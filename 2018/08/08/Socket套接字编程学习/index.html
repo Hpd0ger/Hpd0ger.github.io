@@ -118,21 +118,16 @@
 <p>数据报套接字（SOCK_DGRAM）：<br>数据报套接字提供了一种无连接的服务。该服务并不能保证数据传输的可靠性，数据有可能在传输过程中丢失或出现数据重复，且无法保证顺序地接收到数据。数据报套接字使用UDP（User Datagram Protocol）协议进行数据的传输。由于数据报套接字不能保证数据传输的可靠性，对于有可能出现的数据丢失情况，需要在程序中做相应的处理。</p>
 <p>原始套接字（SOCK_RAW）：<br>原始套接字(SOCKET_RAW)允许对较低层次的协议直接访问，比如IP、 ICMP协议，它常用于检验新的协议实现，或者访问现有服务中配置的新设备，因为RAW SOCKET可以自如地控制Windows下的多种协议，能够对网络底层的传输机制进行控制，所以可以应用原始套接字来操纵网络层和传输层应用。比如，我们可以通过RAW SOCKET来接收发向本机的ICMP、IGMP协议包，或者接收TCP/IP栈不能够处理的IP包，也可以用来发送一些自定包头或自定协议的IP包。网络监听技术很大程度上依赖于SOCKET_RAW<br>原始套接字与标准套接字（标准套接字指的是前面介绍的流式套接字和数据报套接字）的区别在于：原始套接字可以读写内核没有处理的IP数据包，而流式套接字只能读取TCP协议的数据，数据报套接字只能读取UDP协议的数据。因此，如果要访问其他协议发送数据必须使用原始套接字。</p>
 <h2 id="编程思路"><a href="#编程思路" class="headerlink" title="编程思路"></a>编程思路</h2><h3 id="tcp服务端"><a href="#tcp服务端" class="headerlink" title="tcp服务端"></a>tcp服务端</h3><p>1、创建一个套接字，选择tcp流通信，并且绑定套接字到本地ip和端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">s.bind()</span><br></pre></td></tr></table></figure>
-
-<p>2、开始监听</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s.listen(5) # 一般5的最大连接就够了</span><br></pre></td></tr></table></figure>
-
-<p>3、循环接收客户端连接要求</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">while True:</span><br><span class="line">    conn,addr=s.accept() # 接收tcp连接，并返回一个新的套接字conn，和ip地址addr</span><br></pre></td></tr></table></figure>
-
-<p><strong>这个套接字的作用：</strong><br>作为介质，用来接收客户端的信息、返回给客户端信息。服务端在接收这个conn套接字后跟客户端共用此套接字。</p>
+<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind()</code></pre><p>2、开始监听</p>
+<pre><code>s.listen(5) # 一般5的最大连接就够了</code></pre><p>3、循环接收客户端连接要求</p>
+<pre><code>while True:
+    conn,addr=s.accept() # 接收tcp连接，并返回一个新的套接字conn，和ip地址addr</code></pre><p><strong>这个套接字的作用：</strong><br>作为介质，用来接收客户端的信息、返回给客户端信息。服务端在接收这个conn套接字后跟客户端共用此套接字。</p>
 <p>4、执行接收的命令，结果的数据返回给客户端。</p>
 <p>5、传输完毕关闭套接字</p>
 <h3 id="tcp客户端"><a href="#tcp客户端" class="headerlink" title="tcp客户端"></a>tcp客户端</h3><p>1、创建一个套接字并连接远端</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">s.connect()</span><br></pre></td></tr></table></figure>
-
-<p>2、 连接后发送数据和接收数据</p>
+<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect()</code></pre><p>2、 连接后发送数据和接收数据</p>
 <p>3、 传输完毕关闭套接字</p>
 <h2 id="代码执行"><a href="#代码执行" class="headerlink" title="代码执行"></a>代码执行</h2><h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPTxA.jpg" alt></p>
 <h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPbrt.md.jpg" alt></p>
@@ -145,16 +140,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/08/Socket套接字编程学习/">https://hpdoger.cn/2018/08/08/Socket套接字编程学习/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -167,7 +162,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

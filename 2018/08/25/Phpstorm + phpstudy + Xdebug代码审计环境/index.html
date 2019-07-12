@@ -116,9 +116,19 @@
 <p>在相应目录，如5.6.27版本下的在：phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll</p>
 <h3 id="配置php-ini"><a href="#配置php-ini" class="headerlink" title="配置php.ini"></a>配置php.ini</h3><p>php.ini在相应目录，如5.6.27版本下的在：\phpStudy\PHPTutorial\php\php-5.6.27-nts\php.ini</p>
 <p>在Xdebug部分加如下内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[XDebug]</span><br><span class="line">zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;</span><br><span class="line">xdebug.profiler_append = 0</span><br><span class="line">xdebug.profiler_enable = 1</span><br><span class="line">xdebug.profiler_enable_trigger = 0</span><br><span class="line">xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;</span><br><span class="line">xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;</span><br><span class="line">xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;</span><br><span class="line">xdebug.remote_enable = 1</span><br><span class="line">xdebug.remote_handler = &quot;dbgp&quot;</span><br><span class="line">xdebug.remote_host = &quot;127.0.0.1&quot;</span><br><span class="line">xdebug.remote_port = 9000</span><br><span class="line">xdebug.idekey = PHPSTORM</span><br></pre></td></tr></table></figure>
-
-<p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
+<pre><code>[XDebug]
+zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;
+xdebug.profiler_append = 0
+xdebug.profiler_enable = 1
+xdebug.profiler_enable_trigger = 0
+xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
+xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
+xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;
+xdebug.remote_enable = 1
+xdebug.remote_handler = &quot;dbgp&quot;
+xdebug.remote_host = &quot;127.0.0.1&quot;
+xdebug.remote_port = 9000
+xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
 <h3 id="设置php解释器"><a href="#设置php解释器" class="headerlink" title="设置php解释器"></a>设置php解释器</h3><p>![](Delete Link<br><a href="https://i.loli.net/2018/08/25/5b8157cb1f00f.png" target="_blank" rel="noopener">https://i.loli.net/2018/08/25/5b8157cb1f00f.png</a>)</p>
 <p>这里我用的是5.6.27版本的</p>
 <h3 id="设置xdebug参数"><a href="#设置xdebug参数" class="headerlink" title="设置xdebug参数"></a>设置xdebug参数</h3><p>Debug里设置监听地址：<br><img src="https://i.loli.net/2018/08/25/5b8157cb63338.jpg" alt></p>
@@ -138,16 +148,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">https://hpdoger.cn/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -160,7 +170,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

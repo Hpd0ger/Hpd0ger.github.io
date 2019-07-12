@@ -119,73 +119,54 @@
 <li>首先要有一个Github账号，创建一个Reposity（库），name为username.github.io，其中username必须为你的Github账号名，否则你建立的库只会在Pages下的目录，并不是主页，个人觉得是github官方的限制，总不可能让你无限制的拥有创建主页面域名。</li>
 <li>需要安装<a href="https://git-scm.com/" target="_blank" rel="noopener">Git</a>,emmm..如果你不知道什么是<a href="www.baidu.com">Git</a></li>
 <li>需要安装<a href="https://nodejs.org/en/" target="_blank" rel="noopener">Node.js</a></li>
-<li>需要安装Hexo,hexo是一款基于Node.js的静态博客框架,就是说我们可以通过hexo创建我们的博文，将md文件转换成静态文件，再部署到Github上;Hexo可以在安装了Node.js之后通过npm安装：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install hexo-cli -g</span><br></pre></td></tr></table></figure>
-
+<li>需要安装Hexo,hexo是一款基于Node.js的静态博客框架,就是说我们可以通过hexo创建我们的博文，将md文件转换成静态文件，再部署到Github上;Hexo可以在安装了Node.js之后通过npm安装：<pre><code class="bash">$ npm install hexo-cli -g</code></pre>
+笔者是在cmd下运行的npm，但看到网上的方法说最好打开Git bash运行安装<h3 id="根目录初始化"><a href="#根目录初始化" class="headerlink" title="根目录初始化"></a>根目录初始化</h3></li>
+<li>首先创建一个文件夹，名字最好为uername.github.io（便与管理站点）。文件夹用来存放Hexo的配置文件</li>
+<li>命令行Cd到该文件夹下，或者右键git bash，执行命令：<pre><code class="bash">$hexo init</code></pre>
 </li>
+<li>安装依赖包：<pre><code class="bash">$nmp install</code></pre>
+此时该文件夹下会多出来很多文件，目录如下：<pre><code class="bash">.
+├── _config.yml
+├── package.json
+├── scaffolds
+├── source
+|   ├── _drafts
+|   └── _posts
+└── themes</code></pre>
+即为<a href="https://blog.csdn.net/gyq1998/article/details/78294689" target="_blank" rel="noopener">Hexo的配置文件</a><h3 id="安装上传插件-hexo-deployer-git"><a href="#安装上传插件-hexo-deployer-git" class="headerlink" title="安装上传插件 hexo-deployer-git"></a>安装上传插件 <strong>hexo-deployer-git</strong></h3><pre><code class="bash">$ npm install hexo-deployer-git --save</code></pre>
+这个插件支持本地修改上传到Github<h2 id="布置自己的网站"><a href="#布置自己的网站" class="headerlink" title="布置自己的网站"></a>布置自己的网站</h2><h3 id="Clone一个你喜欢的骚主题到文件夹"><a href="#Clone一个你喜欢的骚主题到文件夹" class="headerlink" title="Clone一个你喜欢的骚主题到文件夹"></a>Clone一个你喜欢的骚主题到文件夹</h3></li>
 </ol>
-<p>笔者是在cmd下运行的npm，但看到网上的方法说最好打开Git bash运行安装</p>
-<h3 id="根目录初始化"><a href="#根目录初始化" class="headerlink" title="根目录初始化"></a>根目录初始化</h3><ol>
-<li><p>首先创建一个文件夹，名字最好为uername.github.io（便与管理站点）。文件夹用来存放Hexo的配置文件</p>
+<ul>
+<li>这里笔者用的是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">Next</a>，通过Git命令执行的github克隆：<pre><code class="bash">git clone https://github.com/iissnan/hexo-theme-next themes/next</code></pre>
 </li>
-<li><p>命令行Cd到该文件夹下，或者右键git bash，执行命令：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> init</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>安装依赖包：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$nmp</span> install</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>此时该文件夹下会多出来很多文件，目录如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── _config.yml</span><br><span class="line">├── package.json</span><br><span class="line">├── scaffolds</span><br><span class="line">├── <span class="built_in">source</span></span><br><span class="line">|   ├── _drafts</span><br><span class="line">|   └── _posts</span><br><span class="line">└── themes</span><br></pre></td></tr></table></figure>
-
-<p>即为<a href="https://blog.csdn.net/gyq1998/article/details/78294689" target="_blank" rel="noopener">Hexo的配置文件</a></p>
-<h3 id="安装上传插件-hexo-deployer-git"><a href="#安装上传插件-hexo-deployer-git" class="headerlink" title="安装上传插件 hexo-deployer-git"></a>安装上传插件 <strong>hexo-deployer-git</strong></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
-
-<p>这个插件支持本地修改上传到Github</p>
-<h2 id="布置自己的网站"><a href="#布置自己的网站" class="headerlink" title="布置自己的网站"></a>布置自己的网站</h2><h3 id="Clone一个你喜欢的骚主题到文件夹"><a href="#Clone一个你喜欢的骚主题到文件夹" class="headerlink" title="Clone一个你喜欢的骚主题到文件夹"></a>Clone一个你喜欢的骚主题到文件夹</h3><ul>
-<li><p>这里笔者用的是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">Next</a>，通过Git命令执行的github克隆：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/iissnan/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>需要一定的时间，克隆后的文件夹名为next，在themes目录下<br><img src="https://s1.ax1x.com/2018/05/26/ChVSTP.png" alt="avatar"></p>
-</li>
-<li><p>其中，_config.yml是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">博客页面的配置文件</a>,使用详情左戳</p>
-</li>
+<li>需要一定的时间，克隆后的文件夹名为next，在themes目录下<br><img src="https://s1.ax1x.com/2018/05/26/ChVSTP.png" alt="avatar"></li>
+<li>其中，_config.yml是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">博客页面的配置文件</a>,使用详情左戳</li>
 </ul>
 <h3 id="配置主目录"><a href="#配置主目录" class="headerlink" title="配置主目录"></a>配置主目录</h3><ul>
 <li>打开主目录下_config.yml</li>
 </ul>
 <ol>
-<li><p>修改主题，使其指向我们使用的主题</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">theme:next</span><br></pre></td></tr></table></figure>
+<li>修改主题，使其指向我们使用的主题<pre><code class="bash">theme:next</code></pre>
 </li>
-<li><p>修改deploy项，与你自己的github相对应</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/Hpd0ger/Hpd0ger.github.io.git</span><br><span class="line">  name: Hpdoger</span><br><span class="line">  email: <span class="comment"># 注册Github的邮箱</span></span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
-
+<li>修改deploy项，与你自己的github相对应<pre><code class="bash">deploy:
+type: git
+repo: https://github.com/Hpd0ger/Hpd0ger.github.io.git
+name: Hpdoger
+email: # 注册Github的邮箱
+branch: master</code></pre>
+这个deploy信息是hexo-deployer-git插件的工作认证，执行部署操作的时候，首先会自动初始化git仓库（位置在.deploy_git中），并关联到指定repo与branch，后续public文件夹中自动生成的页面代码将会拷贝至此目录中进行代码管理。若修改了name和email，需要删掉整个.deploy_git再重新部署才会生效以及你的Github账号。<h3 id="部署到GitHub上"><a href="#部署到GitHub上" class="headerlink" title="部署到GitHub上"></a>部署到GitHub上</h3>主要有三个步骤：</li>
+<li>hexo g：<pre><code class="bash">$hexo generate ：将source\_post文件下的md文件转成静态页面到public文件夹下</code></pre>
 </li>
+<li>hexo s:<pre><code class="bash">$hexo s ： 生成本地预览，默认情况下，访问网址为： http://localhost:4000/</code></pre>
+</li>
+<li>hexo d:<pre><code class="bash">$hexo d  ：将.deploy目录部署到GitHub</code></pre>
+特别注意：<pre><code class="bash">$hexo clean ：清除缓存文件(db.json)和已生成的静态文件(public)。在某些情况（尤其是更换主题后），如果发现您对站点的更改无论如何也不生效，您可能需要运行该命令。</code></pre>
+</li>
+<li>现在登陆一下自己的博客，看看有没有成功哦</li>
 </ol>
-<p>这个deploy信息是hexo-deployer-git插件的工作认证，执行部署操作的时候，首先会自动初始化git仓库（位置在.deploy_git中），并关联到指定repo与branch，后续public文件夹中自动生成的页面代码将会拷贝至此目录中进行代码管理。若修改了name和email，需要删掉整个.deploy_git再重新部署才会生效以及你的Github账号。</p>
-<h3 id="部署到GitHub上"><a href="#部署到GitHub上" class="headerlink" title="部署到GitHub上"></a>部署到GitHub上</h3><p>主要有三个步骤：</p>
-<ol>
-<li><p>hexo g：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> generate ：将<span class="built_in">source</span>\_post文件下的md文件转成静态页面到public文件夹下</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>hexo s:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> s ： 生成本地预览，默认情况下，访问网址为： http://localhost:4000/</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>hexo d:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> d  ：将.deploy目录部署到GitHub</span><br></pre></td></tr></table></figure>
-
-<p>特别注意：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> clean ：清除缓存文件(db.json)和已生成的静态文件(public)。在某些情况（尤其是更换主题后），如果发现您对站点的更改无论如何也不生效，您可能需要运行该命令。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>现在登陆一下自己的博客，看看有没有成功哦</p>
-</li>
-</ol>
-<h2 id="写博客"><a href="#写博客" class="headerlink" title="写博客"></a>写博客</h2><h3 id="创建一篇博文"><a href="#创建一篇博文" class="headerlink" title="创建一篇博文"></a>创建一篇博文</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> new <span class="string">'文章名'</span></span><br></pre></td></tr></table></figure>
-
+<h2 id="写博客"><a href="#写博客" class="headerlink" title="写博客"></a>写博客</h2><h3 id="创建一篇博文"><a href="#创建一篇博文" class="headerlink" title="创建一篇博文"></a>创建一篇博文</h3><pre><code class="bash">$hexo new &#39;文章名&#39;</code></pre>
 <p>会在source_post文件下创建一个md文件，系统已经为你写好了标题和日期</p>
-<h3 id="创建一个页面"><a href="#创建一个页面" class="headerlink" title="创建一个页面"></a>创建一个页面</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> new page <span class="string">"页面名"</span> <span class="comment">#如 tages、catagories</span></span><br></pre></td></tr></table></figure>
-
+<h3 id="创建一个页面"><a href="#创建一个页面" class="headerlink" title="创建一个页面"></a>创建一个页面</h3><pre><code class="bash">$hexo new page &quot;页面名&quot; #如 tages、catagories</code></pre>
 <p>创建页面就是在主页上显示你的页面名，即你在博文的开头定义的这篇博文的标签、分类，即属于页面内容<br>会在source\目录下建立对应名称的文件夹，文件夹下有对应名称的md文件</p>
 <h3 id="使用Markdown编辑器"><a href="#使用Markdown编辑器" class="headerlink" title="使用Markdown编辑器"></a>使用Markdown编辑器</h3><p>笔者使用的是cmd markdown，由于画面比较小清新所以一直使用，如果你氪金的话还可以将md文件转化为pdf格式。</p>
 <h3 id="Markdown语法介绍"><a href="#Markdown语法介绍" class="headerlink" title="Markdown语法介绍"></a>Markdown语法介绍</h3><ul>
@@ -201,16 +182,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/05/26/利用Hexo和Github搭建个人博客/">https://hpdoger.cn/2018/05/26/利用Hexo和Github搭建个人博客/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -223,7 +204,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

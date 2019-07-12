@@ -112,34 +112,55 @@
             <div class="content">
                 <h1 id="Code-Breaking-Puzzles-WriteUp"><a href="#Code-Breaking-Puzzles-WriteUp" class="headerlink" title="Code-Breaking-Puzzles WriteUp"></a>Code-Breaking-Puzzles WriteUp</h1><p>最近终于可以忙里偷闲来做一下P神的题目，真的能学到不少东西，对底层的一些漏洞知识学习很有帮助。感谢网上已经有好多版本的wp可以提供参考，有一些知识实在是盲区。写一些笔记，不笱求与师傅们观点相异，如果能让看文章的人更能理解这些洞点，也算是我的荣幸了。</p>
 <h1 id="easy-function"><a href="#easy-function" class="headerlink" title="easy - function"></a>easy - function</h1><p>不得不说P神的代码简洁又暴力</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$action = $_GET[&apos;action&apos;] ?? &apos;&apos;;</span><br><span class="line">$arg = $_GET[&apos;arg&apos;] ?? &apos;&apos;;</span><br><span class="line"></span><br><span class="line">if(preg_match(&apos;/^[a-z0-9_]*$/isD&apos;, $action)) &#123;</span><br><span class="line">    show_source(__FILE__);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    $action(&apos;&apos;, $arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+$action = $_GET[&#39;action&#39;] ?? &#39;&#39;;
+$arg = $_GET[&#39;arg&#39;] ?? &#39;&#39;;
 
-<p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
+if(preg_match(&#39;/^[a-z0-9_]*$/isD&#39;, $action)) {
+    show_source(__FILE__);
+} else {
+    $action(&#39;&#39;, $arg);
+}</code></pre><p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
 <p>应该是利用action做函数名来执行命令，但$action的首尾做了正则限制，不能直接是函数名。</p>
 <p>P神小密圈说到的方式用\可以绕过。原因就是<strong>\funciton</strong>是php原生函数的写法，就是以命名空间+函数名的方法来表示函数。而原生函数的命名空间是”&quot;。这种用法倒是在tp框架里见过，当调用一个类的时候会指明命名空间”\think\db”。虽然很无感命名空间的说法，但是感觉和java里的package类似</p>
 <p>接着就是调用Create_function函数来代码注入了，具体原理参考：<a href="http://blog.51cto.com/lovexm/1743442" target="_blank" rel="noopener">http://blog.51cto.com/lovexm/1743442</a></p>
 <p>直接上Poc:<br><code>action=create_function&amp;arg=;}print_r(file_get_contents(&#39;../flag_h0w2execute_arb1trary_c0de&#39;));//</code></p>
 <p>别忘了注释//，否则逃脱不了函数</p>
-<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">function is_php($data)&#123;</span><br><span class="line">    return preg_match(&apos;/&lt;\?.*[(`;?&gt;].*/is&apos;, $data);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if(empty($_FILES)) &#123;</span><br><span class="line">    die(show_source(__FILE__));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$user_dir = &apos;data/&apos; . md5($_SERVER[&apos;REMOTE_ADDR&apos;]);</span><br><span class="line">$data = file_get_contents($_FILES[&apos;file&apos;][&apos;tmp_name&apos;]);</span><br><span class="line">if (is_php($data)) &#123;</span><br><span class="line">    echo &quot;bad request&quot;;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    @mkdir($user_dir, 0755);</span><br><span class="line">    $path = $user_dir . &apos;/&apos; . random_int(0, 10) . &apos;.php&apos;;</span><br><span class="line">    move_uploaded_file($_FILES[&apos;file&apos;][&apos;tmp_name&apos;], $path);</span><br><span class="line"></span><br><span class="line">    header(&quot;Location: $path&quot;, true, 303);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><pre><code>&lt;?php
+function is_php($data){
+    return preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data);
+}
 
-<h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
+if(empty($_FILES)) {
+    die(show_source(__FILE__));
+}
+
+$user_dir = &#39;data/&#39; . md5($_SERVER[&#39;REMOTE_ADDR&#39;]);
+$data = file_get_contents($_FILES[&#39;file&#39;][&#39;tmp_name&#39;]);
+if (is_php($data)) {
+    echo &quot;bad request&quot;;
+} else {
+    @mkdir($user_dir, 0755);
+    $path = $user_dir . &#39;/&#39; . random_int(0, 10) . &#39;.php&#39;;
+    move_uploaded_file($_FILES[&#39;file&#39;][&#39;tmp_name&#39;], $path);
+
+    header(&quot;Location: $path&quot;, true, 303);
+} </code></pre><h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
 <p>很明显应该是preg_match的洞点，但是当时并不知道具体突破的思路，看了一些文章才知道，原来php用的是PCRE库的。那么什么是PCRE和NFA正则引擎？</p>
 <h2 id="PCRE"><a href="#PCRE" class="headerlink" title="PCRE"></a>PCRE</h2><p>PCRE(Perl Compatible Regular Expressions中文含义：perl语言兼容正则表达式)是一个用C语言编写的正则表达式函数库</p>
 <p>NFA引擎</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</span><br></pre></td></tr></table></figure>
-
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">preg_match(&apos;/&lt;\?.*[(`;?&gt;].*/is&apos;, $data)</span><br></pre></td></tr></table></figure>
-
-<p>如果我们输入<code>&lt;?php print;abcd</code></p>
+<pre><code>**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
+<pre><code>preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data)</code></pre><p>如果我们输入<code>&lt;?php print;abcd</code></p>
 <p>那么它匹配的流程应该是这样的：<br><code>&lt;?php print;abc</code><br><code>&lt;?php print;ab</code><br><code>&lt;?php print;a</code><br><code>&lt;?php print;</code><br><code>&lt;?php print;abcd</code></p>
 <p><strong>.*</strong>会把?后的所有字符都先匹配到，发现没有[]里面的这些字符后再进行回溯。但是PHP为了防止回溯次数过多，发生拒绝服务，会有一个回溯限制</p>
 <p>引用kk师傅的一张图：<br><img src="https://www.kingkk.com/2018/11/Code-Breaking-Puzzles-%E9%A2%98%E8%A7%A3-%E5%AD%A6%E4%B9%A0%E7%AF%87/3.png" alt></p>
 <p>5.2以后的版本回溯次数是1000000，超过这个次数还没有匹配到，则会返回false</p>
 <h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><p>既然是弱类型比较，我们就用false来等价null绕过</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);</span><br><span class="line">$msg = &quot;&lt;?php print_r(scandir(&apos;../&apos;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);</span><br><span class="line">fwrite($f,$msg);</span><br><span class="line">fclose($f);</span><br></pre></td></tr></table></figure>
-
-<p>构造个上传表单完事</p>
+<pre><code>&lt;?php
+$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);
+$msg = &quot;&lt;?php print_r(scandir(&#39;../&#39;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);
+fwrite($f,$msg);
+fclose($f);</code></pre><p>构造个上传表单完事</p>
 <p>这也提醒我们,正确使用preg_match的重要性，用强类型等于避免很多不安全因素</p>
 <h1 id="phpmagic"><a href="#phpmagic" class="headerlink" title="phpmagic"></a>phpmagic</h1><p>这个题真的发现很多知识碎片</p>
 <h2 id="php-filter"><a href="#php-filter" class="headerlink" title="php://filter"></a>php://filter</h2><p>首先聊聊filter的妙用。以前见到的情况和套路都是include()、file_get_contents()的参数可控，我们用php://filter/read配合base64-encode可以把文件编码成base64后输出。没想到file_put_contents文件名可控时也有magic</p>
@@ -150,9 +171,12 @@
 <p>至于绕过后缀名，这两天做工程实践的时候恰好用到了p师傅关于apache的x0a后缀解析为php的文件上传绕过，具体思路：<a href="https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715</a><br><img src="https://s1.ax1x.com/2018/12/24/F6bE11.png" alt></p>
 <p>poc如下<br><img src="https://s1.ax1x.com/2018/12/24/F6b97F.png" alt></p>
 <h1 id="php-limit"><a href="#php-limit" class="headerlink" title="php limit"></a>php limit</h1><p>这道题依然简单粗暴，代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if(&apos;;&apos; === preg_replace(&apos;/[^\W]+\((?R)?\)/&apos;, &apos;&apos;, $_GET[&apos;code&apos;])) &#123;    </span><br><span class="line">    eval($_GET[&apos;code&apos;]);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    show_source(__FILE__);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
+<pre><code>&lt;?php
+if(&#39;;&#39; === preg_replace(&#39;/[^\W]+\((?R)?\)/&#39;, &#39;&#39;, $_GET[&#39;code&#39;])) {    
+    eval($_GET[&#39;code&#39;]);
+} else {
+    show_source(__FILE__);
+}</code></pre><p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
 <p>在匹配完b()之后，由于匹配不到[^\W]，正则就停止了。所以这里的代码执行点就是：嵌套函数且最后一个函数不能用参数值</p>
 <p>有的师傅们用了get_defined_vars()获取http请求头。其实这个之前在打awd时上流量监控部分用到过，appache可以用getallheaders()来获取http头，但是nginx没有这个函数，可以用了get_defined_vars()，通过current()、next()进而选择可控参数,poc如下</p>
 <p><img src="https://i.loli.net/2019/01/08/5c3413c0a9be1.png" alt></p>
@@ -170,16 +194,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/12/21/Code-Breaking-Puzzles WriteUp/">https://hpdoger.cn/2018/12/21/Code-Breaking-Puzzles WriteUp/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -192,7 +216,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

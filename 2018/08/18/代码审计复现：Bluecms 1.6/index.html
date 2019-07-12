@@ -115,50 +115,115 @@
 <p>从今天起，至未来的一个月，会把学习的全部精力都投入到审计方向，立下flag:未来半个月内拿自己的cve</p>
 <h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>cms: bulecms 1.6 sp1<br>php: 5.4 + mysql 5.5.53</p>
 <h2 id="sql注入一"><a href="#sql注入一" class="headerlink" title="sql注入一"></a>sql注入一</h2><h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题文件位于：/uploads/ad_js.php</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&apos;ad&apos;).&quot; WHERE ad_id =&quot;.$ad_id);</span><br></pre></td></tr></table></figure>
-
-<p>变量未用单引号闭合，可能会引起注入</p>
+<pre><code>$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&#39;ad&#39;).&quot; WHERE ad_id =&quot;.$ad_id);</code></pre><p>变量未用单引号闭合，可能会引起注入</p>
 <p>跟踪一下$ad_id，查找该参数如何获得</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ad_id = !empty($_GET[&apos;ad_id&apos;]) ? trim($_GET[&apos;ad_id&apos;]) : &apos;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
+<pre><code>$ad_id = !empty($_GET[&#39;ad_id&#39;]) ? trim($_GET[&#39;ad_id&#39;]) : &#39;&#39;;</code></pre><p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
 <p>再追踪一下getone()函数怎么定义的，一个定义mysql相关操作的文件位于/uploads/include/mysql.class.php：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">function getone($sql, $type=MYSQL_ASSOC)&#123;</span><br><span class="line">	$query = $this-&gt;query($sql,$this-&gt;linkid);</span><br><span class="line">	$row = mysql_fetch_array($query, $type);</span><br><span class="line">	return $row;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>追踪此类里query函数的定义：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">function query($sql)&#123;</span><br><span class="line">	if(!$query=@mysql_query($sql, $this-&gt;linkid))&#123;</span><br><span class="line">		$this-&gt;dbshow(&quot;Query error:$sql&quot;);</span><br><span class="line">	&#125;else&#123;</span><br><span class="line">		return $query;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
+<pre><code>    function getone($sql, $type=MYSQL_ASSOC){
+        $query = $this-&gt;query($sql,$this-&gt;linkid);
+        $row = mysql_fetch_array($query, $type);
+        return $row;
+    }</code></pre><p>追踪此类里query函数的定义：</p>
+<pre><code>    function query($sql){
+        if(!$query=@mysql_query($sql, $this-&gt;linkid)){
+            $this-&gt;dbshow(&quot;Query error:$sql&quot;);
+        }else{
+            return $query;
+        }
+    }</code></pre><p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
 <h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p><img src="https://s1.ax1x.com/2018/08/16/PWEujK.jpg" alt></p>
 <h2 id="sql注入二"><a href="#sql注入二" class="headerlink" title="sql注入二"></a>sql注入二</h2><p>一开始审了一个前台/uploads/user.php的宽字节注入,记一下思路：</p>
 <p>在mysql.class.php中看到：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql_query( &quot;SET NAMES gbk&quot;);</span><br></pre></td></tr></table></figure>
-
-<p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
+<pre><code>mysql_query( &quot;SET NAMES gbk&quot;);</code></pre><p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
 <p>果然对POST\GET过滤，追踪deep_addslashes</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">function deep_addslashes($str)</span><br><span class="line">&#123;</span><br><span class="line">	if(is_array($str))</span><br><span class="line">	&#123;</span><br><span class="line">		foreach($str as $key=&gt;$val)</span><br><span class="line">		&#123;</span><br><span class="line">			$str[$key] = deep_addslashes($val);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	else</span><br><span class="line">	&#123;</span><br><span class="line">		$str = addslashes($str);</span><br><span class="line">	&#125;</span><br><span class="line">	return $str;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>function deep_addslashes($str)
+{
+    if(is_array($str))
+    {
+        foreach($str as $key=&gt;$val)
+        {
+            $str[$key] = deep_addslashes($val);
+        }
+    }
+    else
+    {
+        $str = addslashes($str);
+    }
+    return $str;
+}</code></pre><p>联想宽字节，先追踪一下处理表单的方法</p>
+<pre><code> elseif($act == &#39;index_login&#39;){
+     $user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;
+     $pwd = !empty($_REQUEST[&#39;pwd&#39;]) ? trim($_REQUEST[&#39;pwd&#39;]) : &#39;&#39;;
+     $remember = isset($_REQUEST[&#39;remember&#39;]) ? intval($_REQUEST[&#39;remember&#39;]) : 0;
+     if($user_name == &#39;&#39;){
+         showmsg(&#39;�û�������Ϊ��&#39;);
+     }
+     if($pwd == &#39;&#39;){
+         showmsg(&#39;���벻��Ϊ��&#39;);
+     }
+    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);
+    if($row[&#39;num&#39;] == 1){
+        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
+    }
+    $w = login($user_name, $pwd);
 
-<p>联想宽字节，先追踪一下处理表单的方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">elseif($act == &apos;index_login&apos;)&#123;</span><br><span class="line">	$user_name = !empty($_REQUEST[&apos;user_name&apos;]) ? trim($_REQUEST[&apos;user_name&apos;]) : &apos;&apos;;</span><br><span class="line">	$pwd = !empty($_REQUEST[&apos;pwd&apos;]) ? trim($_REQUEST[&apos;pwd&apos;]) : &apos;&apos;;</span><br><span class="line">	$remember = isset($_REQUEST[&apos;remember&apos;]) ? intval($_REQUEST[&apos;remember&apos;]) : 0;</span><br><span class="line">	if($user_name == &apos;&apos;)&#123;</span><br><span class="line">		showmsg(&apos;�û�������Ϊ��&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">	if($pwd == &apos;&apos;)&#123;</span><br><span class="line">		showmsg(&apos;���벻��Ϊ��&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;admin&apos;).&quot; WHERE admin_name=&apos;$user_name&apos;&quot;);</span><br><span class="line">if($row[&apos;num&apos;] == 1)&#123;</span><br><span class="line">	showmsg(&apos;ϵͳ�û��鲻�ܴ�ǰ̨��¼&apos;);</span><br><span class="line">&#125;</span><br><span class="line">$w = login($user_name, $pwd);</span><br><span class="line"></span><br><span class="line">if(defined(&apos;UC_API&apos;) &amp;&amp; @include_once(BLUE_ROOT.&apos;uc_client/client.php&apos;))&#123;</span><br><span class="line">	list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);</span><br><span class="line">	if($uid&gt;0)&#123;</span><br><span class="line">		$password = md5($password);</span><br><span class="line">		if(!$w)&#123;</span><br><span class="line">			$db-&gt;query(&quot;INSERT INTO &quot;.table(&apos;user&apos;).&quot; (user_name, pwd, email, reg_time) VALUES (&apos;$username&apos;, &apos;$password&apos;, &apos;$email&apos;, &apos;$timestamp&apos;)&quot;); </span><br><span class="line">			$w = 1;</span><br><span class="line">		&#125;</span><br><span class="line">		$ucsynlogin = uc_user_synlogin($uid);</span><br><span class="line">	&#125;</span><br><span class="line">	elseif($uid === -1)&#123;</span><br><span class="line">		if($w == 1)&#123;</span><br><span class="line">			$user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&apos;user&apos;).&quot; WHERE user_name=&apos;$user_name&apos;&quot;);</span><br><span class="line">			$uid = uc_user_register($user_name, $pwd, $user_info[&apos;email&apos;]);</span><br><span class="line">			if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);</span><br><span class="line">		&#125;else $w = -1;</span><br><span class="line">	&#125;</span><br><span class="line">	elseif($uid == -2)&#123;</span><br><span class="line">		showmsg(&apos;�������&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">	echo $ucsynlogin;</span><br><span class="line">&#125;</span><br><span class="line">if($w == -1 || $w == 0)&#123;</span><br><span class="line">	showmsg(&apos;��������û��������벻��ȷ&apos;);</span><br><span class="line">&#125;</span><br><span class="line">elseif($w == 1)&#123;</span><br><span class="line">	update_user_info($user_name);</span><br><span class="line">		if($remember==1)&#123;</span><br><span class="line">			setcookie(&apos;BLUE[user_id]&apos;, $_SESSION[&apos;user_id&apos;], time()+172800, $cookiepath, $cookiedomain);</span><br><span class="line">			setcookie(&apos;BLUE[user_name]&apos;, $user_name, time()+172800, $cookiepath, $cookiedomain);</span><br><span class="line">		setcookie(&apos;BLUE[user_pwd]&apos;, md5(md5($pwd).$_CFG[&apos;cookie_hash&apos;]), time()+172800, $cookiepath, $cookiedomain);</span><br><span class="line">		&#125;</span><br><span class="line">		showmsg(&apos;��ӭ�� &apos;.$user_name.&apos; ���������ڽ�ת����Ա����&apos;, &apos;user.php&apos;);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>追踪user_name怎么传入：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$user_name = !empty($_REQUEST[&apos;user_name&apos;]) ? trim($_REQUEST[&apos;user_name&apos;]) : &apos;&apos;;</span><br></pre></td></tr></table></figure>
-
-<p>发现无过滤</p>
+    if(defined(&#39;UC_API&#39;) &amp;&amp; @include_once(BLUE_ROOT.&#39;uc_client/client.php&#39;)){
+        list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);
+        if($uid&gt;0){
+            $password = md5($password);
+            if(!$w){
+                $db-&gt;query(&quot;INSERT INTO &quot;.table(&#39;user&#39;).&quot; (user_name, pwd, email, reg_time) VALUES (&#39;$username&#39;, &#39;$password&#39;, &#39;$email&#39;, &#39;$timestamp&#39;)&quot;); 
+                $w = 1;
+            }
+            $ucsynlogin = uc_user_synlogin($uid);
+        }
+        elseif($uid === -1){
+            if($w == 1){
+                $user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
+                $uid = uc_user_register($user_name, $pwd, $user_info[&#39;email&#39;]);
+                if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);
+            }else $w = -1;
+        }
+        elseif($uid == -2){
+            showmsg(&#39;�������&#39;);
+        }
+        echo $ucsynlogin;
+    }
+    if($w == -1 || $w == 0){
+        showmsg(&#39;��������û��������벻��ȷ&#39;);
+    }
+    elseif($w == 1){
+        update_user_info($user_name);
+         if($remember==1){
+             setcookie(&#39;BLUE[user_id]&#39;, $_SESSION[&#39;user_id&#39;], time()+172800, $cookiepath, $cookiedomain);
+             setcookie(&#39;BLUE[user_name]&#39;, $user_name, time()+172800, $cookiepath, $cookiedomain);
+            setcookie(&#39;BLUE[user_pwd]&#39;, md5(md5($pwd).$_CFG[&#39;cookie_hash&#39;]), time()+172800, $cookiepath, $cookiedomain);
+         }
+         showmsg(&#39;��ӭ�� &#39;.$user_name.&#39; ���������ڽ�ת����Ա����&#39;, &#39;user.php&#39;);
+     }
+ }</code></pre><p>追踪user_name怎么传入：</p>
+<pre><code>$user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;</code></pre><p>发现无过滤</p>
 <p>再追踪一下对suername的sql语句如何执行：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;admin&apos;).&quot; WHERE admin_name=&apos;$user_name&apos;&quot;);</span><br></pre></td></tr></table></figure>
-
-<p>看到调用了getone()函数，第一个注入有介绍。</p>
+<pre><code>$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);</code></pre><p>看到调用了getone()函数，第一个注入有介绍。</p>
 <p>再看到下面一句：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if($row[&apos;num&apos;] == 1)&#123;</span><br><span class="line">	showmsg(&apos;ϵͳ�û��鲻�ܴ�ǰ̨��¼&apos;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$w = login($user_name, $pwd);</span><br></pre></td></tr></table></figure>
-
-<p>再追踪login函数得到：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">function login($user_name,$pwd)&#123;</span><br><span class="line">	global $db;</span><br><span class="line">$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;user&apos;).&quot; WHERE user_name=&apos;$user_name&apos;&quot;);</span><br><span class="line">if($row[&apos;num&apos;]==0)&#123;</span><br><span class="line">	$result = 0;</span><br><span class="line">&#125;else&#123;</span><br><span class="line">	$sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&apos;user&apos;).&quot; WHERE user_name=&apos;$user_name&apos; and pwd=md5(&apos;$pwd&apos;)&quot;;</span><br><span class="line">		$user_num = $db-&gt;getone($sql);</span><br><span class="line">		if($user_num[&apos;num&apos;])&#123;</span><br><span class="line">			$result = 1;</span><br><span class="line">		&#125;else $result = -1;</span><br><span class="line">&#125;</span><br><span class="line">	return $result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
+<pre><code>    if($row[&#39;num&#39;] == 1){
+        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
+    }</code></pre><p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
+<pre><code>$w = login($user_name, $pwd);</code></pre><p>再追踪login函数得到：</p>
+<pre><code> function login($user_name,$pwd){
+     global $db;
+    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
+    if($row[&#39;num&#39;]==0){
+        $result = 0;
+    }else{
+        $sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39; and pwd=md5(&#39;$pwd&#39;)&quot;;
+         $user_num = $db-&gt;getone($sql);
+         if($user_num[&#39;num&#39;]){
+             $result = 1;
+         }else $result = -1;
+    }
+     return $result;
+ }</code></pre><p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
 <p><strong>如果我们的用户名是admin表中用户名，则不允许登陆</strong><br><strong>若不是表中的用户名，则会进行user表的对比查询，再判断是否有这个用户</strong></p>
 <p>明确思路：盲注<br>注入是否成功的判断条件：$row[‘num’]返回值</p>
 <h3 id="复现-1"><a href="#复现-1" class="headerlink" title="复现"></a>复现</h3><p>success injection: <img src="https://s1.ax1x.com/2018/08/17/PWKfzj.jpg" alt></p>
@@ -171,16 +236,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/18/代码审计复现：Bluecms 1.6/">https://hpdoger.cn/2018/08/18/代码审计复现：Bluecms 1.6/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -193,7 +258,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>

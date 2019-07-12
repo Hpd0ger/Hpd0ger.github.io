@@ -112,9 +112,7 @@
             <div class="content">
                 <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>php Background pages restrict the type of uploaded files, jpe, gif, rar,we can break through the restrictions on uploading malicious files such as: PHP.</p>
 <h2 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h2><p>The affected code(located:/ciuy_Admin/SEMCMS_Upfile.php):</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</span><br></pre></td></tr></table></figure>
-
-<p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
+<pre><code>$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</code></pre><p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
 <h2 id="Founction"><a href="#Founction" class="headerlink" title="Founction"></a>Founction</h2><p>The attaking founction:use char(0) to cut off the filename and make up a renew suffix</p>
 <p>The affected page located in admin’s management page:<code>ciuy_Admin/SEMCMS_Upfile.php</code></p>
 <h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>First,we define our evil php’s suffix as test.rar(which is allowed) and post it as follow.There,we could see no files in the Folder</p>
@@ -129,16 +127,16 @@
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Sōsuke</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2018/08/23/Arbitrary File upload in Semcms V2.7/">https://hpdoger.cn/2018/08/23/Arbitrary File upload in Semcms V2.7/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -151,7 +149,7 @@
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>
