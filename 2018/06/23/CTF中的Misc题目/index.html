@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            CTF中的Misc题目
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/06/23/CTF中的Misc题目/"> 
+                    CTF中的Misc题目 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-06-23   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，Misc/">ctf，Misc</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#又是一张图片，还单纯么"><span class="toc-list-text">又是一张图片，还单纯么</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#linux基础"><span class="toc-list-text">linux基础</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#中国菜刀"><span class="toc-list-text">中国菜刀</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#要蹭网先解开密码"><span class="toc-list-text">要蹭网先解开密码</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>因为最近要实验班考核，开始做一下Misc题目，毕竟要简单一些。。发现好多神奇在kali里面，就用ssh连接了本地win10和kali，搭了xftp互传文件，后台挂上kali解放双手解放内存，爽的不行~</p>
+<h3 id="又是一张图片，还单纯么"><a href="#又是一张图片，还单纯么" class="headerlink" title="又是一张图片，还单纯么"></a>又是一张图片，还单纯么</h3><p>丢到kali的binwalk里扫一下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">binwalk -e 2.jpg</span><br></pre></td></tr></table></figure>
+
+<p>发现有好多文件，用Kali下的foremost分离一下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">foremost 2.jpg</span><br></pre></td></tr></table></figure>
+
+<p>分离了两张图片传回到win下查看flag</p>
+<h3 id="linux基础"><a href="#linux基础" class="headerlink" title="linux基础"></a>linux基础</h3><p>给了一个flag未知类型的文件，又提示linux基础。<br>学会了一个linux下的打印命令：strings</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strings flag</span><br></pre></td></tr></table></figure>
+
+<h3 id="中国菜刀"><a href="#中国菜刀" class="headerlink" title="中国菜刀"></a>中国菜刀</h3><p>得到一个pcap的文件，果断丢到wireshark<br>追踪Tcp数据流发现有Base64编码的东西。<br>解码后发现有这个东西:C:\wwwroot\flag.tar.gz<br>我的想法是，可能这个pcap里还包含的有其它文件，不管了丢到binwalk里看一下<br><img src="https://s1.ax1x.com/2018/06/23/PpvTz9.png" alt="1"><br>果然有一个zip的压缩文件，但是我用foremost分离不出来，于是用binwalk的dd命令来提取：<br><img src="https://s1.ax1x.com/2018/06/23/Ppvbs1.png" alt="2"></p>
+<p>注意偏移量的选取！</p>
+<p>参考：<a href="https://blog.csdn.net/vspiders/article/details/72876889" target="_blank" rel="noopener">CTF中图片隐藏文件分离方法总结</a></p>
+<h3 id="要蹭网先解开密码"><a href="#要蹭网先解开密码" class="headerlink" title="要蹭网先解开密码"></a>要蹭网先解开密码</h3><p>给了一个cap文件，放到kali里的aircrack里跑。<br>给了前七位，用密码工具生成完整的11位手机号码的密码字典。<br>接着执行如下命令：<br><img src="https://s1.ax1x.com/2018/06/23/P9kq9P.png" alt="1"><br>index那行提示是让我们看握手包的次数，显示的是三次就输入3</p>
+<p>后期要做一个破解wifi的文章~</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/06/23/CTF中的Misc题目/">https://hpdoger.cn/2018/06/23/CTF中的Misc题目/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/07/09/内网穿透进行Metasploit渗透/">  内网穿透进行Metasploit渗透</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/06/21/Nc反弹Shell初识/"> Nc反弹Shell </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat Jun 23 2018 12:25:35 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

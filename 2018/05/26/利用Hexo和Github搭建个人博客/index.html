@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            利用Hexo和Github搭建个人博客
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/05/26/利用Hexo和Github搭建个人博客/"> 
+                    利用Hexo和Github搭建个人博客 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-05-26   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/搭建博客/">搭建博客</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/教程，github/">教程，github</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#准备工具"><span class="toc-list-text">准备工具</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#根目录初始化"><span class="toc-list-text">根目录初始化</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#安装上传插件-hexo-deployer-git"><span class="toc-list-text">安装上传插件 hexo-deployer-git</span></a></li></ol><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#布置自己的网站"><span class="toc-list-text">布置自己的网站</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Clone一个你喜欢的骚主题到文件夹"><span class="toc-list-text">Clone一个你喜欢的骚主题到文件夹</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#配置主目录"><span class="toc-list-text">配置主目录</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#部署到GitHub上"><span class="toc-list-text">部署到GitHub上</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#写博客"><span class="toc-list-text">写博客</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#创建一篇博文"><span class="toc-list-text">创建一篇博文</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#创建一个页面"><span class="toc-list-text">创建一个页面</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#使用Markdown编辑器"><span class="toc-list-text">使用Markdown编辑器</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Markdown语法介绍"><span class="toc-list-text">Markdown语法介绍</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#写在最后"><span class="toc-list-text">写在最后</span></a>
+</li></div>
+            <div class="content">
+                <h3 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h3><p>大一萌新一枚，想学点技术写一个自己的博客，记录自己的点滴。能力有限，又总要写点什么，那就写一下这次创建blog的心酸经历</p>
+<h3 id="准备工具"><a href="#准备工具" class="headerlink" title="准备工具"></a>准备工具</h3><ol>
+<li>首先要有一个Github账号，创建一个Reposity（库），name为username.github.io，其中username必须为你的Github账号名，否则你建立的库只会在Pages下的目录，并不是主页，个人觉得是github官方的限制，总不可能让你无限制的拥有创建主页面域名。</li>
+<li>需要安装<a href="https://git-scm.com/" target="_blank" rel="noopener">Git</a>,emmm..如果你不知道什么是<a href="www.baidu.com">Git</a></li>
+<li>需要安装<a href="https://nodejs.org/en/" target="_blank" rel="noopener">Node.js</a></li>
+<li>需要安装Hexo,hexo是一款基于Node.js的静态博客框架,就是说我们可以通过hexo创建我们的博文，将md文件转换成静态文件，再部署到Github上;Hexo可以在安装了Node.js之后通过npm安装：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install hexo-cli -g</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>笔者是在cmd下运行的npm，但看到网上的方法说最好打开Git bash运行安装</p>
+<h3 id="根目录初始化"><a href="#根目录初始化" class="headerlink" title="根目录初始化"></a>根目录初始化</h3><ol>
+<li><p>首先创建一个文件夹，名字最好为uername.github.io（便与管理站点）。文件夹用来存放Hexo的配置文件</p>
+</li>
+<li><p>命令行Cd到该文件夹下，或者右键git bash，执行命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> init</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装依赖包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$nmp</span> install</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>此时该文件夹下会多出来很多文件，目录如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── _config.yml</span><br><span class="line">├── package.json</span><br><span class="line">├── scaffolds</span><br><span class="line">├── <span class="built_in">source</span></span><br><span class="line">|   ├── _drafts</span><br><span class="line">|   └── _posts</span><br><span class="line">└── themes</span><br></pre></td></tr></table></figure>
+
+<p>即为<a href="https://blog.csdn.net/gyq1998/article/details/78294689" target="_blank" rel="noopener">Hexo的配置文件</a></p>
+<h3 id="安装上传插件-hexo-deployer-git"><a href="#安装上传插件-hexo-deployer-git" class="headerlink" title="安装上传插件 hexo-deployer-git"></a>安装上传插件 <strong>hexo-deployer-git</strong></h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
+
+<p>这个插件支持本地修改上传到Github</p>
+<h2 id="布置自己的网站"><a href="#布置自己的网站" class="headerlink" title="布置自己的网站"></a>布置自己的网站</h2><h3 id="Clone一个你喜欢的骚主题到文件夹"><a href="#Clone一个你喜欢的骚主题到文件夹" class="headerlink" title="Clone一个你喜欢的骚主题到文件夹"></a>Clone一个你喜欢的骚主题到文件夹</h3><ul>
+<li><p>这里笔者用的是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">Next</a>，通过Git命令执行的github克隆：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/iissnan/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>需要一定的时间，克隆后的文件夹名为next，在themes目录下<br><img src="https://s1.ax1x.com/2018/05/26/ChVSTP.png" alt="avatar"></p>
+</li>
+<li><p>其中，_config.yml是<a href="http://theme-next.iissnan.com/getting-started.html#select-language" target="_blank" rel="noopener">博客页面的配置文件</a>,使用详情左戳</p>
+</li>
+</ul>
+<h3 id="配置主目录"><a href="#配置主目录" class="headerlink" title="配置主目录"></a>配置主目录</h3><ul>
+<li>打开主目录下_config.yml</li>
+</ul>
+<ol>
+<li><p>修改主题，使其指向我们使用的主题</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">theme:next</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改deploy项，与你自己的github相对应</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">  <span class="built_in">type</span>: git</span><br><span class="line">  repo: https://github.com/Hpd0ger/Hpd0ger.github.io.git</span><br><span class="line">  name: Hpdoger</span><br><span class="line">  email: <span class="comment"># 注册Github的邮箱</span></span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>这个deploy信息是hexo-deployer-git插件的工作认证，执行部署操作的时候，首先会自动初始化git仓库（位置在.deploy_git中），并关联到指定repo与branch，后续public文件夹中自动生成的页面代码将会拷贝至此目录中进行代码管理。若修改了name和email，需要删掉整个.deploy_git再重新部署才会生效以及你的Github账号。</p>
+<h3 id="部署到GitHub上"><a href="#部署到GitHub上" class="headerlink" title="部署到GitHub上"></a>部署到GitHub上</h3><p>主要有三个步骤：</p>
+<ol>
+<li><p>hexo g：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> generate ：将<span class="built_in">source</span>\_post文件下的md文件转成静态页面到public文件夹下</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>hexo s:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> s ： 生成本地预览，默认情况下，访问网址为： http://localhost:4000/</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>hexo d:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> d  ：将.deploy目录部署到GitHub</span><br></pre></td></tr></table></figure>
+
+<p>特别注意：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> clean ：清除缓存文件(db.json)和已生成的静态文件(public)。在某些情况（尤其是更换主题后），如果发现您对站点的更改无论如何也不生效，您可能需要运行该命令。</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>现在登陆一下自己的博客，看看有没有成功哦</p>
+</li>
+</ol>
+<h2 id="写博客"><a href="#写博客" class="headerlink" title="写博客"></a>写博客</h2><h3 id="创建一篇博文"><a href="#创建一篇博文" class="headerlink" title="创建一篇博文"></a>创建一篇博文</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> new <span class="string">'文章名'</span></span><br></pre></td></tr></table></figure>
+
+<p>会在source_post文件下创建一个md文件，系统已经为你写好了标题和日期</p>
+<h3 id="创建一个页面"><a href="#创建一个页面" class="headerlink" title="创建一个页面"></a>创建一个页面</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$hexo</span> new page <span class="string">"页面名"</span> <span class="comment">#如 tages、catagories</span></span><br></pre></td></tr></table></figure>
+
+<p>创建页面就是在主页上显示你的页面名，即你在博文的开头定义的这篇博文的标签、分类，即属于页面内容<br>会在source\目录下建立对应名称的文件夹，文件夹下有对应名称的md文件</p>
+<h3 id="使用Markdown编辑器"><a href="#使用Markdown编辑器" class="headerlink" title="使用Markdown编辑器"></a>使用Markdown编辑器</h3><p>笔者使用的是cmd markdown，由于画面比较小清新所以一直使用，如果你氪金的话还可以将md文件转化为pdf格式。</p>
+<h3 id="Markdown语法介绍"><a href="#Markdown语法介绍" class="headerlink" title="Markdown语法介绍"></a>Markdown语法介绍</h3><ul>
+<li>这里有一篇不错的博文介绍了一下用法，个人觉得还不错<a href="https://blog.csdn.net/chwshuang/article/details/52350551" target="_blank" rel="noopener">链接</a></li>
+<li>值得注意的就是标题的套用</li>
+<li>对于hexo，有两种方式：<br>使用本地路径：在hexo/source目录下新建一个img文件夹，将图片放入该文件夹下，插入图片时链接即为/img/图片名称。<br>使用<a href="https://imgchr.com/" target="_blank" rel="noopener">图床</a>，地址将图片拖入区域中，会生成图片的URL，这就是链接地址。<br>第一种没有成功，笔者一直用的第二种</li>
+</ul>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>这是笔者的第一篇博文，参考了一些google的资料。写博客目的只是为了能够提高自己，把自己所见所学写下来，比如这次博客的搭建，就花费了好多时间。最近还要忙着考四级和转专业，希望院里面的申请能通过。文采有限，希望有不对或者不好的地方可以反馈给我，接下来的阶段会闭关修炼一阵子，传一下ctf题或者sql注入绕过的博文吧。</p>
+<p>未来的路还有很长，希望自己可以一直走下去</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/05/26/利用Hexo和Github搭建个人博客/">https://hpdoger.cn/2018/05/26/利用Hexo和Github搭建个人博客/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/05/28/sql简单的注入和常见的waf绕过/">  sql简单的注入和常见的waf绕过</a>
+    </div>
+
+<div></div>
+
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat May 26 2018 22:38:06 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

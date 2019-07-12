@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            xss从零开始（一）
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/01/xss从零开始（一）/"> 
+                    xss从零开始（一） 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-01   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/">xss</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#一个简单的demo"><span class="toc-list-text">一个简单的demo</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Html知识补充"><span class="toc-list-text">Html知识补充</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#id属性"><span class="toc-list-text">id属性</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#class属性"><span class="toc-list-text">class属性</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#div标签"><span class="toc-list-text">div标签</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#span标签"><span class="toc-list-text">span标签</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Input标签"><span class="toc-list-text">Input标签</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#button标签"><span class="toc-list-text">button标签</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#document-querySelector"><span class="toc-list-text">document.querySelector</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#innerHTML"><span class="toc-list-text">innerHTML</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#xss测试"><span class="toc-list-text">xss测试</span></a></li></ol>
+</div>
+            <div class="content">
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>这两天事情比较多，学习了一下scrapy只能简单的爬一下没有登陆模拟的页面，以后再写登陆模拟的接口。一直说要学xss却没怎么起步，就是做过几个题粗略的了解。准备系统的学习xss和html内的构造、CSS的渲染。找到一些大神的学习手册，跟着学习一下</p>
+<h2 id="一个简单的demo"><a href="#一个简单的demo" class="headerlink" title="一个简单的demo"></a>一个简单的demo</h2><p>输出所输入的内容<br><img src="https://s1.ax1x.com/2018/08/01/Pw4niR.png" alt></p>
+<p>demo代码<br><img src="https://s1.ax1x.com/2018/08/01/Pw4uJ1.png" alt></p>
+<h2 id="Html知识补充"><a href="#Html知识补充" class="headerlink" title="Html知识补充"></a>Html知识补充</h2><h3 id="id属性"><a href="#id属性" class="headerlink" title="id属性"></a>id属性</h3><p>id只能唯一，识别作用</p>
+<h3 id="class属性"><a href="#class属性" class="headerlink" title="class属性"></a>class属性</h3><p>定义的类可以多次引用</p>
+<h3 id="div标签"><a href="#div标签" class="headerlink" title="div标签"></a>div标签</h3><div> 可定义文档中的分区或节（division/section）。
+<div> 标签可以把文档分割为独立的、不同的部分。它可以用作严格的组织工具，并且不使用任何格式与其关联。如果用 id 或 class 来标记 <div>，那么该标签的作用会变得更加有效。
+
+<p>div就是一块区域的标签，可以对同一个 <div> 元素应用 class 或 id 属性，但是更常见的情况是只应用其中一种。这两者的主要差异是，class 用于元素组（类似的元素，或者可以理解为某一类元素），而 id 用于标识单独的特定的元素。不必为每一个 <div> 都加上类或 id。</div></div></p>
+<h3 id="span标签"><a href="#span标签" class="headerlink" title="span标签"></a>span标签</h3><p>自己定义名称的标签，你也可以命名为a标签或者hpdoger标签，标记好id就行</p>
+<h3 id="Input标签"><a href="#Input标签" class="headerlink" title="Input标签"></a>Input标签</h3><p>输入标签，定义class可以选择demo，type规定输入类型，记得标记id</p>
+<h3 id="button标签"><a href="#button标签" class="headerlink" title="button标签"></a>button标签</h3><p>字如其名，按钮作用</p>
+<h3 id="document-querySelector"><a href="#document-querySelector" class="headerlink" title="document.querySelector"></a>document.querySelector</h3><p>获取文档中 id=”demo” 的元素：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">document.querySelector(&quot;#demo&quot;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="innerHTML"><a href="#innerHTML" class="headerlink" title="innerHTML"></a>innerHTML</h3><p>innerHTML 属性设置或返回表格行的开始和结束标签之间的 HTML。</p>
+<p>这里就是在span标签之间插入value</p>
+<h2 id="xss测试"><a href="#xss测试" class="headerlink" title="xss测试"></a>xss测试</h2><p>我们插一个Script看是否会弹框<br><img src="https://s1.ax1x.com/2018/08/01/Pw4KRx.png" alt></p>
+<p>没有弹框，看一下script的位置，原因如下：</p>
+<p><strong>w3c规范innerHTML这个api插入的script标签不会被执行</strong></p>
+</div></div></div>
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/08/01/xss从零开始（一）/">https://hpdoger.cn/2018/08/01/xss从零开始（一）/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/08/02/xss从零开始（二）之怒刷xss-quiz/">  xss从零开始（二）之怒刷xss-quiz</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/07/23/linux基本使用/"> linux基本使用 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Wed Aug 01 2018 18:49:06 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

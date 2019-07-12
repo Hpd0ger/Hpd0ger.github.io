@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            HITCON CTF命令执行绕过
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/07/14/HITCON CTF命令执行绕过/"> 
+                    HITCON CTF命令执行绕过 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-07-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#BabayFirst"><span class="toc-list-text">BabayFirst</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#linux写文件命令"><span class="toc-list-text">linux写文件命令</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#用echo和-gt-gt-追加命令写shell"><span class="toc-list-text">用echo和&gt;&gt;追加命令写shell</span></a></li></ol>
+</div>
+            <div class="content">
+                <p>#HITCON CTF命令执行绕过</p>
+<h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近开始暑假生活，基本上是吃喝玩乐。但是过两天还有一场peakgeek，不想让自己松懈，学习一道命令执行的题目，由于没有自己的服务器来搭小马，我就大致在自己的linux进行绕过操作，才发现自己linux命令学的狗屁不是，构造能力也特别垃圾</p>
+<h2 id="BabayFirst"><a href="#BabayFirst" class="headerlink" title="BabayFirst"></a>BabayFirst</h2><p>题目给的源码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">    $sandbox = &apos;/www/sandbox/&apos; . md5(&quot;orange&quot; . $_SERVER[&apos;REMOTE_ADDR&apos;]);</span><br><span class="line">    @mkdir($sandbox);</span><br><span class="line">    @chdir($sandbox);</span><br><span class="line">    if (isset($_GET[&apos;cmd&apos;]) &amp;&amp; strlen($_GET[&apos;cmd&apos;]) &lt;= 5) &#123;</span><br><span class="line">        @exec($_GET[&apos;cmd&apos;]);</span><br><span class="line">    &#125; else if (isset($_GET[&apos;reset&apos;])) &#123;</span><br><span class="line">        @exec(&apos;/bin/rm -rf &apos; . $sandbox);</span><br><span class="line">    &#125;</span><br><span class="line">    highlight_file(__FILE__);</span><br></pre></td></tr></table></figure>
+
+<h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
+<p>命令的长度不能超过5<br>这里有一篇文章:<br><a href="http://wonderkun.cc/index.html/?p=524" target="_blank" rel="noopener"> 从七个字符长度的任意命令执行到GetShell</a></p>
+<p>文章讲了一种方法，通过<code>&gt;</code>命令建立空文件，再用<code>ls -t&gt;</code>把当前目录的<strong>文件名</strong>当作<strong>文件内容</strong>导入到一个<strong>新的文件</strong>中。<strong>新的文件</strong>中也包含当前文件名，内容按照ascii码表排序换行。</p>
+<p>linux还有一个小技巧，<code>\</code>可以对命令进行换行，是命令的拼接操作，具体如下<br><img src="https://s1.ax1x.com/2018/07/14/PMwdcq.png" alt></p>
+<p>先看一下它是如何Work的：<br><img src="https://s1.ax1x.com/2018/07/14/PMwwj0.png" alt></p>
+<p>这里我们用<code>ls</code>语句把当前文件夹下的文件名写成一个新文件叫做<strong>down</strong>，可以看到我们用<code>&gt;</code>来创建空文件，文件名包含反斜杠<code>\</code>，这样我们执行sh的时候就可以拼接命令。从图也可以看到，遇到错误命令会报错，但是不会终止，依旧输出了1。也就是”echo 1”</p>
+<p>值得注意的是，若文件名有反斜杠，则要用<code>\\</code>来写，还有空格、&gt;要用<code>\</code>、<code>\&gt;</code>来写，用转义符。</p>
+<p>根据图片的ls可以看到，我们的文件名是按ascii码表排的，生成文件的话命令是杂乱的，也是无效的。所以我们用<code>ls -t&gt;</code>按照时间顺序来写入文件。</p>
+<p>但是这题有长度限制, ls -t&gt;已经超过5个字符。<br>网上思路是把ls -t&gt;也写成一个文件，用sh执行，那么就需要构造这个文件了。<br>构造思路纠结了我很久，后来看到一种巧妙的方法，借助<code>&gt;&gt;</code>来文件追加<br>写文件过程:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;l\\</span><br><span class="line">&gt;s \\</span><br><span class="line">&gt;-t\\</span><br><span class="line">&gt;\&gt;g</span><br></pre></td></tr></table></figure>
+
+<p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br></pre></td></tr></table></figure>
+
+<p>如果我们追加<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">```</span><br><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br><span class="line">&apos;-t\&apos;</span><br><span class="line">&apos;&gt;g&apos;</span><br><span class="line">&apos;a&apos;</span><br><span class="line">&apos;l\&apos;</span><br><span class="line">&apos;s \&apos;</span><br></pre></td></tr></table></figure></p>
+<p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
+<p>接着还要构造curl请求来下载一个小马。这点还没有学会，以后再记</p>
+<h2 id="用echo和-gt-gt-追加命令写shell"><a href="#用echo和-gt-gt-追加命令写shell" class="headerlink" title="用echo和&gt;&gt;追加命令写shell"></a>用echo和&gt;&gt;追加命令写shell</h2><p>这个是偶然看到郁离歌的博客里写的，对长度限制不是那么严格的时候可以用。<br><img src="https://s1.ax1x.com/2018/07/14/PMwc4J.png" alt></p>
+<p>但是看到别人博客写，有时候这样php文件不能执行，原因就在于换行。最好可以把POST[]写到一行。所以这个方法不是很好，大多数是用wget或者curl下载小马，但是我还没学会</p>
+<p>相关链接：<br><a href="http://www.freebuf.com/articles/web/137923.html" target="_blank" rel="noopener">浅谈CTF中命令执行与绕过的小技巧</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/07/14/HITCON CTF命令执行绕过/">https://hpdoger.cn/2018/07/14/HITCON CTF命令执行绕过/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/07/17/浅谈Arp攻击和利用Arp欺骗进行MITM/">  浅谈Arp攻击和利用Arp欺骗进行MITM</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/07/09/内网穿透进行Metasploit渗透/"> 内网穿透进行Metasploit渗透 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat Jul 14 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

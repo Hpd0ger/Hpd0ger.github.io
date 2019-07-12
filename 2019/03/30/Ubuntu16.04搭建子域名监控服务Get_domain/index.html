@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Ubuntu16.04-子域名监控工具Getdomain环境搭建
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/"> 
+                    Ubuntu16.04-子域名监控工具Getdomain环境搭建 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-03-30   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Ubuntu16-04-子域名监控Get-domain环境搭建"><span class="toc-list-text">Ubuntu16.04-子域名监控Get_domain环境搭建</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#各种依赖安装"><span class="toc-list-text">各种依赖安装</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#安装mongodb服务端"><span class="toc-list-text">安装mongodb服务端</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#配置mongodb服务端"><span class="toc-list-text">配置mongodb服务端</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#安装chromedriver"><span class="toc-list-text">安装chromedriver</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#安装go-lang"><span class="toc-list-text">安装go-lang</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#设置Python默认为Python3"><span class="toc-list-text">设置Python默认为Python3</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#下载subfinder"><span class="toc-list-text">下载subfinder</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#后续步骤"><span class="toc-list-text">后续步骤</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Mongodb操作"><span class="toc-list-text">Mongodb操作</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#一直运行random-start"><span class="toc-list-text">一直运行random_start</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#各种报错解决"><span class="toc-list-text">各种报错解决</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#报错代码127"><span class="toc-list-text">报错代码127</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#权限报错"><span class="toc-list-text">权限报错</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="Ubuntu16-04-子域名监控Get-domain环境搭建"><a href="#Ubuntu16-04-子域名监控Get-domain环境搭建" class="headerlink" title="Ubuntu16.04-子域名监控Get_domain环境搭建"></a>Ubuntu16.04-子域名监控Get_domain环境搭建</h1><p>操作环境：Ubuntu16.04<br>数据库：Mongdb<br>项目地址：<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">https://github.com/guimaizi/get_domain</a></p>
+<h1 id="各种依赖安装"><a href="#各种依赖安装" class="headerlink" title="各种依赖安装"></a>各种依赖安装</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install git python3 python3-pip xvfb unzip libxss1 libappindicator1 libindicator7 -y</span><br><span class="line"></span><br><span class="line">sudo pip3 install selenium pymongo</span><br></pre></td></tr></table></figure>
+
+<h1 id="安装mongodb服务端"><a href="#安装mongodb服务端" class="headerlink" title="安装mongodb服务端"></a>安装mongodb服务端</h1><ol>
+<li><p>添加mongodb签名到APT</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>创建/etc/apt/sources.list.d/mongodb-org-3.2.list文件并写入命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo &quot;deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse&quot; | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>更新软件源列表</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装mongodb（默认是安装稳定版）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install -y mongodb-org</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h1 id="配置mongodb服务端"><a href="#配置mongodb服务端" class="headerlink" title="配置mongodb服务端"></a>配置mongodb服务端</h1><ol>
+<li>修改配置文件<code>/etc/mongodb.conf</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">修改后的内容如下：</span><br><span class="line">bind_ip = 0.0.0.0</span><br><span class="line">port = 27017</span><br><span class="line">auth=true (添加帐号,密码认证)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>修改后重启mongodb:sudo service mongodb restart</p>
+<ol start="2">
+<li><p>添加超级用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use admin</span><br><span class="line">db.createUser(&#123;user:&apos;admin&apos;,pwd:&apos;123456aaa1xsda1A&apos;,roles:[&#123;role:&apos;userAdminAnyDatabase&apos;,db:&apos;admin&apos;&#125;]&#125;)</span><br><span class="line">db.auth(&apos;admin&apos;,&apos;123456aaa1xsda1A&apos;)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>添加扫描器用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">use target_domain</span><br><span class="line">db.createUser(&#123;user:&apos;target&apos;,pwd:&apos;123456aaaxsda1A&apos;,roles:[&#123;role:&apos;readWrite&apos;,db:&apos;target_domain&apos;&#125;]&#125;)</span><br><span class="line">db.auth(&apos;target&apos;,&apos;123456aaaxsda1A&apos;)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h1 id="安装chromedriver"><a href="#安装chromedriver" class="headerlink" title="安装chromedriver"></a>安装chromedriver</h1><p>先安装Chrome浏览器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install libxss1 libappindicator1 libindicator7</span><br><span class="line">wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb</span><br><span class="line">sudo dpkg -i google-chrome*.deb</span><br><span class="line">sudo apt-get install -f</span><br></pre></td></tr></table></figure>
+
+<p>再安装chromedriver</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">wget -N http://chromedriver.storage.googleapis.com/72.0.3626.7/chromedriver_linux64.zip</span><br><span class="line">unzip chromedriver_linux64.zip</span><br><span class="line">chmod +x chromedriver</span><br><span class="line">sudo mv -f chromedriver /usr/local/share/chromedriver</span><br><span class="line">sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver</span><br><span class="line">sudo ln -s /usr/local/share/chromedriver /usr/bin/chromedriver</span><br></pre></td></tr></table></figure>
+
+<h1 id="安装go-lang"><a href="#安装go-lang" class="headerlink" title="安装go-lang"></a>安装go-lang</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get update</span><br><span class="line">$ sudo apt-get -y upgrade</span><br><span class="line">$ wget https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz</span><br><span class="line">$ sudo tar -xvf go1.7.linux-amd64.tar.gz</span><br><span class="line">$ sudo mv go /usr/local</span><br></pre></td></tr></table></figure>
+
+<p>设置gopath</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/profile</span><br><span class="line">export GOROOT=/usr/local/go  #设置为go安装的路径，有些安装包会自动设置默认的goroot</span><br><span class="line">export GOPATH=$HOME/gocode   #默认安装包的路径</span><br><span class="line">export PATH=$PATH:$GOROOT/bin:$GOPATH/bin</span><br><span class="line">source /etc/profile</span><br></pre></td></tr></table></figure>
+
+<p>go env看一下是否设置成功</p>
+<h1 id="设置Python默认为Python3"><a href="#设置Python默认为Python3" class="headerlink" title="设置Python默认为Python3"></a>设置Python默认为Python3</h1><p>文章：<a href="https://blog.csdn.net/u011534057/article/details/51615193" target="_blank" rel="noopener">https://blog.csdn.net/u011534057/article/details/51615193</a></p>
+<p>使用文章的第二种方法：在系统级修改 Python 版本</p>
+<h1 id="下载subfinder"><a href="#下载subfinder" class="headerlink" title="下载subfinder"></a>下载subfinder</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get github.com/subfinder/subfinder</span><br></pre></td></tr></table></figure>
+
+<p>报错没关系，只要文件里有bin src就行</p>
+<h1 id="后续步骤"><a href="#后续步骤" class="headerlink" title="后续步骤"></a>后续步骤</h1><p>见<a href="http://www.guimaizi.com/archives/360的启动说明" target="_blank" rel="noopener">http://www.guimaizi.com/archives/360的启动说明</a></p>
+<p>crontab定时执行任务：<a href="https://www.jianshu.com/p/838db0269fd0" target="_blank" rel="noopener">https://www.jianshu.com/p/838db0269fd0</a></p>
+<p>crontab文件如下，每天12点执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># everday 12:00 am exec</span><br><span class="line">0 0 17 * * ? python /home/get_domain/while_update.py</span><br></pre></td></tr></table></figure>
+
+<p>注意最后要留个空行</p>
+<h1 id="Mongodb操作"><a href="#Mongodb操作" class="headerlink" title="Mongodb操作"></a>Mongodb操作</h1><p>更新，否则无法进行对比，更新状态到0</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.getCollection(&apos;xxx&apos;).update(&#123;&apos;state&apos;:1&#125;,&#123;$set:&#123;&apos;state&apos;: NumberInt(0)&#125;&#125;,&#123;multi:true&#125;)</span><br></pre></td></tr></table></figure>
+
+<h1 id="一直运行random-start"><a href="#一直运行random-start" class="headerlink" title="一直运行random_start"></a>一直运行random_start</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup python -u random_start.py &gt; nohup.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+
+<p>记得修改random_start的代码为while 1<br>可以修改五次config,运行五个后台程序</p>
+<h1 id="各种报错解决"><a href="#各种报错解决" class="headerlink" title="各种报错解决"></a>各种报错解决</h1><h2 id="报错代码127"><a href="#报错代码127" class="headerlink" title="报错代码127"></a>报错代码127</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selenium.common.exceptions.WebDriverException: Message: Service chromedriver unexpectedly exited. Status code was: 127</span><br></pre></td></tr></table></figure>
+
+<p>原因是browser版本过低，跟driver不匹配，升级browser</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install chromium-browser</span><br></pre></td></tr></table></figure>
+
+<h2 id="权限报错"><a href="#权限报错" class="headerlink" title="权限报错"></a>权限报错</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selenium.common.exceptions.WebDriverException: Message: unknown error: Chrome failed to start: exited abnormall</span><br></pre></td></tr></table></figure>
+
+<p>chromedriver在py程序里没权限，修改代码Browser.py</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chrome_options.add_argument(&apos;--headless&apos;)</span><br><span class="line">chrome_options.add_argument(&apos;--no-sandbox&apos;)</span><br></pre></td></tr></table></figure>
+
+<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><p>安装mongodb:<a href="https://www.jianshu.com/p/5598f1dcbb98" target="_blank" rel="noopener">https://www.jianshu.com/p/5598f1dcbb98</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">https://hpdoger.cn/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">  SRC挖掘初探之随缘XSS挖掘</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/03/25/0CTF2019-Web1WriteUp/"> 0CTF2019-Web1WriteUp </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat Mar 30 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

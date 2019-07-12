@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Oauth2的两类漏洞挖掘
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/02/14/Oauth2的两类漏洞挖掘/"> 
+                    Oauth2的两类漏洞挖掘 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Oauth2的两类漏洞挖掘"><span class="toc-list-text">Oauth2的两类漏洞挖掘</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#redict-uri限制不严格-Oauth配置错误"><span class="toc-list-text">redict_uri限制不严格(Oauth配置错误)</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#逻辑"><span class="toc-list-text">逻辑</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#案例-第三方帐号快捷登录授权劫持漏洞"><span class="toc-list-text">案例-第三方帐号快捷登录授权劫持漏洞</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#无state导致CSRF产生的账户接管"><span class="toc-list-text">无state导致CSRF产生的账户接管</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#案例"><span class="toc-list-text">案例</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#相关链接-1"><span class="toc-list-text">相关链接</span></a></li></ol></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="Oauth2的两类漏洞挖掘"><a href="#Oauth2的两类漏洞挖掘" class="headerlink" title="Oauth2的两类漏洞挖掘"></a>Oauth2的两类漏洞挖掘</h1><p>一直忘了总结这个，结合OPPX的网站(无漏洞站点)说明一下</p>
+<h2 id="redict-uri限制不严格-Oauth配置错误"><a href="#redict-uri限制不严格-Oauth配置错误" class="headerlink" title="redict_uri限制不严格(Oauth配置错误)"></a>redict_uri限制不严格(Oauth配置错误)</h2><h3 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h3><p>一般登陆选项是这样，常见的是QQ/微信/微博/…授权登陆<br><img src="https://i.loli.net/2019/02/14/5c64d712383f4.png" alt></p>
+<p>点击QQ授权的时候请求包和返回包如下<br><img src="https://i.loli.net/2019/02/14/5c64d71326e9b.png" alt></p>
+<p>request:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">POST /oauth2.0/authorize HTTP/1.1</span><br><span class="line">Host: graph.qq.com</span><br><span class="line">response_type=code&amp;client_id=100498628&amp;redirect_uri=https%3A%2F%2Fmy.oppo.com%2Fauth%2Fqqcallback&amp;scope=get_user_info%2Cadd_share%2Clist_album%2Cadd_album%2Cupload_pic%2Cadd_topic%2Cadd_one_blog%2Cadd_weibo%2Ccheck_page_fans%2Cadd_t%2Cadd_pic_t%2Cdel_t%2Cget_repost_list%2Cget_info%2Cget_other_info%2Cget_fanslist%2Cget_idolist%2Cadd_idol%2Cdel_idol%2Cget_tenpay_addr&amp;state=49085978f5e969063165246c6d07e062&amp;switch=&amp;from_ptlogin=1&amp;src=1&amp;update_auth=1&amp;openapi=80901010&amp;g_tk=1156350624&amp;auth_time=1550070856795&amp;ui=97557FF6-0331-4598-BC09-6CD21B7106E0</span><br></pre></td></tr></table></figure>
+
+<p>response:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 302 Moved Temporarily</span><br><span class="line">Server: nginx</span><br><span class="line">Date: Wed, 13 Feb 2019 15:17:13 GMT</span><br><span class="line">Content-Type: text/html</span><br><span class="line">Content-Length: 0</span><br><span class="line">Connection: close</span><br><span class="line">Location: https://my.oppo.com/auth/qqcallback?code=5E0AA09C0CA8179C186688ABAF4BE043&amp;state=49085978f5e969063165246c6d07e062</span><br></pre></td></tr></table></figure>
+
+<p>流程：请求graph.qq.com获得授权，拿到auth code后拼接到redirect_uri再请求，这点可以在返回包中的Location看到。</p>
+<p>漏洞思路就是redict_uri限制不到位，严重的情况是没有限制域，一般情况是redict_uri可以到子域。QQ做了限制，拿cline_id和redirec_uri比对，不相符就返回False，如下<br><img src="https://i.loli.net/2019/02/14/5c64d712c68d7.png" alt></p>
+<h3 id="案例-第三方帐号快捷登录授权劫持漏洞"><a href="#案例-第三方帐号快捷登录授权劫持漏洞" class="headerlink" title="案例-第三方帐号快捷登录授权劫持漏洞"></a>案例-第三方帐号快捷登录授权劫持漏洞</h3><p>修改redirect_uri到子域(一般是论坛站点，可以加载外域图片的地方，或者是可以XSS的地方)。location跳转到子域后访问我们外域地址，referer就携带了code。</p>
+<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>KEY：<a href="https://gh0st.cn/archives/2018-02-12/1" target="_blank" rel="noopener">https://gh0st.cn/archives/2018-02-12/1</a></p>
+<h2 id="无state导致CSRF产生的账户接管"><a href="#无state导致CSRF产生的账户接管" class="headerlink" title="无state导致CSRF产生的账户接管"></a>无state导致CSRF产生的账户接管</h2><p>用户在第三方网站A上登录后，通过Authorization code方式的绑定流程。</p>
+<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><p>拿绑定QQ为例子。</p>
+<p>一般在登陆后的个人中心页面有绑定社交用户的功能，依然是请求greph.qq.com获取code，拼接到redirect_uri访问后完成绑定。如果没有state参数，用户在A登陆后进行，点击攻击者的redict_uri+code链接，就把用户A绑定在了攻击者的QQ上。可以看作是CSRF<br><img src="https://i.loli.net/2019/02/14/5c64d712f1b50.png" alt></p>
+<h3 id="相关链接-1"><a href="#相关链接-1" class="headerlink" title="相关链接"></a>相关链接</h3><p>OAuth2.0忽略state参数引发的CSRF漏洞：<a href="https://blog.csdn.net/gjb724332682/article/details/54428808" target="_blank" rel="noopener">https://blog.csdn.net/gjb724332682/article/details/54428808</a></p>
+<p>Oauth配置错误导致的账户接管：<a href="https://mp.weixin.qq.com/s/6lc6CHVjdXU1Zy4wWRIHzg" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/6lc6CHVjdXU1Zy4wWRIHzg</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/02/14/Oauth2的两类漏洞挖掘/">https://hpdoger.cn/2019/02/14/Oauth2的两类漏洞挖掘/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">  对“绕过Facebook Token进行CSRF账号接管”的文章解读</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/"> Echsop2.7.x几处漏洞分析 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Thu Feb 14 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

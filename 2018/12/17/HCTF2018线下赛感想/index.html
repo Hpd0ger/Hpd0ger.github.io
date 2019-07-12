@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            HCTF2018线下赛感想
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/12/17/HCTF2018线下赛感想/"> 
+                    HCTF2018线下赛感想 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-17   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/博客文章/">博客文章</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#反思"><span class="toc-list-text">反思</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#这次比赛后要准备的东西"><span class="toc-list-text">这次比赛后要准备的东西</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#内置后门批量上马"><span class="toc-list-text">内置后门批量上马</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#心态"><span class="toc-list-text">心态</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <p>跑去丢了一趟人，实在是对不起各位师傅</p>
+<h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><p>比赛期恰逢考试期，几天一共就睡了几个小时，无论从体力或是经验都输的一塌糊涂。</p>
+<p>这次比赛也算是给自己个教训，<strong>准备不充分</strong>，就把之前备好的流量成功监控了，其余的东西几乎没用</p>
+<p>比赛开始配置网络用了挺长时间的，导致登上ssh以后就已经被别人上马了。</p>
+<p>其实这是很吃亏的事：第一，你无法及时备份原始的目录，这就有一个很严重的后果，如果后来一不小心恢复了留有马子的备份一切功亏一篑，更严重的是，如果你的一些服务被恶意删了，那开局就直接崩盘。</p>
+<p>第二，在你杀别人后门的时候，别人可能就已经打了你一轮，甚至可能会种新的马。而且杀后门的时间又占用了补洞的时间..新一轮的马子又会上来…</p>
+<p>所以上线一定要快，备份打的一定要快！</p>
+<p>教训就是，一定要在本地补好洞了，再传到机器上，宁可被打，也要修好自己的服务，被打总比down掉了好。这次吃了很大的亏，全场被check。</p>
+<p>所以，不要随便就删漏洞点，有时候漏洞点也是功能点。补洞不代表无脑卡权限，这次include的文件包含洞就可以换成file_get_contents来补。<strong>最重要的事，不要随便就把目录555了</strong>，如果Check点是上传和下载功能就凉了</p>
+<p>关于防御，<strong>一定要给自己留一个可用的后门</strong>,www-data权限一定得有一个，否则php进程可能都杀不掉</p>
+<h1 id="这次比赛后要准备的东西"><a href="#这次比赛后要准备的东西" class="headerlink" title="这次比赛后要准备的东西"></a>这次比赛后要准备的东西</h1><p>吃足了教训：<strong>手动上马是非常愚蠢的行为</strong></p>
+<h2 id="内置后门批量上马"><a href="#内置后门批量上马" class="headerlink" title="内置后门批量上马"></a>内置后门批量上马</h2><p>蓝莲花的moxiaoxi师傅的脚本思路大致是这样的：</p>
+<p>内置后门(能执行system函数)，通过散列生成随机名字的隐藏不死马+守护进程维护不死马+软连接来隐藏真实的请求</p>
+<p>最近要完成这个脚本</p>
+<h2 id="心态"><a href="#心态" class="headerlink" title="心态"></a>心态</h2><p>心态真的是很重要，不要因为被打就慌张，找到洞点，补好了再上服务，切忌慌里慌张。</p>
+<p>这次就算是交学费了，自闭</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/12/17/HCTF2018线下赛感想/">https://hpdoger.cn/2018/12/17/HCTF2018线下赛感想/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/12/20/SWPUCTF2018 Write up/">  SWPUCTF2018 Write up</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/11/14/RootkitXSS֮ServiceWorker/"> RootkitXSS之ServiceWorker </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Dec 17 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

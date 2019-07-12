@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Phpstorm + phpstudy + Xdebug代码审计环境
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Ponyo loves Sōsuke!
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+                <li class="menu-item">
+                    <a class="menu-item-link search">
+                        Search                   
+                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
+                    </a>
+                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
+                </li>
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/"> 
+                    Phpstorm + phpstudy + Xdebug代码审计环境 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-25   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#搭建环境"><span class="toc-list-text">搭建环境</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#安装php-xdebug-dll"><span class="toc-list-text">安装php_xdebug.dll</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#配置php-ini"><span class="toc-list-text">配置php.ini</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#设置php解释器"><span class="toc-list-text">设置php解释器</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#设置xdebug参数"><span class="toc-list-text">设置xdebug参数</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#配置Debug"><span class="toc-list-text">配置Debug</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#浏览器安装debug插件"><span class="toc-list-text">浏览器安装debug插件</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#调试测试"><span class="toc-list-text">调试测试</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#新建一个工程"><span class="toc-list-text">新建一个工程</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#浏览器开启debug"><span class="toc-list-text">浏览器开启debug</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#设置断点"><span class="toc-list-text">设置断点</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#phpstorm开启debug"><span class="toc-list-text">phpstorm开启debug</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>硬着头皮挖了一些，也算是完成了之前一个月内出cve的任务：<br>1、YFCMF:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16431" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16431</a><br>2、SQL in Bluecms1.6:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16432" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16432</a><br>3、XSS in Semcms:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16433" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16433</a><br>4、SQL in Semcms:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16434" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16434</a></p>
+<p>但想学好代码审计还有很长的路要走，勿忘初心，开始正题~</p>
+<h2 id="搭建环境"><a href="#搭建环境" class="headerlink" title="搭建环境"></a>搭建环境</h2><h3 id="安装php-xdebug-dll"><a href="#安装php-xdebug-dll" class="headerlink" title="安装php_xdebug.dll"></a>安装php_xdebug.dll</h3><p>phpstudy自带各版本的xdebug.dll插件</p>
+<p>在相应目录，如5.6.27版本下的在：phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll</p>
+<h3 id="配置php-ini"><a href="#配置php-ini" class="headerlink" title="配置php.ini"></a>配置php.ini</h3><p>php.ini在相应目录，如5.6.27版本下的在：\phpStudy\PHPTutorial\php\php-5.6.27-nts\php.ini</p>
+<p>在Xdebug部分加如下内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[XDebug]</span><br><span class="line">zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;</span><br><span class="line">xdebug.profiler_append = 0</span><br><span class="line">xdebug.profiler_enable = 1</span><br><span class="line">xdebug.profiler_enable_trigger = 0</span><br><span class="line">xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;</span><br><span class="line">xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;</span><br><span class="line">xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;</span><br><span class="line">xdebug.remote_enable = 1</span><br><span class="line">xdebug.remote_handler = &quot;dbgp&quot;</span><br><span class="line">xdebug.remote_host = &quot;127.0.0.1&quot;</span><br><span class="line">xdebug.remote_port = 9000</span><br><span class="line">xdebug.idekey = PHPSTORM</span><br></pre></td></tr></table></figure>
+
+<p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
+<h3 id="设置php解释器"><a href="#设置php解释器" class="headerlink" title="设置php解释器"></a>设置php解释器</h3><p>![](Delete Link<br><a href="https://i.loli.net/2018/08/25/5b8157cb1f00f.png" target="_blank" rel="noopener">https://i.loli.net/2018/08/25/5b8157cb1f00f.png</a>)</p>
+<p>这里我用的是5.6.27版本的</p>
+<h3 id="设置xdebug参数"><a href="#设置xdebug参数" class="headerlink" title="设置xdebug参数"></a>设置xdebug参数</h3><p>Debug里设置监听地址：<br><img src="https://i.loli.net/2018/08/25/5b8157cb63338.jpg" alt></p>
+<p>接着设置代理：<br><img src="https://i.loli.net/2018/08/25/5b8157cb56aba.jpg" alt></p>
+<h3 id="配置Debug"><a href="#配置Debug" class="headerlink" title="配置Debug"></a>配置Debug</h3><p>运行–&gt;编辑配置</p>
+<p>Defaults–&gt;Web Page<br><img src="https://i.loli.net/2018/08/25/5b8157cb673a3.png" alt></p>
+<p>新增一个服务端，填写信息如图，要点击应用和确认<br><img src="https://i.loli.net/2018/08/25/5b8157cb55242.png" alt></p>
+<p>回到上级页面后别忘了选择刚才添加的server</p>
+<h3 id="浏览器安装debug插件"><a href="#浏览器安装debug插件" class="headerlink" title="浏览器安装debug插件"></a>浏览器安装debug插件</h3><p>下面我是使用火狐的插件xdebug-ext进行调试，因为审计用得比较多的就是火狐了插件多</p>
+<p>IDE key也要对应上我们的配置：<br><img src="https://pic-1252849007.cos.ap-guangzhou.myqcloud.com/phpstorm6.png" alt></p>
+<h2 id="调试测试"><a href="#调试测试" class="headerlink" title="调试测试"></a>调试测试</h2><h3 id="新建一个工程"><a href="#新建一个工程" class="headerlink" title="新建一个工程"></a>新建一个工程</h3><h3 id="浏览器开启debug"><a href="#浏览器开启debug" class="headerlink" title="浏览器开启debug"></a>浏览器开启debug</h3><p>在需要debug的页面点击右上图标为红色时：<br><img src="https://i.loli.net/2018/08/25/5b8158615412d.jpg" alt></p>
+<h3 id="设置断点"><a href="#设置断点" class="headerlink" title="设置断点"></a>设置断点</h3><h3 id="phpstorm开启debug"><a href="#phpstorm开启debug" class="headerlink" title="phpstorm开启debug"></a>phpstorm开启debug</h3><p>点击右上角的小电话开启，再点左边的绿色甲壳虫图标进行调试</p>
+<p>传参后看结果<br><img src="https://i.loli.net/2018/08/25/5b81588414c88.png" alt></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Sōsuke</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">https://hpdoger.cn/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2018/09/08/基于Windows下mysql的一些提权分析/">  基于Windows下mysql的一些提权分析</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2018/08/23/Csrf in YFCMF 3.0/"> Csrf in YFCMF 3.0 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat Aug 25 2018 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
