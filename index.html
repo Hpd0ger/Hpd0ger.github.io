@@ -137,6 +137,10 @@ xmlhttp.setRequestHeader(&quot;Content-type&quot;,&quot;application/x-www-form-u
 xmlhttp.send(&quot;url=xxx&quot;);</code></pre><h2 id="跨域"><a href="#跨域" class="headerlink" title="跨域"></a>跨域</h2><p>可以看总结：<a href="https://xz.aliyun.com/t/5084" target="_blank" rel="noopener">https://xz.aliyun.com/t/5084</a></p>
 <h3 id="iframe"><a href="#iframe" class="headerlink" title="iframe"></a>iframe</h3><p>当一个同源站点，同时存在两个页面，其中<strong>一个有CSP保护的A页面</strong>，<strong>另一个没有CSP保护B页面</strong>。</p>
 <p>那么如果B页面存在XSS漏洞，我们可以直接在B页面新建iframe用javascript直接操作A页面的dom，A页面的CSP防护完全失效<br><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1dd8b6jsku4c129k14vflmutk5p.png-59.6kB"></p>
+<h3 id="Access-control-allow-origin"><a href="#Access-control-allow-origin" class="headerlink" title="Access-control-allow-origin"></a>Access-control-allow-origin</h3><p><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1dajgb6g22h8tli1tdkcjd1f3e9.png-17.1kB"></p>
+<p>当Access-control-allow-origin指定origin的时候，考虑下面一种情况也可以Bypass CSP(CORS的错误配置):</p>
+<p>CSP页面<strong>存在缓存记录</strong>且“Access-Control-Allow-Origin”已经被设置，但是“Access-Control-Allow-Credentials: true”并且“Vary: Origin”头没有被设置(或者不存在)</p>
+<p>可以利用缓存进行XSS-&gt;加载远程的JS脚本=&gt;bypass CSP<br>具体文章可以看这一篇：<a href="https://xz.aliyun.com/t/2745#toc-18，未来的CTF很可能有这一方面的考点" target="_blank" rel="noopener">https://xz.aliyun.com/t/2745#toc-18，未来的CTF很可能有这一方面的考点</a></p>
 <h1 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h1><p>各种绕过姿势在笔记里有</p>
 <h2 id="过滤指定字符串"><a href="#过滤指定字符串" class="headerlink" title="过滤指定字符串"></a>过滤指定字符串</h2><p>用unicode编码绕过localhost的限制</p>
 <pre><code>LocalHost = localhost = ⓛocaⓛhost </code></pre><p><img src="http://static.zybuluo.com/1160307775/orcqk8cgbz10far21uvn5zb1/image_1dd8b6jsku4c129k14vflmutk5p.png" alt="image_1ddi759agea21r3r1587uju11ch1r.png-21.1kB"></p>
