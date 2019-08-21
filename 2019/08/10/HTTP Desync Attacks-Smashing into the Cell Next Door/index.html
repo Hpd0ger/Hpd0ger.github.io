@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            HTTP Desync Attacks-Smashing into the Cell Next Door
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/08/10/HTTP Desync Attacks-Smashing into the Cell Next Door/"> 
+                    HTTP Desync Attacks-Smashing into the Cell Next Door 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-08-10   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#HTTP-Desync-Attacks-Smashing-into-the-Cell-Next-Door"><span class="toc-list-text">HTTP Desync Attacks-Smashing into the Cell Next Door</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Abstract"><span class="toc-list-text">Abstract</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Core-concepts"><span class="toc-list-text">Core concepts</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Methodology"><span class="toc-list-text">Methodology</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Detect"><span class="toc-list-text">Detect</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Confirm"><span class="toc-list-text">Confirm</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Explore"><span class="toc-list-text">Explore</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Exploit"><span class="toc-list-text">Exploit</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Store"><span class="toc-list-text">Store</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Attack"><span class="toc-list-text">Attack</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Upgrading-XSS"><span class="toc-list-text">Upgrading XSS</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Grasping-the-DOM"><span class="toc-list-text">Grasping the DOM</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#CDN-Chaining"><span class="toc-list-text">CDN Chaining</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#‘Harmless’-responses"><span class="toc-list-text">‘Harmless’ responses</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Web-Cache-Poisoning"><span class="toc-list-text">Web Cache Poisoning</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Web-Cache-Deception"><span class="toc-list-text">Web Cache Deception++</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#PayPal"><span class="toc-list-text">PayPal</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Demo"><span class="toc-list-text">Demo</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Defence"><span class="toc-list-text">Defence</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Conclusion"><span class="toc-list-text">Conclusion</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#References"><span class="toc-list-text">References</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#议题原文件"><span class="toc-list-text">议题原文件</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="HTTP-Desync-Attacks-Smashing-into-the-Cell-Next-Door"><a href="#HTTP-Desync-Attacks-Smashing-into-the-Cell-Next-Door" class="headerlink" title="HTTP Desync Attacks-Smashing into the Cell Next Door"></a>HTTP Desync Attacks-Smashing into the Cell Next Door</h1><p>文章转载议题:<a href="https://www.blackhat.com/us-19/briefings/schedule/index.html#http-desync-attacks-smashing-into-the-cell-next-door-15153(相关文章资源放到文章结尾)" target="_blank" rel="noopener">https://www.blackhat.com/us-19/briefings/schedule/index.html#http-desync-attacks-smashing-into-the-cell-next-door-15153(相关文章资源放到文章结尾)</a></p>
+<p>James Kettle - <a href="mailto:james.kettle@portswigger.net" target="_blank" rel="noopener">james.kettle@portswigger.net</a> - @albinowax</p>
+<h2 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h2><p>传统上，HTTP请求被视为独立的独立实体。在本文中，我将探讨一种远程、未经身份验证的攻击者能够打破这种隔离并将其请求转接到其他人身上的技术。通过这种技术，我可以在众多商业和军事系统的WEB基础应用上扮演一位操作者，在他们的虚拟环境中使用漏洞，并且在bug bounties中获得超过6万美元</p>
+<p>将这些目标作为案例研究，我将向您展示如何巧妙地修改受害者的请求，以将其路由到恶意领域，调用有害的响应。我还将演示在您自己的请求中使用后端重组，攻击基于前端的各种信任，获得对内部API的最大特权访问，投毒Web缓存，并危及paypal的登录页面。</p>
+<p>HTTP Request Smuggling(后文称为请求走私)最初是由WatchFire1于2005年记录下来的，但由于其困难和附带损害的可怕名声，使得当Web服务的敏感性增常期间，它大多被忽视。除了新的攻击变种和利用途径之外，我将帮助您使用定制的开源工具和一种改进的方法来处理这一遗留问题，以最小的风险进行可靠的黑盒检测、评估和利用</p>
+<h2 id="Core-concepts"><a href="#Core-concepts" class="headerlink" title="Core concepts"></a>Core concepts</h2><p>自HTTP/1.1以来，通过一个底层TCP或SSL/TLS套接字发送多个HTTP请求被广泛支持。这个协议非常简单——HTTP请求只需背靠背地放置，服务器解析报头就可以知道每个报头的结束位置和下一个报头的开始位置。这经常与HTTP pipeline2混淆，后者是少见的类型，在本文的攻击描述中不予介绍。</p>
+<p>这本身是无害的。然而，现代网站是由一系列的系统组成的，都是通过HTTP进行对话的。此多层体系结构接收来自多个不同用户的HTTP请求，并通过单个TCP/TLS连接将其路由：<br><img src="http://static.zybuluo.com/1160307775/5zcoyljdq16xzvsz5wbnna62/image_1dhtfhnrdqvspfo15j4no1tuqp.png" alt="image_1dhtfhnrdqvspfo15j4no1tuqp.png-22.8kB"></p>
+<p>这意味着，后端与前端关于“每条消息在哪里结束”达成一致是至关重要的。否则，攻击者可能会发送一条不明确的消息，使后端将其解释为两个不同的HTTP请求</p>
+<p><img src="http://static.zybuluo.com/1160307775/ornlfq2wbqh1jf5r7dzed55y/image_1dhtfsok51vkp1c6g7rb1sku1gnm1m.png" alt="image_1dhtfsok51vkp1c6g7rb1sku1gnm1m.png-26kB"></p>
+<p>这使攻击者能够在下一个合法用户请求开始时预先处理任意内容。在本文中，走私内容将被称为“前缀”，并以橙色突出显示。</p>
+<p>让我们假设前端浏览器优先处理第一个内容长度头，后端优先处理第二个内容长度头。从后端的角度来看，TCP流可能看起来像：</p>
+<p><img src="http://static.zybuluo.com/1160307775/m2v46k8ligt8vtjxbvzvcdck/image_1dhtg6sgu16rlhn09bi1779smo3q.png" alt="image_1dhtg6sgu16rlhn09bi1779smo3q.png-21.7kB"></p>
+<p>在引擎中，前端浏览器将蓝色和橙色数据转发到后端，后端在发出响应之前只读取蓝色内容。这使得后端套接字受到橙色数据的污染。当合法的绿色请求到达时，它最终附加到橙色内容上，导致意外的响应。</p>
+<p>在这个例子中，注入的“G”会破坏绿色用户的请求，他们可能会得到“未知方法GPOST”的响应。</p>
+<p>本文中的每个攻击都遵循这个基本格式。WatchFire论文描述了一种称为“反向请求走私”的替代方法，但这依赖于前端和后端系统之间的管道连接，因此很少有选择。</p>
+<p>在现实生活中，双content-length技术很少起作用，因为许多系统明智地拒绝具有多个内容长度头的请求。相反，我们将使用分块编码攻击系统-这次我们利用RFC2616规范：</p>
+<p><strong>如果接收的消息同时包含传输编码头字段和内容长度头字段，则必须忽略后者</strong></p>
+<p>由于规范默许使用传输编码（分块编码和内容长度）处理请求，因此很少有服务器拒绝此类请求。每当我们找到一种方法，从一个服务器上将传输编码头隐藏在一个链中的时，它将返回到使用内容长度，并且我们可以取消整个系统的同步。</p>
+<p>您可能不太熟悉分块编码，因为像Burp Suite这样的工具会自动将分块的请求/响应缓冲到常规消息中，以便于编辑。在分块的消息中，正文由0个或多个分块组成。每个块由块大小、换行符和块内容组成。消息以0大小的块终止。以下是使用分块编码进行的简单失步攻击：</p>
+<p><img src="http://static.zybuluo.com/1160307775/re8piqva834m983ljgcg4sh9/image_1dhthci68dal13houlsiv8brk47.png" alt="image_1dhthci68dal13houlsiv8brk47.png-22.3kB"></p>
+<p>我们没有在这里隐藏传输编码头，因此此漏洞主要适用于前端根本不支持分块编码的系统，这在使用内容交付网络Akamai的许多网站上都可以看到。</p>
+<p>如果后端不支持分块编码，我们需要翻转偏移量：<br><img src="http://static.zybuluo.com/1160307775/41818gek0g1258ed5ud1uz9d/image_1dhthmclj6hn11mehtq1ko2ikn4k.png" alt="image_1dhthmclj6hn11mehtq1ko2ikn4k.png-24.6kB"></p>
+<p>这种技术在相当多的系统上都起作用，但是我们可以通过使传输编码头稍微难以被发现来利用更多的资源，这样一个系统就看不到它。这可以通过使用服务器的HTTP解析中的差异来实现。下面是一些只有部分服务识别传输编码的请求示例：分块头。在本研究中，每个都成功地用于攻破至少一个系统：</p>
+<p><img src="http://static.zybuluo.com/1160307775/qzi15zyia3alxga9sragpspx/image_1dhtj1skk1mim1naa1l2a1toq1ig051.png" alt="image_1dhtj1skk1mim1naa1l2a1toq1ig051.png-52kB"></p>
+<p>如果前端和后端服务器都有这些处理，那么每个处理都是无害的，否则都是一个重大威胁。有关更多技术，请查看Regilero正在进行的research4.。我们稍后将使用其他技术查看实际示例。</p>
+<h2 id="Methodology"><a href="#Methodology" class="headerlink" title="Methodology"></a>Methodology</h2><p>请求走私背后的理论是直截了当的，但是不受控制变量的数量和我们对前端所发生事情的完全不了解会导致复杂的情况。</p>
+<p>我已经开发了应对这些挑战的技术和工具，并将它们组合成以下简单的方法，我们可以利用这些方法来追查请求的走私漏洞并证明其影响：<br><img src="http://static.zybuluo.com/1160307775/4avwsjuodz5s97mcmuq4ql8c/image_1dhtjaght12mlo3grs1q0rtko5e.png" alt="image_1dhtjaght12mlo3grs1q0rtko5e.png-19.7kB"></p>
+<h2 id="Detect"><a href="#Detect" class="headerlink" title="Detect"></a>Detect</h2><p>检测请求走私漏洞的明显方法是发出一个含糊不清的请求，然后发出一个正常的“受害者”请求，然后观察后者是否得到意外的响应。但是，这极易受到干扰；如果另一个用户的请求在受害者请求之前击中中毒的套接字，那么他们将得到损坏的响应，我们将不会发现该漏洞。这意味着，在流量很大的网站，如果不在过程中利用大量用户去测试，就很难证明存在<strong>请求走私</strong>漏洞。即使在没有其他流量的站点上，您也会面临应用程序级异常终止连接所导致的错误否定的风险。</p>
+<p>为了解决这个问题，我开发了一种检测策略，它使用一系列消息，使得易受攻击的后端系统挂起并超时连接。这种技术几乎没有误报，可以抵抗应用程序级的行为从而导致的误报，最重要的是，它几乎没有影响其他用户的风险。</p>
+<p>假设前端服务器使用Content-Length头，后端使用Transfer-Encoding头。我简称这个目标为cl.te。我们可以通过发送以下请求来检测潜在的请求走私：</p>
+<p><img src="http://static.zybuluo.com/1160307775/15im6vs0brbtf61gd6zm1jv6/image_1dhtjsm7t4jo1tun14v4a174ri5r.png" alt="image_1dhtjsm7t4jo1tun14v4a174ri5r.png-17.5kB"></p>
+<p>由于内容长度较短，前端将只转发蓝色文本，后端将在等待下一个块大小时超时。这将导致可观察到的时间延迟。</p>
+<p>如果两个服务器都是同步的（te.te或cl.cl），则前端将拒绝该请求，或者两个系统都将无害地处理该请求。最后，如果从另一个角度（te.cl）执行去同步，由于块大小“q”无效，前端将拒绝消息而不将其转发到后端。这可以防止后端套接字中毒。</p>
+<p>我们可以使用以下请求安全地检测te.cl去同步：<br><img src="http://static.zybuluo.com/1160307775/fvkyn0yeyjzy0pff2in1qg4u/image_1dhtk3jth1s2k11e51o9h15291qqh68.png" alt="image_1dhtk3jth1s2k11e51o9h15291qqh68.png-17.4kB"></p>
+<p>由于“0”分块的终止，前端将只转发蓝色文本，后端将超时等待X到达。</p>
+<p>如果Desync以另一种方式发生（cl.te），那么这种方法将使用”X”毒害后端套接字，可能会危害合法用户。幸运的是，通过始终运行首先检测方法，我们可以排除这种可能性。</p>
+<p>这些请求可以针对头解析中的任意差异进行调整，并用于通过取消Desynchronize5自动识别请求走私漏洞-一个开发用于帮助此类攻击的开源Burp Suite 扩展。它们现在也用于Burp Suite的scanner。尽管这是一个服务器级的漏洞，但单个域上的不同端点通常路由到不同的目标，因此该技术应单独应用于每个端点。</p>
+<h2 id="Confirm"><a href="#Confirm" class="headerlink" title="Confirm"></a>Confirm</h2><p>在这一点上，您已经尽了最大努力，而不会给其他用户带来副作用的风险。然而，许多客户不愿意在没有进一步证据的情况下认真对待报告，所以这就是我们将要克服的。证明请求走私的全部危害的下一步是证明后端套接字中毒是可能的。为此，我们将发出一个旨在毒害后端套接字的请求，然后发出一个希望成为毒害受害者的请求，明显地改变了响应。</p>
+<p>如果第一个请求导致错误，后端服务器可能会决定关闭连接，丢弃中毒缓冲区并破坏攻击。尝试通过将设计用于接受POST请求的端点作为目标，并保留任何预期的GET/POST参数来避免这种情况。</p>
+<p>有些站点有多个不同的后端系统，前端查看每个请求的方法、URL和头，以决定将其路由到何处。如果受害者请求路由到与攻击请求不同的后端，那么攻击将失败。因此，“攻击”和“受害者”请求最初应尽可能相似。</p>
+<p>如果目标请求看起来像：<br><img src="http://static.zybuluo.com/1160307775/988vcjqwqvtxw9bigenwnjv3/image_1dhv43t4jmhm12pc1rdo1oe61bn86l.png" alt="image_1dhv43t4jmhm12pc1rdo1oe61bn86l.png-23.2kB"></p>
+<p>那么，一次CL.TE毒害攻击尝试看起来像是：<br><img src="http://static.zybuluo.com/1160307775/xogz4l7vzvbexan7rd1f1fdv/image_1dhv465pn1if7lah1iqrh5st572.png" alt="image_1dhv465pn1if7lah1iqrh5st572.png-43.3kB"></p>
+<p>如果攻击成功，受害者请求（绿色）将得到404响应。</p>
+<p>te.cl攻击看起来很相似，但是需要一个封闭块，这意味着我们需要自己指定所有的头，并将受害者请求放在正文中。确保前缀中的内容长度略大于正文：</p>
+<p><img src="http://static.zybuluo.com/1160307775/nr7oeij645povxo3wrvdcdrh/image_1dhv4boe01rjp1s361dut1c8o8aj7f.png" alt="image_1dhv4boe01rjp1s361dut1c8o8aj7f.png-59.1kB"></p>
+<p>如果一个站点是运行的，另一个用户的请求可能会击中您之前投毒的套接字，这将使您的攻击失败，并可能使用户不安。因此，此过程通常需要进行几次尝试，在高流量站点上可能需要数千次尝试。所以请谨慎和克制行为</p>
+<h2 id="Explore"><a href="#Explore" class="headerlink" title="Explore"></a>Explore</h2><p>我将使用一系列真实的网站演示其余的方法。像往常一样，我专门针对那些明确表示愿意通过运行bug奖励计划与安全研究人员合作的公司。多亏了大量涌现的私人程序和不打补丁的习惯，我不得不编写很多案例。在明确声明网站的地方，请记住，它们是少数能够抵御这种攻击的安全网站之一。</p>
+<p>现在我们已经确定套接字投毒是可能的，下一步是收集信息，这样我们就可以发动一次全面的攻击。</p>
+<p>前端通常会附加和重写HTTP请求头，如x-forwarded-host和x-forwarded-for，以及许多经常难以猜测名称的自定义头。我们的走私请求可能缺少这些头，这可能导致意外的应用程序行为和失败的攻击。</p>
+<p>幸运的是，有一个简单的策略另辟蹊径，并且可以看到这些隐藏的header头。这使得我们可以通过手动添加头来恢复功能，甚至可以启用进一步的攻击。</p>
+<p>只需在目标应用程序上查找一个反射post参数的页面，对参数进行无序排列，使反射的参数排列最后，稍微增加内容长度，然后将生成的请求进行走私：<br><img src="http://static.zybuluo.com/1160307775/4ie737yk1pu8d49dpv11lrrp/image_1dhvv1j72jm7qdm132e1ekoaim7s.png" alt="image_1dhvv1j72jm7qdm132e1ekoaim7s.png-54.9kB"></p>
+<p>绿色请求将在其到达login[email]参数之前由前端重写，因此当它被反射回来时，将泄漏所有内部头：</p>
+<p><img src="http://static.zybuluo.com/1160307775/pe2e05lr18lvcyjofytq9j7p/image_1dhvv7g6s1qtlf9ie2l10qs1a8699.png" alt="image_1dhvv7g6s1qtlf9ie2l10qs1a8699.png-45.5kB"></p>
+<p>通过增加Content-Length头，您可以逐步检索更多信息，直到您试图读取超过受害者请求末尾的内容，并且受害者的请求会超时。</p>
+<p>有些系统完全依赖于前端系统的安全性，一旦您bypass，您就可以直接为所欲为。在login.new relic.com上，“后端”系统是反代的，因此更改走私的主机头授予我访问不同的新relic系统的权限。最初，我访问的每个内部系统都认为我的请求是通过HTTP发送的，并以重定向方式响应的：</p>
+<p><img src="http://static.zybuluo.com/1160307775/h3bs3zziu7yq9f3ltsxga4y1/image_1dhvvp3og1rod1iu28cetojpb59m.png" alt="image_1dhvvp3og1rod1iu28cetojpb59m.png-22.2kB"></p>
+<p>使用前面观察到的x-forwarded-proto头很容易修复：<br><img src="http://static.zybuluo.com/1160307775/1sy6c955n8mv6iou1qbmcxde/image_1dhvvq6j81n781hslpqtel1o38a3.png" alt="image_1dhvvq6j81n781hslpqtel1o38a3.png-24.7kB"></p>
+<p>通过一些目录，我在目标上找到了一个有用的端点：<br><img src="http://static.zybuluo.com/1160307775/7s94vz15z04k0rj1rk1elzvj/image_1dhvvt1km1bb81cd82bou11aufag.png" alt="image_1dhvvt1km1bb81cd82bou11aufag.png-25.3kB"></p>
+<p>错误消息清楚地告诉我需要某种类型的授权头，但却没有告诉我字段名。我决定尝试前面看到的“x-nr-external-service”头段：<br><img src="http://static.zybuluo.com/1160307775/sfiuf8gboh57gq3ltxtm6ne8/image_1dhvvvrpe1s7v1b1s1sk2ddcml0at.png" alt="image_1dhvvvrpe1s7v1b1s1sk2ddcml0at.png-29.4kB"></p>
+<p>不幸的是，这不起作用——它导致了我们在直接访问该URL时已经看到的相同的禁止响应。这表明前端正在使用x-nr-external-service头来指示请求来自Internet，通过走私因此丢失请求头，我们已经诱使系统认为我们的请求来自内部。这是非常有意义的，但没有直接的用处——我们仍然需要缺少的授权头的名称。</p>
+<p>此时，我可以将已处理的请求反射技术应用到一系列端点，直到找到一个具有正确请求头的端点。相反，我决定从上一次我的New Relic6中查询一些笔记，这显示了两个非常宝贵的报头-Server-Gateway-Account-Id and Service- Gateway-Is-Newrelic-Admin。使用这些工具，我可以获得对其内部API的完全管理级访问：<br><img src="http://static.zybuluo.com/1160307775/cj5947kaur85xykxf7725ym6/image_1di00ssli1mfu1381nml92h1mn4ba.png" alt="image_1di00ssli1mfu1381nml92h1mn4ba.png-78.4kB"></p>
+<p>New Relic部署了一个修补程序，并将根本原因诊断为F5网关中的一个弱点。据我所知，没有可用的补丁，这意味着在写作的时候这仍然是0day。</p>
+<h2 id="Exploit"><a href="#Exploit" class="headerlink" title="Exploit"></a>Exploit</h2><p>直接进入内部API确实不错，但它很少是我们唯一的选择。我们还可以针对浏览目标网站的每个人发起大量不同的攻击。</p>
+<p>要确定哪些攻击可以应用到其他用户，我们需要了解哪些类型的请求可以被破坏。从“确认”阶段重复套接字中毒测试，但反复调整“受害者”请求，直到它类似于典型的GET请求。您可能会发现，您只能使用某些方法、路径或头毒害请求。另外，尝试从不同的IP地址发出受害者请求-在极少数情况下，您可能会发现您只能对来自同一IP的请求进行毒害。</p>
+<p>最后，检查网站是否使用Web缓存-这些可以帮助绕过许多限制，增加我们对哪些资源中毒的控制，并最终增加请求走私漏洞的严重性。</p>
+<h3 id="Store"><a href="#Store" class="headerlink" title="Store"></a>Store</h3><p>如果应用程序支持编辑或存储任何类型的文本数据，那么利用就非常容易。通过在受害者的请求前加上一个精心设计的存储请求，我们可以让应用程序保存他们的请求并将其显示给我们，然后窃取任何身份验证cookie/headers。下面是一个以Trello为目标的示例，使用其配置文件编辑端点：</p>
+<p><img src="http://static.zybuluo.com/1160307775/txwaqf2l9ruc7nv89gyxljog/image_1di01d7421dui1a81nbepu2btbn.png" alt="image_1di01d7421dui1a81nbepu2btbn.png-54.1kB"></p>
+<p>一旦受害者的请求到达，它就会保存在我的个人资料中，暴露他们所有的头和cookie：</p>
+<p><img src="http://static.zybuluo.com/1160307775/2622oq8b4q8yery1kpm2s8jw/image_1di01e9oa1c4s19e513t9p564a8c4.png" alt="image_1di01e9oa1c4s19e513t9p564a8c4.png-48.7kB"></p>
+<p>使用这种技术的唯一主要目的是丢失“&amp;”之后发生的任何数据，这使得从表单编码的post请求中窃取主体很困难。我花了一段时间试图通过使用可选的请求编码来解决这个限制，最终放弃了，但我仍然怀疑这是可能的。</p>
+<p>数据存储的机会并不总是如此明显——在另一个网站上，我可以使用“联系我们”表单，最终触发一封包含受害者请求的电子邮件，并获得2500美元的额外收入。</p>
+<h3 id="Attack"><a href="#Attack" class="headerlink" title="Attack"></a>Attack</h3><p>能够将一个任意前缀应用到其他人的响应中，也打开了另一种攻击途径——触发一个有害的响应。</p>
+<p>使用有害反应有两种主要方法。最简单的方法是发出“攻击”请求，然后等待其他人的请求击中后端套接字并触发有害响应。一种更为棘手但更强大的方法是亲自发出“攻击”和“受害者”请求，并希望对受害者请求的有害响应通过Web缓存保存，并提供给访问同一URL的任何其他人-Web缓存中毒。</p>
+<p>在以下每个请求/响应片段中，黑色文本是对第二个（绿色）请求的响应。第一个（蓝色）请求的响应被忽略，因为它不相关。</p>
+<h2 id="Upgrading-XSS"><a href="#Upgrading-XSS" class="headerlink" title="Upgrading XSS"></a>Upgrading XSS</h2><p>在审计一个SaaS应用程序时，Param Miner7发现了一个名为saml的参数，Burp scaner证实它易受反射XSS的攻击。反射式XSS本身不错，但在规模上很难利用，因为它需要用户交互。</p>
+<p>通过请求走私，我们可以对主动浏览网站的随机用户提供包含XSS的响应，从而实现直接的大规模利用。我们还可以访问authentication headers 和仅HTTP cookie，这可能会让我们转到其他域。</p>
+<p><img src="http://static.zybuluo.com/1160307775/l8sr33d0y8t306l6qx5higvw/image_1di01r6qa1iap8ki1vh0gdg17s9d1.png" alt="image_1di01r6qa1iap8ki1vh0gdg17s9d1.png-70.8kB"></p>
+<h2 id="Grasping-the-DOM"><a href="#Grasping-the-DOM" class="headerlink" title="Grasping the DOM"></a>Grasping the DOM</h2><p>在<a href="http://www.redhat.com上查找请求走私链的漏洞时，我发现了一个基于DOM的开放重定向，这带来了一个有趣的挑战：" target="_blank" rel="noopener">www.redhat.com上查找请求走私链的漏洞时，我发现了一个基于DOM的开放重定向，这带来了一个有趣的挑战：</a><br><img src="http://static.zybuluo.com/1160307775/xu9tr6kxrkzl7m0t2uvwdlrs/image_1di01vv584rumq9d5r1ormld2de.png" alt="image_1di01vv584rumq9d5r1ormld2de.png-34.5kB"></p>
+<p>页面上的一些javascript正在从受害者浏览器的查询字符串中读取“redir”参数，但我如何控制它？请求走私使我们能够控制服务器认为查询字符串是什么，但是受害者的浏览器对查询字符串的认知只是了解用户试图访问哪个页面。</p>
+<p>我可以通过链接服务器端的非开放重定向来解决这个问题：</p>
+<p><img src="http://static.zybuluo.com/1160307775/klj8f2y8p7hgayr8jvzphtkn/image_1di025q9518k91g5dh8drkna2feb.png" alt="image_1di025q9518k91g5dh8drkna2feb.png-70.3kB"></p>
+<p>受害者浏览器将收到一个301重定向到<a href="https://www.redhat.com/assets/x.html?redir=//redat.com@evil.net/，然后执行基于dom的开放重定向并将其转储到evil.net上。" target="_blank" rel="noopener">https://www.redhat.com/assets/x.html?redir=//redat.com@evil.net/，然后执行基于dom的开放重定向并将其转储到evil.net上。</a></p>
+<h2 id="CDN-Chaining"><a href="#CDN-Chaining" class="headerlink" title="CDN Chaining"></a>CDN Chaining</h2><p>有些网站使用多层反向代理和cdn。这给了我们额外的机会去同步，这是一直被赞赏的，它也经常增加严重性</p>
+<p>一个目标是不知何故地使用两层Akamai，尽管服务器由同一供应商提供，但仍有可能将它们不同步，因此，在受害者网站的Akamai network中提供不同的内容：<br><img src="http://static.zybuluo.com/1160307775/oy6dcrszjf3k5nzxie51n427/image_1di02gpq91n7jc93pii6hsvseo.png" alt="image_1di02gpq91n7jc93pii6hsvseo.png-45.2kB"></p>
+<p>同样的概念也适用于SaaS提供商——我能够攻破一个建立在知名SaaS平台上的关键网站，将请求定向到建立在同一平台上的不同系统。</p>
+<h2 id="‘Harmless’-responses"><a href="#‘Harmless’-responses" class="headerlink" title="‘Harmless’ responses"></a>‘Harmless’ responses</h2><p>因为请求走私让我们影响对任意请求的响应，一些通常无害的行为成为可利用的。例如，即使是不起眼的开放式重定向，也可以通过将javascript导入重定向到恶意域来危害帐户。</p>
+<p>使用307代码的重定向特别有用，因为在发出post请求后接收307的浏览器将把post重新发送到新的目的地。这可能意味着你可以让不知情的受害者直接将他们的明文密码发送到你的网站。</p>
+<p>经典的开放式重定向本身就很常见，但是有一种变体在Web中普遍存在，因为它源于Apache和IIS中的默认行为。它很方便地被认为是无害的，被几乎所有人忽视，因为没有像请求走私这样的伴随的弱点，它确实是无用的。如果尝试访问没有尾随斜杠的文件夹，服务器将使用主机头中的主机名进行重定向以附加斜杠：<br><img src="http://static.zybuluo.com/1160307775/fpic6gjvppuog2tlgow0f4gl/image_1di033eund4netio7jsa3nf4f5.png" alt="image_1di033eund4netio7jsa3nf4f5.png-44.4kB"></p>
+<p>使用此技术时，请密切关注重定向中使用的协议。您可以使用像x-forwarded-ssl这样的头来影响它。如果它卡在HTTP上，而您攻击的是一个HTTPS站点，那么受害者的浏览器将由于其混合内容保护而阻止连接。有两个已知的例外8-可以完全绕过Internet Explorer的混合内容保护，如果重定向目标在其HSTS缓存中，Safari将自动升级到HTTPS的连接。</p>
+<h2 id="Web-Cache-Poisoning"><a href="#Web-Cache-Poisoning" class="headerlink" title="Web Cache Poisoning"></a>Web Cache Poisoning</h2><p>在尝试对特定网站进行基于重定向的攻击几个小时后，我在浏览器中打开了他们的主页以查找更多的攻击面，并在Dev控制台中发现了以下错误：</p>
+<p><img src="http://static.zybuluo.com/1160307775/b8jv6t5emd2ty057r7njho6u/image_1di037a5k1iq51f7a19n51jmc600fi.png" alt="image_1di037a5k1iq51f7a19n51jmc600fi.png-18.5kB"></p>
+<p>无论从哪台机器加载网站，都会发生此错误，并且IP地址看起来非常熟悉。在我的重定向探测期间，在我的受害者请求之前，有人请求了一个图像文件，而中毒的响应被缓存保存了下来。</p>
+<p>这是对潜在影响的一个很好的证明，但总的来说并不是一个理想的结果。除了依赖基于超时的检测，没有办法完全消除意外缓存中毒的可能性。也就是说，为了将风险降到最低，你可以：<br>-确保“受害者”请求有一个缓存阻止程序。</p>
+<p>-使用turbo Intruder，尽快发送“受害者”请求。<br>-尝试创建一个前缀来触发反缓存头的响应，或者一个不太可能被缓存的状态代码。<br>-在不常用的前端处实施攻击。</p>
+<h2 id="Web-Cache-Deception"><a href="#Web-Cache-Deception" class="headerlink" title="Web Cache Deception++"></a>Web Cache Deception++</h2><p>如果我们不尝试减少攻击者/用户混合响应缓存的机会，而是接受它呢？</p>
+<p>我们可以尝试用受害者的cookie获取包含敏感信息的响应，而不是使用设计用于导致有害响应的前缀：<br><img src="http://static.zybuluo.com/1160307775/n6jss7idvvrs8bz0933pb08e/image_1di03lb12var1itka221437galfv.png" alt="image_1di03lb12var1itka221437galfv.png-24.3kB"></p>
+<p>前端请求：<br><img src="http://static.zybuluo.com/1160307775/rr9iwmh76f9jexgwfedovzyu/image_1di03ot516ne1j91u041oh61tu5gs.png" alt="image_1di03ot516ne1j91u041oh61tu5gs.png-13.1kB"></p>
+<p>当用户对静态资源的请求到达中毒的套接字时，响应将包含其帐户详细信息，并且缓存将通过静态资源保存这些信息。然后，我们可以通过从缓存中加载/static/site.js来检索帐户详细信息。</p>
+<p>这实际上是Web缓存欺骗攻击的一个新变体。它在两个关键方面更强大——它不需要任何用户交互，也不需要目标站点允许您使用扩展。唯一的陷阱是攻击者无法确定受害者的反应将落在何处。</p>
+<h2 id="PayPal"><a href="#PayPal" class="headerlink" title="PayPal"></a>PayPal</h2><p>由于请求走私连锁缓存中毒，我能够持续劫持众多JavaScript文件，其中之一是在Paypal的登录页面：<a href="https://c.paypal.com/webstatic/r/fb/fb-all-prod.pp2.min.js" target="_blank" rel="noopener">https://c.paypal.com/webstatic/r/fb/fb-all-prod.pp2.min.js</a>.</p>
+<p><img src="http://static.zybuluo.com/1160307775/wmoqtjprhf707is1xo7ka1ka/image_1di03u9lu1fb2tur1n51ekl9loh9.png" alt="image_1di03u9lu1fb2tur1n51ekl9loh9.png-61.8kB"></p>
+<p>但是有一个问题——PayPal的登录页面使用了<code>script-src</code>的csp，它破坏了我的重定向。<br><img src="http://static.zybuluo.com/1160307775/cpxwv9v85x5usy6th6jdwu98/image_1di040r7764spvs1orqvbk96rhm.png" alt="image_1di040r7764spvs1orqvbk96rhm.png-23.4kB"></p>
+<p>起初，这看起来像是纵深防御的胜利。但是，我注意到登录页面在一个动态生成的iframe中加载了c.paypal.com上的一个子页面。此子页没有使用CSP，还导入了我们的有害JS文件。这使我们完全控制了iframe的内容，但是由于同源策略，我们仍然无法从父页面读取用户的Paypal密码。</p>
+<p><img src="http://static.zybuluo.com/1160307775/dkyfc1gj4hzy6ihqaqc20wbx/image_1di0433272ms1vie1ond1n1p1eqqi3.png" alt="image_1di0433272ms1vie1ond1n1p1eqqi3.png-40.2kB"></p>
+<p>我的同事GarethHeyes随后在paypal.com/us/gifts上发现了一个不使用CSP的页面，并导入了我们中毒的JS文件。通过使用我们的JS重定向c.paypal.com iframe到该URL（并在第三次触发我们的JS），我们最终可以从使用Safari或IE登录的所有人访问父和窃取明文Paypal密码。<br><img src="http://static.zybuluo.com/1160307775/kgm49hw0deq81v5z9k90qsyo/image_1di0462kcnfm1ik4v7v19q81ue0ig.png" alt="image_1di0462kcnfm1ik4v7v19q81ue0ig.png-68.3kB"></p>
+<p>PayPal通过配置Akamai拒绝包含传输编码的请求：chunked header，快速地解决了这个漏洞，并授予了18900美元的赏金。</p>
+<p>几周后，在发明和测试一些新的去同步技术时，我决定尝试使用一个换行的头文件：<br><img src="http://static.zybuluo.com/1160307775/bsi9yau5mqmjou0cgxvas5iv/image_1di048085cfbp1e3b1hmeeddit.png" alt="image_1di048085cfbp1e3b1hmeeddit.png-5.3kB"></p>
+<p>这似乎使转移编码头对于Akamai来说不可见，成功绕过，并再次授予我控制Paypal的登录页面。PayPal迅速应用了一个更稳健的解决方案，并获得了令人印象深刻的20000美元。(译者跪了2333)</p>
+<h2 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h2><p>另一个目标使用了反向代理链，其中一个没有将’\n’视为有效的头终止符。这意味着他们的网络基础设施中相当大的一部分容易受到走私请求的攻击。我录制了一个演示，演示如何使用非同步来有效地识别和利用Bugzilla安装的副本上的漏洞，该副本包含一些非常敏感的信息。</p>
+<p>您可以在本白皮书的在线版本<a href="https://portswigger.net/blog/http-desync-attacks9中找到该视频。" target="_blank" rel="noopener">https://portswigger.net/blog/http-desync-attacks9中找到该视频。</a></p>
+<h2 id="Defence"><a href="#Defence" class="headerlink" title="Defence"></a>Defence</h2><p>像往常一样，安全很简单。如果您的网站没有负载均衡器、cdn和反向代理，那么这种技术就不是一种威胁。引入的层越多，就越容易受到攻击。</p>
+<p>每当我讨论攻击技术时，我都会被问到HTTPS是否可以阻止它。一如既往，答案是“不”。也就是说，通过将前端服务器配置为专门使用HTTP/2与后端系统通信，或者完全禁用后端连接重用，可以解决此漏洞的所有变体。或者，您可以确保链中的所有服务器使用相同的配置运行相同的Web服务器软件。</p>
+<p>可以通过重新配置前端服务器来解决此漏洞的特定实例，以便在继续路由之前将不明确的请求规范化。对于不想让客户受到攻击的客户来说，这可能是唯一现实可行的解决方案，CloudFlare和Fastly似乎成功地应用了它。</p>
+<p>对于后端服务器来说，正常化请求不是一个选项——它们需要彻底拒绝不明确的请求，并删除关联的连接。由于拒绝请求比简单地使其正常化更可能影响合法流量，因此我建议重点防止通过前端服务器进行请求走私。</p>
+<p>当你的工具对你不利时，有效的防御是不可能的。大多数Web测试工具在发送请求时都会自动“更正”内容长度头段，从而使请求无法走私。在BurpSuite中，您可以使用Repeater menu禁用此行为-确保您选择的工具具有同等的功能。此外，某些公司和bug赏金平台通过Squid之类的代理来转发测试人员的流量，以便进行监控。这些将管理测试人员发起的任何请求走私攻击，确保公司对该漏洞类的覆盖率为零。</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>在多年来一直被忽视的研究基础上，我引入了新的技术来取消服务器的同步，并演示了使用大量真实网站作为案例研究来利用结果的新方法。</p>
+<p>通过这一点，我已经证明了请求走私是对Web的主要威胁，HTTP请求解析是一个安全关键的功能，容忍不明确的消息是危险的。我还发布了一个方法论和一个开源工具包，帮助人们审计请求走私，证明其影响，并以最小的风险获得奖金。</p>
+<p>这一主题仍在研究中，因此我希望本出版物将有助于在未来几年内激发新的去同步技术和开发。</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><ol>
+<li><a href="https://www.cgisecurity.com/lib/HTTP-Request-Smuggling.pdf" target="_blank" rel="noopener">https://www.cgisecurity.com/lib/HTTP-Request-Smuggling.pdf</a></li>
+<li><a href="https://portswigger.net/blog/turbo-intruder-embracing-the-billion-request-attack" target="_blank" rel="noopener">https://portswigger.net/blog/turbo-intruder-embracing-the-billion-request-attack</a></li>
+<li><a href="https://tools.ietf.org/html/rfc2616#section-4.4" target="_blank" rel="noopener">https://tools.ietf.org/html/rfc2616#section-4.4</a></li>
+<li><a href="https://regilero.github.io/tag/Smuggling/" target="_blank" rel="noopener">https://regilero.github.io/tag/Smuggling/</a></li>
+<li><a href="https://github.com/portswigger/desynchronize" target="_blank" rel="noopener">https://github.com/portswigger/desynchronize</a></li>
+<li><a href="https://portswigger.net/blog/cracking-the-lens-targeting-https-hidden-attack-surface" target="_blank" rel="noopener">https://portswigger.net/blog/cracking-the-lens-targeting-https-hidden-attack-surface</a> 7. <a href="https://github.com/PortSwigger/param-miner" target="_blank" rel="noopener">https://github.com/PortSwigger/param-miner</a></li>
+<li><a href="https://portswigger.net/blog/practical-web-cache-poisoning#hiddenroutepoisoning" target="_blank" rel="noopener">https://portswigger.net/blog/practical-web-cache-poisoning#hiddenroutepoisoning</a> </li>
+<li><a href="https://portswigger.net/blog/http-desync-attacks" target="_blank" rel="noopener">https://portswigger.net/blog/http-desync-attacks</a></li>
+</ol>
+<h2 id="议题原文件"><a href="#议题原文件" class="headerlink" title="议题原文件"></a>议题原文件</h2><p><a href="https://pan.baidu.com/s/1ycNVD8Y3EIr4ayEnM9eqew" target="_blank" rel="noopener">https://pan.baidu.com/s/1ycNVD8Y3EIr4ayEnM9eqew</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/08/10/HTTP Desync Attacks-Smashing into the Cell Next Door/">https://hpdoger.cn/2019/08/10/HTTP Desync Attacks-Smashing into the Cell Next Door/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/08/13/从一次漏洞挖掘入门ldap注入/">  从一次漏洞挖掘入门ldap注入</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/08/06/De1CTF-Giftbox题解/"> De1CTF-Giftbox题解 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sat Aug 10 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
