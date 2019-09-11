@@ -90,6 +90,116 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/12/21/Code-Breaking-Puzzles WriteUp/"> 
+                    Code-Breaking-Puzzles WriteUp 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-21   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Code-Breaking-Puzzles-WriteUp"><a href="#Code-Breaking-Puzzles-WriteUp" class="headerlink" title="Code-Breaking-Puzzles WriteUp"></a>Code-Breaking-Puzzles WriteUp</h1><p>最近终于可以忙里偷闲来做一下P神的题目，真的能学到不少东西，对底层的一些漏洞知识学习很有帮助。感谢网上已经有好多版本的wp可以提供参考，有一些知识实在是盲区。写一些笔记，不笱求与师傅们观点相异，如果能让看文章的人更能理解这些洞点，也算是我的荣幸了。</p>
+<h1 id="easy-function"><a href="#easy-function" class="headerlink" title="easy - function"></a>easy - function</h1><p>不得不说P神的代码简洁又暴力</p>
+<pre><code>&lt;?php
+$action = $_GET[&#39;action&#39;] ?? &#39;&#39;;
+$arg = $_GET[&#39;arg&#39;] ?? &#39;&#39;;
+
+if(preg_match(&#39;/^[a-z0-9_]*$/isD&#39;, $action)) {
+    show_source(__FILE__);
+} else {
+    $action(&#39;&#39;, $arg);
+}</code></pre><p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
+<p>应该是利用action做函数名来执行命令，但$action的首尾做了正则限制，不能直接是函数名。</p>
+<p>P神小密圈说到的方式用\可以绕过。原因就是<strong>\funciton</strong>是php原生函数的写法，就是以命名空间+函数名的方法来表示函数。而原生函数的命名空间是”&quot;。这种用法倒是在tp框架里见过，当调用一个类的时候会指明命名空间”\think\db”。虽然很无感命名空间的说法，但是感觉和java里的package类似</p>
+<p>接着就是调用Create_function函数来代码注入了，具体原理参考：<a href="http://blog.51cto.com/lovexm/1743442" target="_blank" rel="noopener">http://blog.51cto.com/lovexm/1743442</a></p>
+<p>直接上Poc:<br><code>action=create_function&amp;arg=;}print_r(file_get_contents(&#39;../flag_h0w2execute_arb1trary_c0de&#39;));//</code></p>
+<p>别忘了注释//，否则逃脱不了函数</p>
+<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><pre><code>&lt;?php
+function is_php($data){
+    return preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data);
+}
+
+if(empty($_FILES)) {
+    die(show_source(__FILE__));
+}
+
+$user_dir = &#39;data/&#39; . md5($_SERVER[&#39;REMOTE_ADDR&#39;]);
+$data = file_get_contents($_FILES[&#39;file&#39;][&#39;tmp_name&#39;]);
+if (is_php($data)) {
+    echo &quot;bad request&quot;;
+} else {
+    @mkdir($user_dir, 0755);
+    $path = $user_dir . &#39;/&#39; . random_int(0, 10) . &#39;.php&#39;;
+    move_uploaded_file($_FILES[&#39;file&#39;][&#39;tmp_name&#39;], $path);
+
+    header(&quot;Location: $path&quot;, true, 303);
+} </code></pre><h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
+<p>很明显应该是preg_match的洞点，但是当时并不知道具体突破的思路，看了一些文章才知道，原来php用的是PCRE库的。那么什么是PCRE和NFA正则引擎？</p>
+<h2 id="PCRE"><a href="#PCRE" class="headerlink" title="PCRE"></a>PCRE</h2><p>PCRE(Perl Compatible Regular Expressions中文含义：perl语言兼容正则表达式)是一个用C语言编写的正则表达式函数库</p>
+<p>NFA引擎</p>
+<pre><code>**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
+<pre><code>preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data)</code></pre><p>如果我们输入<code>&lt;?php print;abcd</code></p>
+<p>那么它匹配的流程应该是这样的：<br><code>&lt;?php print;abc</code><br><code>&lt;?php print;ab</code><br><code>&lt;?php print;a</code><br><code>&lt;?php print;</code><br><code>&lt;?php print;abcd</code></p>
+<p><strong>.*</strong>会把?后的所有字符都先匹配到，发现没有[]里面的这些字符后再进行回溯。但是PHP为了防止回溯次数过多，发生拒绝服务，会有一个回溯限制</p>
+<p>引用kk师傅的一张图：<br><img src="https://www.kingkk.com/2018/11/Code-Breaking-Puzzles-%E9%A2%98%E8%A7%A3-%E5%AD%A6%E4%B9%A0%E7%AF%87/3.png" alt></p>
+<p>5.2以后的版本回溯次数是1000000，超过这个次数还没有匹配到，则会返回false</p>
+<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><p>既然是弱类型比较，我们就用false来等价null绕过</p>
+<pre><code>&lt;?php
+$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);
+$msg = &quot;&lt;?php print_r(scandir(&#39;../&#39;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);
+fwrite($f,$msg);
+fclose($f);</code></pre><p>构造个上传表单完事</p>
+<p>这也提醒我们,正确使用preg_match的重要性，用强类型等于避免很多不安全因素</p>
+<h1 id="phpmagic"><a href="#phpmagic" class="headerlink" title="phpmagic"></a>phpmagic</h1><p>这个题真的发现很多知识碎片</p>
+<h2 id="php-filter"><a href="#php-filter" class="headerlink" title="php://filter"></a>php://filter</h2><p>首先聊聊filter的妙用。以前见到的情况和套路都是include()、file_get_contents()的参数可控，我们用php://filter/read配合base64-encode可以把文件编码成base64后输出。没想到file_put_contents文件名可控时也有magic</p>
+<p>当我们可控的文件名$file传入参数<code>php://filter/write=convert.base64-decode/resource=shell.php</code>，$text传入<code>this is test</code>时，file_put_contents($file,$text)执行的内容如下：<br><img src="https://s1.ax1x.com/2018/12/24/F6Hv60.png" alt></p>
+<p>可以把写入的文本进行base64编码，而且可以指定写入的文件名<code>shell.php</code>。其实这个用处还挺多的，比如将可控文本Base64编码，用伪协议写入文件的时候再decode，就能绕过<strong>后端正则对可控文本php危险语句检测</strong>的过滤</p>
+<h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>关键代码<br><img src="https://s1.ax1x.com/2018/12/24/F6bp0U.png" alt></p>
+<p>$output会被转义后输入到可控文本，用上面的思路在写入文本的时候base64-decode就能绕过，注意用Host拼接$log_name。</p>
+<p>至于绕过后缀名，这两天做工程实践的时候恰好用到了p师傅关于apache的x0a后缀解析为php的文件上传绕过，具体思路：<a href="https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715</a><br><img src="https://s1.ax1x.com/2018/12/24/F6bE11.png" alt></p>
+<p>poc如下<br><img src="https://s1.ax1x.com/2018/12/24/F6b97F.png" alt></p>
+<h1 id="php-limit"><a href="#php-limit" class="headerlink" title="php limit"></a>php limit</h1><p>这道题依然简单粗暴，代码如下</p>
+<pre><code>&lt;?php
+if(&#39;;&#39; === preg_replace(&#39;/[^\W]+\((?R)?\)/&#39;, &#39;&#39;, $_GET[&#39;code&#39;])) {    
+    eval($_GET[&#39;code&#39;]);
+} else {
+    show_source(__FILE__);
+}</code></pre><p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
+<p>在匹配完b()之后，由于匹配不到[^\W]，正则就停止了。所以这里的代码执行点就是：嵌套函数且最后一个函数不能用参数值</p>
+<p>有的师傅们用了get_defined_vars()获取http请求头。其实这个之前在打awd时上流量监控部分用到过，appache可以用getallheaders()来获取http头，但是nginx没有这个函数，可以用了get_defined_vars()，通过current()、next()进而选择可控参数,poc如下</p>
+<p><img src="https://i.loli.net/2019/01/08/5c3413c0a9be1.png" alt></p>
+<h1 id="Nodejs魔法"><a href="#Nodejs魔法" class="headerlink" title="Nodejs魔法"></a>Nodejs魔法</h1><p>Koa框架写的登陆页面，入库的语句都写出来了<br><img src="https://i.loli.net/2018/12/02/5c033d7cc5c7a.png" alt></p>
+<p>看到这一步很关键，因为忘了看flag在哪个表里，后面浪费了很多时间</p>
+<p>继续看到登陆的逻辑<br><img src="https://i.loli.net/2018/12/02/5c033d7ce1b2e.png" alt><br>传入的username&amp;&amp;password非空，并且经过safe函数过滤后带入查询，如果有结果则设定session为查询结果</p>
+<p>##分析<br>一开始绕safe就饶了好久,尝试了各种注释。最后l0cal师傅提醒，在js里toUpperCase()是可以用拉丁文的unicode绕过的，例如<code>&quot;ſ&quot;.toUpperCase()&lt;=&gt;&quot;S&quot;</code>和<code>&quot;ı&quot;.toUpperCase()&lt;=&gt;&quot;I&quot;</code></p>
+<p>那么select 和 union 都可以绕过</p>
+<p>一开始想多了,一直在盲注,根据时候有session判断查询的真假，结果好多东西都绕不过去，而且没看代码还在傻乎乎的测表名，十分愚蠢</p>
+<p>有好多语句都会500，估计是云服务做了限制。。到最后发现把用户名和密码置空，后面用union查询flag，那设置的session不就是flag么。。</p>
+<p>真的是太菜了</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/12/21/Code-Breaking-Puzzles WriteUp/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/12/20/SWPUCTF2018 Write up/"> 
                     SWPUCTF2018 Write up 
                 </a>
@@ -1133,53 +1243,10 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
             </div>
         </article>
         
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/23/Arbitrary File upload in Semcms V2.7/"> 
-                    Arbitrary File upload in Semcms V2.7 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-23   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve/">cve</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>php Background pages restrict the type of uploaded files, jpe, gif, rar,we can break through the restrictions on uploading malicious files such as: PHP.</p>
-<h2 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h2><p>The affected code(located:/ciuy_Admin/SEMCMS_Upfile.php):</p>
-<pre><code>$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</code></pre><p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
-<h2 id="Founction"><a href="#Founction" class="headerlink" title="Founction"></a>Founction</h2><p>The attaking founction:use char(0) to cut off the filename and make up a renew suffix</p>
-<p>The affected page located in admin’s management page:<code>ciuy_Admin/SEMCMS_Upfile.php</code></p>
-<h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>First,we define our evil php’s suffix as test.rar(which is allowed) and post it as follow.There,we could see no files in the Folder</p>
-<p>Second,we change the php as php0x00 and the effection as :<br><img src="https://i.loli.net/2018/08/23/5b7e13304a88d.png" alt></p>
-<p>final effection and poc:<br><img src="https://i.loli.net/2018/08/23/5b7e13ba8c3e3.jpg" alt><br><img src="https://i.loli.net/2018/08/23/5b7e141646860.jpg" alt></p>
-<p>Then, we could see the test.php in the folder:<br><img src="https://i.loli.net/2018/08/23/5b7e142f6dfac.png" alt></p>
-<p>Finally, we could use tools (Cknife) to link the evil php<br><img src="https://i.loli.net/2018/08/23/5b7e147a46853.png" alt></p>
-<h2 id="summary"><a href="#summary" class="headerlink" title="summary"></a>summary</h2><p>This is a background getshell process. The required PHP version is less than 5.3</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/23/Arbitrary File upload in Semcms V2.7/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/4/">Next &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">Next &raquo;</a>
   </nav>
 
     </main>

