@@ -185,13 +185,13 @@ def awdlog():
 <h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><h3 id="任意文件读取-1"><a href="#任意文件读取-1" class="headerlink" title="任意文件读取"></a>任意文件读取</h3><p><code>keywords[_filename]=/flag</code></p>
 <p>漏洞点在<code>ThinkPHP/Library/Think/Storage/Driver/File.class.php</code>的File类驱动中，同时File类继承自Storage类：<code>class File extends Storage</code></p>
 <p><img src="http://static.zybuluo.com/1160307775/19r0bw8jrs4a14a8r9emc8c6/image_1dnmqjgof1rfhksv1ae71engq2320.png" alt="image_1dnmqjgof1rfhksv1ae71engq2320.png-396.7kB"></p>
-<p>在判断了$vars是否存在后，进行了一次变量覆盖，再调用load方法进行了文件包含。追踪一下哪里调用了load方法，发现都是在解析模版的时候调用load，这里选择<code>ThinkPHP/ThinkPHP/Library/Think/Template.class.php</code>的fetch()方法</p>
+<p>在判断了$vars是否存在后，进行了一次变量覆盖，再调用load方法进行了文件包含。追踪一下哪里调用了load方法，发现都是在解析模版的时候调用的，这里选择文件<code>ThinkPHP/ThinkPHP/Library/Think/Template.class.php</code>的fetch()方法</p>
 <p><img src="http://static.zybuluo.com/1160307775/qoihow4a22x8pzdf9i9eoxiv/image_1dnmrrf2k138168g9gm12sfoip2t.png" alt="image_1dnmrrf2k138168g9gm12sfoip2t.png-245.5kB"></p>
-<p>发现可控参数<code>$templateVar</code>，会被当作实参传入load()，继续寻找调用fetch()方法的位置。因为TP代码有好多中实例化的方法，并不都像<code>storage::</code>这样的调用方式，只能全局搜索fetch看哪里调用。最终发现在<code>ThinkPHP/Library/Behavior/ParseTemplateBehavior.class.php</code>中实例化了Template类并且调用fetch()方法。</p>
+<p>发现可控参数<code>$templateVar</code>，会被当作实参传入load()，继续寻找调用fetch()方法的位置。因为TP代码中有很多实例化的方法，并不都像<code>storage::</code>这样的调用方式，只能全局搜索fetch看哪里调用。最终发现在<code>ThinkPHP/Library/Behavior/ParseTemplateBehavior.class.php</code>中实例化了Template类并且调用fetch()方法。</p>
 <p><img src="http://static.zybuluo.com/1160307775/fmsgcdfr846jsn5g71sardnt/image_1dnms90lf1fbckc91cnr18281g1c3a.png" alt="image_1dnms90lf1fbckc91cnr18281g1c3a.png-505.2kB"></p>
-<p>刚才说到可控参数<code>$templateVar</code>的原型在这里为<code>$_data</code>，那么<code>$_data</code>是否可控？继续追调用链，这里往回追的时候就卡壳了，因为涉及到tp的一个知识：<a href="https://blog.csdn.net/u013927110/article/details/47000379" target="_blank" rel="noopener">Thinkphp下利用钩子使用行为扩展</a></p>
-<p>简单来说就在xx宏定义了监听器对应的类名(这里的类指的是类似于ParseTemplateBehavior.class.php这种的行为拓展类)<br><img src="http://static.zybuluo.com/1160307775/ab7rmh3hiapj8i4ns6dqrwvi/image_1dnmt4sfa1c6ja0pgb4v00mft4q.png" alt="image_1dnmt4sfa1c6ja0pgb4v00mft4q.png-50.2kB"></p>
-<p>Hook机制通过触发不同的监听器，实现对应行为拓展类的实例化且会调用对应行为拓展类的run方法。一个简单的触发机制就是<code>Hook::Listen(tags,prarm)</code>。</p>
+<p>刚才说到可控参数<code>$templateVar</code>的原型在这里为<code>$_data</code>，那么<code>$_data</code>是否可控？继续追调用链，在这里追的时候就卡壳了，因为涉及到tp的一个知识：<a href="https://blog.csdn.net/u013927110/article/details/47000379" target="_blank" rel="noopener">Thinkphp下利用钩子使用行为扩展</a></p>
+<p>简单来说就在xx文件中，先宏定义了监听器对应的类名再加载进程序(这里的类指的是类似于ParseTemplateBehavior.class.php这种的行为拓展类)<br><img src="http://static.zybuluo.com/1160307775/ab7rmh3hiapj8i4ns6dqrwvi/image_1dnmt4sfa1c6ja0pgb4v00mft4q.png" alt="image_1dnmt4sfa1c6ja0pgb4v00mft4q.png-50.2kB"></p>
+<p>而后，程序中的Hook机制通过触发不同类型的监听器，实现对应行为拓展类的实例化且会调用对应行为拓展类的run方法。一个简单的触发机制就是<code>Hook::Listen(tags,prarm)</code>。</p>
 <p>那么在这里我们希望它触发<code>view_parse</code>，从而实例化<code>ParseTemplateBehavior</code>。就全局搜索<code>Hook::listen(&#39;view_parse&#39;</code>。在TP的视图类里找到了该监听器的hook<br><img src="http://static.zybuluo.com/1160307775/d7u78w1qao6dkos6xtce62gw/image_1dnmtdrpd6t6101m1omechn1n0857.png" alt="image_1dnmtdrpd6t6101m1omechn1n0857.png-507.6kB"></p>
 <p>接下来就好说了，只要<code>$parama</code>可控，并且找到一处能够调用fetch函数的地方，整条利用链就完整了。</p>
 <p>其中$param的取值经过一系列的操作</p>
@@ -204,8 +204,8 @@ def awdlog():
     }
 }
 
-$params = array(&#39;var&#39; =&gt; $this-&gt;tVar, &#39;file&#39; =&gt; $templateFile, &#39;content&#39; =&gt; $content, &#39;prefix&#39; =&gt; $prefix);</code></pre><p>这里file、content、prefix为定值，只有<code>$this-&gt;tvar</code>可操作且被assign函数赋值。这里存在以前tp3的模版rce漏洞，只不过是前半部分的利用链，通过assign这个模版赋值函数，赋值变量<code>$this-&gt;tvar</code>。</p>
-<p>同时这里还涉及Tp的一个小操作，对模版的加载&amp;渲染依靠<code>ThinkPHP/ThinkPHP/Library/Think/View.class.php</code>。先通过类内方法<code>assgin()</code>对模版赋值，再调用<code>display()</code>加载模板和页面输出。在display函数的内部同时实现了<code>fetch()</code>函数解析并获取模板内容，也解决了上面调用fetch函数的困扰。</p>
+$params = array(&#39;var&#39; =&gt; $this-&gt;tVar, &#39;file&#39; =&gt; $templateFile, &#39;content&#39; =&gt; $content, &#39;prefix&#39; =&gt; $prefix);</code></pre><p>file、content、prefix为定值，只有<code>$this-&gt;tvar</code>可操作且被assign函数赋值。这里存在以前tp3的模版rce漏洞的挖掘链，通过assign这个模版赋值函数，赋值变量<code>$this-&gt;tvar</code>。</p>
+<p>同时这里还涉及Tp的一个小操作：在tp3.2中，对模版的加载&amp;渲染依靠<code>ThinkPHP/ThinkPHP/Library/Think/View.class.php</code>。先通过View类方法<code>assgin()</code>对模版赋值，再调用<code>display()</code>加载模板和页面输出。在display函数的内部同时实现了<code>fetch()</code>函数解析并获取模板内容，也解决了上面调用fetch函数的困扰。</p>
 <p>所以只需要找一个Controller，接受post/get传入参数，并且能够传入<code>assign()</code>去模版赋值，之后再经过tp的<code>display()</code>函数渲染模版，这里出题人在控制器里造了一个方法search，接受keywords参数</p>
 <pre><code>public function search()
 {
@@ -267,16 +267,16 @@ if (preg_match(&quot;#^data:image/(\w+);base64,(.*)$#&quot;, $src, $matches)) {
            
             <div class="copyright">
                 <div class="name">
-                    <a>Author:</a>
+                    <a>本文作者:</a>
                     <a>Hpdoger</a>
                 </div>
                 <div class="link">
-                    <a>Link:</a>
+                    <a>本文链接:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/10/20/字节跳动CTF线下赛Web题解&amp;复盘/">https://hpdoger.cn/2019/10/20/字节跳动CTF线下赛Web题解&amp;复盘/</a>
                 </div>
                 <div class="license">
-                    <a>Statement:</a>
-                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                    <a>版权声明:</a>
+                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
                 </div>
             </div>
             
@@ -289,7 +289,7 @@ if (preg_match(&quot;#^data:image/(\w+);base64,(.*)$#&quot;, $src, $matches)) {
 
 <div class="tip">
 <button class="tip-btn">
-    Tip
+    打赏
 </button>
 <div class="tip-img">
 <ul>
