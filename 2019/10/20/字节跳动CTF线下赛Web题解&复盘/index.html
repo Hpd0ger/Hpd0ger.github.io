@@ -132,38 +132,22 @@ def backup():
         return jsonify(ress)
     else:
         return &quot;param is name! please backup!&quot;</code></pre><p><img src="http://static.zybuluo.com/1160307775/xkcvhk7x2py4e8psnoftecq0/image_1dnm8r3b65901pom16tg12t1c031g.png" alt="image_1dnm8r3b65901pom16tg12t1c031g.png-34.8kB"></p>
-<h3 id="模版注入"><a href="#模版注入" class="headerlink" title="模版注入"></a>模版注入</h3><p>这个点我没挖到，但是感觉是存在的。在auth逻辑处是这样写的</p>
-<pre><code>@auth.route(&#39;/register&#39;, methods=[&#39;GET&#39;,&#39;POST&#39;])
-def register():
-    form  = RegisterForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user is not None:
-            flash(u&#39;用户已经存在，注册失败&#39;, &#39;danger&#39;)
-            return render_template(&#39;auth/register.html&#39;,form=form)
-        else:
-            if(User.insert_admin(form.email.data,form.email.data,form.password.data)):
-                flash(u&#39;注册成功，请登录&#39;, &#39;success&#39;)
-                return redirect(url_for(&#39;auth.login&#39;))
-            else:
-                flash(u&#39;注册失败了，请重试&#39;, &#39;danger&#39;)
-    return render_template(&#39;auth/register.html&#39;, form=form)
-
-@auth.route(&#39;/login&#39;, methods=[&#39;GET&#39;, &#39;POST&#39;])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user is not None and user.verify_password(form.password.data):
-            login_user(user)
-            flash(u&#39;登陆成功！欢迎回来，%s!&#39; % user.username, &#39;success&#39;)
-            return redirect(request.args.get(&#39;next&#39;) or url_for(&#39;main.index&#39;))
-        else:
-            flash(u&#39;登陆失败！用户名或密码错误，请重新登陆。&#39;, &#39;danger&#39;)
-    if form.errors:
-        flash(u&#39;登陆失败，请尝试重新登陆.&#39;, &#39;danger&#39;)
-
-    return render_template(&#39;auth/login.html&#39;, form=form)</code></pre><p>很明显调用了<code>render_template</code>，如果登陆失败也会进入render_template渲染，而这个函数恰好是jinjia2 ssti的经典漏洞函数。感觉应该也可以采取注册payload用户名-&gt;ssti</p>
+<h3 id="模版注入"><a href="#模版注入" class="headerlink" title="模版注入"></a>模版注入</h3><p>这个点我没挖到，但是后来听别的师傅说存在404的ssti</p>
+<pre><code>@main.app_errorhandler(404)
+def page_not_found(e):
+    for x in request.path:
+        if x in &#39;._%&#39;:
+            return render_template(&#39;404.html&#39;), 404
+    template = &#39;&#39;&#39;
+{%% block body %%}
+    &lt;div class=&quot;center-content error&quot;&gt;
+        &lt;h1&gt;Oops! That page doesn&#39;t exist in this Blog.&lt;/h1&gt;
+        &lt;h3&gt;%s&lt;/h3&gt;
+    &lt;/div&gt;
+{%% endblock %%}
+&#39;&#39;&#39; % (request.url)
+    return render_template_string(template), 404</code></pre><p>过滤了<code>._%</code>，下面的ssti是经典的漏洞案例。利用<code>|</code>过滤器和动态传参就可以bypass了，跟今年护网杯的题目思路差不多，这里盗用一下@Smile师傅的payload</p>
+<p><img src="http://static.zybuluo.com/1160307775/0ag6778ky7rmn2p6hbxeolyy/image_1dnp66nft9tm243119nifpt49.png" alt="image_1dnp66nft9tm243119nifpt49.png-91.2kB"></p>
 <h2 id="流量记录"><a href="#流量记录" class="headerlink" title="流量记录"></a>流量记录</h2><p>这次还是吃了没流量的亏，测试了一下别人的py流量脚本，这里贴出来</p>
 <pre><code>@main.before_request
 def awdlog():
@@ -267,16 +251,16 @@ if (preg_match(&quot;#^data:image/(\w+);base64,(.*)$#&quot;, $src, $matches)) {
            
             <div class="copyright">
                 <div class="name">
-                    <a>本文作者:</a>
+                    <a>Author:</a>
                     <a>Hpdoger</a>
                 </div>
                 <div class="link">
-                    <a>本文链接:</a>
+                    <a>Link:</a>
                     <a class="permalink" href="https://hpdoger.cn/2019/10/20/字节跳动CTF线下赛Web题解&amp;复盘/">https://hpdoger.cn/2019/10/20/字节跳动CTF线下赛Web题解&amp;复盘/</a>
                 </div>
                 <div class="license">
-                    <a>版权声明:</a>
-                    <a>本博客所有文章除特别声明外，均采用许可协议 CC BY-NC-SA 3.0 CN。转载请注明出处！</a>
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
                 </div>
             </div>
             
@@ -289,7 +273,7 @@ if (preg_match(&quot;#^data:image/(\w+);base64,(.*)$#&quot;, $src, $matches)) {
 
 <div class="tip">
 <button class="tip-btn">
-    打赏
+    Tip
 </button>
 <div class="tip-img">
 <ul>
