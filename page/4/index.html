@@ -90,6 +90,44 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/10/22/ISCC2018 信阳杯线下赛小结/"> 
+                    ISCC2018 信阳杯线下赛小结 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-10-22   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/">ctf</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>自己巨大的锅..感觉本能拿第一的，却只水了个第二。</p>
+<p>从这篇起以后的日子闭关反思</p>
+<h2 id="线下ctf"><a href="#线下ctf" class="headerlink" title="线下ctf"></a>线下ctf</h2><p>上午的线下ctf就不说了,一个misc两个逆向。web狗：？？？<br>而且misc巨坑，感觉也是比脑洞，b32出来了对比hex还原再crc32。当时B32解出来有乱码，一直在测试编码的道路上，但结束后问了西工的师傅们才发现路走偏了。要学会习惯用winhex分析，跟原始的zip比对….这就解释了为什么有个504的文件头了..总之ctf体验极差</p>
+<h2 id="高地赛"><a href="#高地赛" class="headerlink" title="高地赛"></a>高地赛</h2><p>当时拿到题目是两个私地，一个pwn，一个web.高地也是一个pwn<br>看到网上有这么个吐槽：<br>选手：“ISCC你又出新题啦！”</p>
+<p>当时看到题,第一反应是17年的原题,ez的前端太好辨识了..<br>最扯淡的是，给了Mongodb的配置和17年的也一样..甚至连后台账号密码都没变。不过一开始我万能密码也进去了。但自己菜的也是真实，作为第一个打全场的队伍，后来权限没稳住又被别人反超…</p>
+<p>Always onload，还有很多要学的</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/09/13/四个实例递进php反序列化/"> 
                     四个实例递进php反序列化 
                 </a>
@@ -1267,62 +1305,6 @@ if(empty($port)){
             </div>
             <div class="continue">
             <a href="/2018/08/10/初探ssrf/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/08/Socket套接字编程学习/"> 
-                    Socket套接字编程学习 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-08   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tcp/">tcp</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近接触到socket模块，练一下python能力，写一个通过socket（套接字）的tcp的连接，执行命令并回显。模拟ncat的正向连接功能</p>
-<h2 id="Socket套接字"><a href="#Socket套接字" class="headerlink" title="Socket套接字"></a>Socket套接字</h2><p>TCP用主机的IP地址加上主机上的端口号作为TCP连接的端点，这种端点就叫做套接字（socket）或插口</p>
-<p>套接字用（IP地址：端口号）表示。例如：192.168.1.1:8080</p>
-<p>它是网络通信过程中端点的抽象表示，包含进行网络通信必需的五种信息：连接使用的协议，本地主机的IP地址，本地进程的协议端口，远地主机的IP地址，远地进程的协议端口。</p>
-<h2 id="TCP-IP协议的三种套接字类型："><a href="#TCP-IP协议的三种套接字类型：" class="headerlink" title="TCP/IP协议的三种套接字类型："></a>TCP/IP协议的三种套接字类型：</h2><p>流式套接字（SOCK_STREAM）：<br>流式套接字用于提供面向连接、可靠的数据传输服务。该服务将保证数据能够实现无差错、无重复发送，并按顺序接收。流式套接字之所以能够实现可靠的数据服务，原因在于其使用了传输控制协议，即TCP（The Transmission Control Protocol）协议。</p>
-<p>数据报套接字（SOCK_DGRAM）：<br>数据报套接字提供了一种无连接的服务。该服务并不能保证数据传输的可靠性，数据有可能在传输过程中丢失或出现数据重复，且无法保证顺序地接收到数据。数据报套接字使用UDP（User Datagram Protocol）协议进行数据的传输。由于数据报套接字不能保证数据传输的可靠性，对于有可能出现的数据丢失情况，需要在程序中做相应的处理。</p>
-<p>原始套接字（SOCK_RAW）：<br>原始套接字(SOCKET_RAW)允许对较低层次的协议直接访问，比如IP、 ICMP协议，它常用于检验新的协议实现，或者访问现有服务中配置的新设备，因为RAW SOCKET可以自如地控制Windows下的多种协议，能够对网络底层的传输机制进行控制，所以可以应用原始套接字来操纵网络层和传输层应用。比如，我们可以通过RAW SOCKET来接收发向本机的ICMP、IGMP协议包，或者接收TCP/IP栈不能够处理的IP包，也可以用来发送一些自定包头或自定协议的IP包。网络监听技术很大程度上依赖于SOCKET_RAW<br>原始套接字与标准套接字（标准套接字指的是前面介绍的流式套接字和数据报套接字）的区别在于：原始套接字可以读写内核没有处理的IP数据包，而流式套接字只能读取TCP协议的数据，数据报套接字只能读取UDP协议的数据。因此，如果要访问其他协议发送数据必须使用原始套接字。</p>
-<h2 id="编程思路"><a href="#编程思路" class="headerlink" title="编程思路"></a>编程思路</h2><h3 id="tcp服务端"><a href="#tcp服务端" class="headerlink" title="tcp服务端"></a>tcp服务端</h3><p>1、创建一个套接字，选择tcp流通信，并且绑定套接字到本地ip和端口</p>
-<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind()</code></pre><p>2、开始监听</p>
-<pre><code>s.listen(5) # 一般5的最大连接就够了</code></pre><p>3、循环接收客户端连接要求</p>
-<pre><code>while True:
-    conn,addr=s.accept() # 接收tcp连接，并返回一个新的套接字conn，和ip地址addr</code></pre><p><strong>这个套接字的作用：</strong><br>作为介质，用来接收客户端的信息、返回给客户端信息。服务端在接收这个conn套接字后跟客户端共用此套接字。</p>
-<p>4、执行接收的命令，结果的数据返回给客户端。</p>
-<p>5、传输完毕关闭套接字</p>
-<h3 id="tcp客户端"><a href="#tcp客户端" class="headerlink" title="tcp客户端"></a>tcp客户端</h3><p>1、创建一个套接字并连接远端</p>
-<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect()</code></pre><p>2、 连接后发送数据和接收数据</p>
-<p>3、 传输完毕关闭套接字</p>
-<h2 id="代码执行"><a href="#代码执行" class="headerlink" title="代码执行"></a>代码执行</h2><h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPTxA.jpg" alt></p>
-<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPbrt.md.jpg" alt></p>
-<h3 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPo2d.png" alt></p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>(Python Socket 编程详细介绍)[<a href="https://gist.github.com/kevinkindom/108ffd675cb9253f8f71]" target="_blank" rel="noopener">https://gist.github.com/kevinkindom/108ffd675cb9253f8f71]</a></p>
-<p>(python socket编程详细介绍Ⅱ)[<a href="http://blog.51cto.com/yangrong/1339593]" target="_blank" rel="noopener">http://blog.51cto.com/yangrong/1339593]</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/08/Socket套接字编程学习/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

