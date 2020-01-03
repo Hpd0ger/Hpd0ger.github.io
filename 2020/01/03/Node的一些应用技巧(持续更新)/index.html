@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            Node的一些应用技巧(持续更新)
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2020/01/03/Node的一些应用技巧(持续更新)/"> 
+                    Node的一些应用技巧(持续更新) 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2020-01-03   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/前端安全/">前端安全</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#Node的一些应用技巧-持续更新"><span class="toc-list-text">Node的一些应用技巧(持续更新)</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#puppeteer模拟登陆"><span class="toc-list-text">puppeteer模拟登陆</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#http发送请求"><span class="toc-list-text">http发送请求</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#简单请求"><span class="toc-list-text">简单请求</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#携带cookie请求"><span class="toc-list-text">携带cookie请求</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#Response内置属性-方法"><span class="toc-list-text">Response内置属性/方法</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#HTTP-Server"><span class="toc-list-text">HTTP-Server</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#快速搭建"><span class="toc-list-text">快速搭建</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#设置Cookie"><span class="toc-list-text">设置Cookie</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#应用实例1-某信息工程大学全自动评教"><span class="toc-list-text">应用实例1-某信息工程大学全自动评教</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="Node的一些应用技巧-持续更新"><a href="#Node的一些应用技巧-持续更新" class="headerlink" title="Node的一些应用技巧(持续更新)"></a>Node的一些应用技巧(持续更新)</h1><p>一边学一边记吧..一些能用的到的</p>
+<h2 id="puppeteer模拟登陆"><a href="#puppeteer模拟登陆" class="headerlink" title="puppeteer模拟登陆"></a>puppeteer模拟登陆</h2><p>对于表单加密，可以简单的用Pupputeer来模拟登陆，遇到前端加密的情况直接爆破密码。同样能够模拟爬虫，比webdriver要省事的多，而且支持document.queryselector，完全模拟浏览器操作</p>
+<pre><code>const puppeteer = require(&#39;puppeteer&#39;);
+
+async function autoLogin(url,username,password){
+    const browser = await puppeteer.launch({
+        args: [ &#39;--proxy-server=http://127.0.0.1:8080&#39; ],
+        headless: false
+    });
+    const page = await browser.newPage();
+
+    for(var i=0, len=password.length; i&lt;len; i++){
+        pwd = password[i];
+        await page.goto(url);
+        await page.waitForSelector(&#39;#login&#39;);
+        await page.type(&#39;#username&#39;, username,{ delay: 50 });
+        await page.type(&#39;#password&#39;, pwd,{ delay: 50 });
+
+        await page.click(&#39;#btn_click&#39;);
+
+        await page.waitFor(200);
+        let html = await page.content();
+        if(html.indexOf(&#39;wrong&#39;) &lt; 1){
+            break
+        }
+    }
+
+    // const tokenVal = await page.$eval(&#39;#token&#39;, input =&gt; input.value);
+    await browser.close();
+    // console.log(&quot;[*]got token is:&quot;+tokenVal);
+
+    page.on(&#39;error&#39;,(err)=&gt;{
+        console.log(err)
+    });
+}
+
+var username = &#39;admin&#39;;
+var password = [&#39;password&#39;,&#39;root&#39;,&#39;sa&#39;,&#39;admin&#39;,&#39;admin123&#39;]
+
+autoLogin(&#39;http://node.localhost.com/koa-demo/aes.html&#39;,username,password);</code></pre><h2 id="http发送请求"><a href="#http发送请求" class="headerlink" title="http发送请求"></a>http发送请求</h2><h3 id="简单请求"><a href="#简单请求" class="headerlink" title="简单请求"></a>简单请求</h3><p>对比python-request的优点在于不造成阻塞</p>
+<pre><code>function getack(target){
+    return new Promise((resolve,reject)=&gt;{
+        let options = {
+            url: target,
+            headers: {
+                &#39;User-Agent&#39;: &#39;request&#39;
+            }
+        };
+        request.get(options, (error,response,body)=&gt;{
+            if (!error &amp;&amp; response.statusCode == 200) { 
+                resolve(body);
+            }else{
+                reject(error);
+            }
+        }).on(&#39;error&#39;, function(err) {
+            rehect(err);
+        }); 
+    })
+
+}
+
+var target = &#39;http://server.com&#39;;
+
+getack(target).then((body)=&gt;{
+    console.log(body);
+})</code></pre><h3 id="携带cookie请求"><a href="#携带cookie请求" class="headerlink" title="携带cookie请求"></a>携带cookie请求</h3><p>request默认不带cookie请求，需要启动jar，获取一个jar对象带入options中，同时对其进行setCookie操作</p>
+<pre><code>const j = request.jar();
+const cookie1 = request.cookie(&#39;username=admin&#39;);
+const cookie2 = request.cookie(&#39;userid=123&#39;);
+j.setCookie(cookie1, target);
+j.setCookie(cookie2, target);
+
+let options = {
+    url: target,
+    jar:j,
+    headers: {
+        &#39;User-Agent&#39;: &#39;request&#39;
+    }
+};
+
+request.get(options, (error,response,body)=&gt;{
+    if (!error &amp;&amp; response.statusCode == 200) { 
+        resolve(body);
+    }else{
+        reject(error);
+    }
+}).on(&#39;error&#39;, function(err) {
+    reject(err);
+}); </code></pre><h3 id="Response内置属性-方法"><a href="#Response内置属性-方法" class="headerlink" title="Response内置属性/方法"></a>Response内置属性/方法</h3><p>查看http.ServerResponse类属性和方法:<a href="http://nodejs.cn/api/http.html#http_class_http_serverresponse" target="_blank" rel="noopener">http://nodejs.cn/api/http.html#http_class_http_serverresponse</a></p>
+<h2 id="HTTP-Server"><a href="#HTTP-Server" class="headerlink" title="HTTP-Server"></a>HTTP-Server</h2><h3 id="快速搭建"><a href="#快速搭建" class="headerlink" title="快速搭建"></a>快速搭建</h3><p>Nodejs提供了内置的http-api，用来作为Server很方便，console出来便于收藏poc</p>
+<pre><code>//server.js
+var http=require(&quot;http&quot;);
+
+http.createServer(function(req,res){
+    res.writeHead(200,{
+        &quot;content-type&quot;:&quot;text/plain&quot;
+    });
+    res.write(&quot;hello world&quot;);
+    console.log(req.url)
+    res.end();
+
+}).listen(3000);
+
+console.log(&quot;[*]server run on:http://127.0.0.1:3000&quot;)</code></pre><h3 id="设置Cookie"><a href="#设置Cookie" class="headerlink" title="设置Cookie"></a>设置Cookie</h3><p><code>req.headers.cookie</code>获取请求头的cookie。node中原生http通过setHeader设置cookie，<code>response.setHeader(name, value)</code>方法接收key,value键值对。</p>
+<pre><code>http.createServer(function(req,res){
+    username = &#39;admin&#39;
+    userid = 1
+    res.setHeader(&quot;Set-Cookie&quot;,[`username=${username}`,`userid=${userid}`]);
+    res.writeHead(200,{
+        &quot;content-type&quot;:&quot;text/plain&quot;
+    });
+    console.log(req.url);
+    res.end(&#39;hello world&#39;);
+
+}).listen(3000);</code></pre><p>当然也可以用JS-Cookie来操作cookie</p>
+<h2 id="应用实例1-某信息工程大学全自动评教"><a href="#应用实例1-某信息工程大学全自动评教" class="headerlink" title="应用实例1-某信息工程大学全自动评教"></a>应用实例1-某信息工程大学全自动评教</h2><p>由于贵校老师实在太多了，闲来无事写了个自动评教(默认全好评)。之所以写了一个koa，是因为最初我想挂到机房，同学们拿着cookie在我web端傻瓜式自动评教了。后来我发现贵校的sso的session竟然验证了ip，代码放出来。</p>
+<pre><code>const puppeteer = require(&#39;puppeteer&#39;);
+const Koa = require(&#39;koa&#39;);
+const router = require(&#39;koa-router&#39;);
+const bodyParser = require(&#39;koa-bodyparser&#39;);
+
+const app = new Koa()
+const home  = new router()
+
+async function autoFound(url,cookie){
+        const browser = await puppeteer.launch({
+            headless: false
+        });
+        const page = await browser.newPage();
+        page.on(&#39;dialog&#39;,(dialog)=&gt;{
+            console.log(dialog.message());
+            dialog.accept(&quot;确定&quot;);
+        });
+
+        page.on(&#39;error&#39;,(err)=&gt;{
+            console.log(err);
+        });
+
+        const cookies = [{
+            name: &#39;semester.id&#39;,
+            value: &#39;105&#39;,
+            domain: &#39;210.41.225.2&#39;
+            },{
+            name: &#39;JSESSIONID&#39;,
+            value: cookie,
+            domain: &#39;210.41.225.2&#39;
+            },{
+            name: &#39;GSESSIONID&#39;,
+            value: cookie,
+            domain: &#39;210.41.225.2&#39;
+            }];
+
+        await page.setCookie(...cookies);
+
+        await page.goto(url);
+        const result = await page.evaluate(() =&gt; {
+            var list = [...document.querySelectorAll(&#39;td &gt; a&#39;)]
+            return list.map(el =&gt; {
+                return {
+                url: el.href.trim(),
+                name: el.innerText
+                }
+            })
+        })
+
+        var answers = [&#39;老师真好，我很喜欢跟他相处&#39;,&#39;老师工作认真负责，课后问题及时讲解&#39;,&#39;在老师的课堂上学到很多知识&#39;];
+
+        for(var i=0, len=result.length;i&lt;len;i++){
+            let bufurl = result[i][&quot;url&quot;];
+            try{
+                await page.goto(bufurl);
+                await page.waitForSelector(&#39;.option-item&#39;);
+                await page.click(&quot;input[id=option_425_0]&quot;);
+                await page.click(&quot;input[id=option_426_0]&quot;);
+                await page.click(&quot;input[id=option_427_0]&quot;);
+                await page.click(&quot;input[id=option_428_0]&quot;);
+                await page.click(&quot;input[id=option_429_0]&quot;);
+                await page.click(&quot;input[id=option_430_0]&quot;);
+                await page.click(&quot;input[id=option_431_0]&quot;);
+                await page.click(&quot;input[id=option_432_0]&quot;);
+                await page.click(&quot;input[id=option_433_0]&quot;);
+                await page.click(&quot;input[id=option_434_0]&quot;);
+                await page.click(&quot;input[id=option_435_0]&quot;);
+                await page.click(&quot;input[id=option_436_0]&quot;);
+                await page.click(&quot;input[id=option_437_4]&quot;);
+                await page.click(&quot;input[id=option_438_3]&quot;);
+                await page.click(&quot;input[id=option_439_0]&quot;);
+                await page.click(&quot;input[id=option_440_0]&quot;);
+                await page.type(&#39;.answer-textarea&#39;, answers[i%3],{ delay: 50 });
+                await page.click(&#39;#sub&#39;);
+                await page.waitFor(3000);
+                console.log(result[i][&#39;name&#39;]+&quot;done!&quot;);
+            }catch(err){
+                try{
+                    await page.goto(bufurl);
+                    await page.waitForSelector(&#39;.option-item&#39;);
+                    await page.click(&quot;input[id=option_382_0]&quot;);
+                    await page.click(&quot;input[id=option_383_0]&quot;);
+                    await page.click(&quot;input[id=option_384_0]&quot;);
+                    await page.click(&quot;input[id=option_385_0]&quot;);
+                    await page.click(&quot;input[id=option_386_0]&quot;);
+                    await page.click(&quot;input[id=option_387_0]&quot;);
+                    await page.click(&quot;input[id=option_388_0]&quot;);
+                    await page.click(&quot;input[id=option_389_0]&quot;);
+                    await page.click(&quot;input[id=option_390_0]&quot;);
+                    await page.click(&quot;input[id=option_391_0]&quot;);
+                    await page.click(&quot;input[id=option_392_0]&quot;);
+                    await page.click(&quot;input[id=option_393_0]&quot;);
+                    await page.click(&quot;input[id=option_502_4]&quot;);
+                    await page.click(&quot;input[id=option_395_3]&quot;);
+                    await page.click(&quot;input[id=option_396_0]&quot;);
+                    await page.click(&quot;input[id=option_397_0]&quot;);
+                    await page.type(&#39;.answer-textarea&#39;, answers[i%3],{ delay: 50 });
+                    await page.click(&#39;#sub&#39;);
+                    await page.waitFor(3000);
+                    console.log(result[i][&#39;name&#39;]+&quot;done!&quot;);
+                }catch(err){
+                    await page.goto(bufurl);
+                    await page.waitForSelector(&#39;.option-item&#39;);
+                    await page.click(&quot;input[id=option_414_0]&quot;);
+                    await page.click(&quot;input[id=option_415_0]&quot;);
+                    await page.click(&quot;input[id=option_416_0]&quot;);
+                    await page.click(&quot;input[id=option_417_0]&quot;);
+                    await page.click(&quot;input[id=option_418_0]&quot;);
+                    await page.click(&quot;input[id=option_419_0]&quot;);
+                    await page.click(&quot;input[id=option_420_0]&quot;);
+                    await page.click(&quot;input[id=option_421_0]&quot;);
+                    await page.click(&quot;input[id=option_422_0]&quot;);
+                    await page.click(&quot;input[id=option_423_0]&quot;);
+                    await page.click(&quot;input[id=option_424_0]&quot;);
+                    await page.type(&#39;.answer-textarea&#39;, answers[i%3],{ delay: 50 });
+                    await page.click(&#39;#sub&#39;);
+                    await page.waitFor(3000);
+                    console.log(result[i][&#39;name&#39;]+&quot;done!&quot;);
+                }
+            }
+        }
+        await browser.close();
+}
+
+home.get(&#39;/&#39;,async(ctx)=&gt;{
+    let html = `
+    &lt;html&gt;
+    &lt;body&gt;
+    &lt;p&gt;
+        首先登陆jwc.cuit.edu.cn，&quot;量化评教&quot;的学情自己填了(否则不允许评教)
+    &lt;/p&gt;
+    &lt;p&gt;
+        然后浏览器f12控制台输入document.cookie，例如:
+    &lt;/p&gt;
+
+    &lt;p&gt;
+        GSESSIONID=B8209EC9AF980BDFE89CF0C43C356DC8
+    &lt;/p&gt;
+
+    &lt;p&gt; 
+        则把B8209EC9AF980BDFE89CF0C43C356DC8复制到框内提交
+    &lt;/p&gt;
+    &lt;form action=&quot;evaluate&quot; method=&quot;post&quot;&gt;
+        &lt;input type=&quot;text&quot; id=&quot;cookie&quot; name=&quot;Mycookie&quot;&gt;
+        &lt;input type=&quot;submit&quot; id=&quot;btn_click&quot; name=&quot;submit&quot;/&gt;
+    &lt;/form&gt;
+    &lt;/body&gt;
+
+    &lt;/html&gt;`
+    ctx.body = html
+
+})
+
+home.post(&#39;/evaluate&#39;,async(ctx)=&gt;{
+    cookie = ctx.request.body.Mycookie;
+    ctx.body = &quot;[+]waiting..后台正在帮您自动评教..请一分钟以后刷新jwc查看情况...&quot;;
+    console.log(cookie);
+    autoFound(&#39;http://210.41.225.2/eams/quality/stdEvaluate.action&#39;,cookie);
+})
+
+app.use(bodyParser())
+app.use(home.routes()).use(home.allowedMethods());
+app.listen(3000)
+console.log(&#39;[demo] start-quick is starting at port 3000&#39;)</code></pre><p>如果想改变对老师的印象可自行更改以下内容</p>
+<pre><code>[&#39;老师真好，我很喜欢跟他相处&#39;,&#39;老师工作认真负责，课后问题及时讲解&#39;,&#39;在老师的课堂上学到很多知识&#39;]</code></pre>
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2020/01/03/Node的一些应用技巧(持续更新)/">https://hpdoger.cn/2020/01/03/Node的一些应用技巧(持续更新)/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+<div></div>
+
+    <div class="next">
+    <a href="/2020/01/01/My 2019/"> My 2019 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Fri Jan 03 2020 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
