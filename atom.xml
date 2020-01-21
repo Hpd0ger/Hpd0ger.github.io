@@ -40,6 +40,29 @@
   </entry>
   
   <entry>
+    <title>深入Javascript-作用域&amp;Scope Chain</title>
+    <link href="https://hpdoger.cn/2020/01/20/%E6%B7%B1%E5%85%A5Javascript-%E4%BD%9C%E7%94%A8%E5%9F%9F&amp;Scope%20Chain/"/>
+    <id>https://hpdoger.cn/2020/01/20/深入Javascript-作用域&amp;Scope Chain/</id>
+    <published>2020-01-19T16:00:00.000Z</published>
+    <updated>2020-01-21T06:39:20.877Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="深入Javascript-作用域-amp-Scope-Chain"><a href="#深入Javascript-作用域-amp-Scope-Chain" class="headerlink" title="深入Javascript-作用域&amp;Scope Chain"></a>深入Javascript-作用域&amp;Scope Chain</h1><h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>前一段时间朋友面试keen问了个问题：JS作用域是什么？正好这两天有一道XSS-Challenge也涉及了作用域的trick，填补了很多知识空白(JS的世界真是太特喵的nb了)，写一篇文章来扫个盲</p><h1 id="什么是JavaScript的作用域"><a href="#什么是JavaScript的作用域" class="headerlink" title="什么是JavaScript的作用域"></a>什么是JavaScript的作用域</h1><p>在JS中，一个函数内是否可访问某个变量，要看该变量的作用域(scope)。我们可以这样理解：<strong>作用域就是一个独立的地盘，让变量不会外泄、暴露出去。也就是说作用域最大的用处就是隔离变量，不同作用域下同名变量不会有冲突</strong></p><p>变量的作用域有全局作用域和局部作用域(函数作用域)两种</p><h2 id="全局作用域-Global-Scope"><a href="#全局作用域-Global-Scope" class="headerlink" title="全局作用域(Global Scope)"></a>全局作用域(Global Scope)</h2><p>在代码中任何地方都能访问到的<strong>对象</strong>拥有全局作用域，一般来说以下三种情形拥有全局作用域</p><h3 id="1-程序最外层定义的函数或者变量"><a href="#1-程序最外层定义的函数或者变量" class="headerlink" title="1-程序最外层定义的函数或者变量"></a>1-程序最外层定义的函数或者变量</h3><p>举个最简单的例子如下，<code>global</code>变量就属于全局作用域，不管是在 checkscope() 函数内部还是外部，都能访问到全局变量 global，<code>checkscope</code>函数也属于全局作用域。</p><pre><code>var global = &quot;global&quot;;     // 显式声明一个全局变量function checkscope() {    var local = &quot;local&quot;;   // 显式声明一个局部变量    return global;         // 返回全局变量的值}console.log(scope);        // &quot;global&quot;console.log(checkscope()); // &quot;global&quot;console.log(local);        // error: local is not defined.</code></pre><h3 id="2-所有末定义直接赋值的变量"><a href="#2-所有末定义直接赋值的变量" class="headerlink" title="2-所有末定义直接赋值的变量"></a>2-所有末定义直接赋值的变量</h3><p>这个跟我们平常写代码的坏习惯有关，不加限制类型的变量会自动升级为全局作用域，这个就不限制在程序的最外层还是函数内部，示例如下：</p><pre><code class="javascript">username = &#39;hpdoger&#39;;function echoName(){    nickname = &#39;wuyanzu&#39;;}function CheckVal(){    console.log(username); //hpdoger        console.log(nickname); //wuyanzu}echoName();CheckVal();</code></pre><h3 id="3-Window对象的属性和方法"><a href="#3-Window对象的属性和方法" class="headerlink" title="3-Window对象的属性和方法"></a>3-Window对象的属性和方法</h3><p>一般情况下，window对象的内置属性都拥有全局作用域，例如window.name、window.location、window.top等等</p><p>通常在Javascript中我们说全局对象，指的就是Window对象，引用<code>this</code>指代的也是Window对象，如果我们在程序中定义一个全局作用域的变量，那么它自然也会成为Window对象的属性，所以下面的用法是等价的</p><pre><code>var name = &#39;hpdoger&#39;;name == window.name; //true</code></pre><h2 id="局部作用域-Local-Scope"><a href="#局部作用域-Local-Scope" class="headerlink" title="局部作用域(Local Scope)"></a>局部作用域(Local Scope)</h2><p>和全局作用域相反，局部作用域一般只在固定的代码片段内可访问到。最常见的是在函数体内定义的变量，只能在函数体内使用</p><p>举个最简单的例子如下</p><pre><code>function init() {    var inVariable = &quot;local&quot;;}init();console.log(inVariable); //Uncaught ReferenceError: inVariable is not defined</code></pre><p><code>var</code>声明的<code>inVariaiable</code>属于局部作用域范畴，在全局作用域没有声明，只能在函数内部调用。这时候你可能有个疑问，它是<code>var</code>的声明啊，他喵的不应该是全局变量吗？？</p><p>实际上这跟它的声明方式没有一点关系。变量是否可引用，只由它的作用域决定。</p><h2 id="局部作用域与全局作用域的制约"><a href="#局部作用域与全局作用域的制约" class="headerlink" title="局部作用域与全局作用域的制约"></a>局部作用域与全局作用域的制约</h2><p>在函数体内，局部变量的优先级高于同名的全局变量。如果在函数内声明的一个局部变量或者函数参数中带有的变量和全局变量重名，那么全局变量就被局部变量所<strong>遮盖</strong>，而全局变量并不会因此发生值的变化，举个例子来看。</p><pre><code>var username = &#39;hpdoger&#39;;function echoNameA(username){    console.log(username);//wuyanzu}function echoNameB(){    var username = &#39;wuyanzu&#39;;    console.log(username); //wuyanzu}echoNameA(&#39;wuyanzu&#39;);echoNameB();console.log(username);   //hpdoger</code></pre><p>我们在这里用到<strong>遮盖</strong>这个词，其实是不准确的。因为读取变量值的方式是查找作用域链，也就是遍历Scope Chain，只是实现效果类似于遮盖。下文我们来看一下什么是Javascript的作用域链</p><h1 id="什么是Javascript作用域链"><a href="#什么是Javascript作用域链" class="headerlink" title="什么是Javascript作用域链"></a>什么是Javascript作用域链</h1><h2 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h2><p>在寻找一个变量可访问性(取值)时是根据作用域链来查找的，<strong>作用域链的用途，是保证对执行环境有权访问的所有变量和函数的有序访问</strong></p><p>我们先引入两个概念来走通scope chain</p><ul><li>AO：Activetion Object（活动对象）</li><li>VO：Variable Object（变量对象）</li></ul><p>AO对应的是函数执行阶段，当函数被调用执行时，会建立一个执行上下文，该执行上下文包含了函数所需的所有变量，该变量共同组成了一个新的对象就是Activetion Object。该对象包含了：</p><ul><li>函数的所有局部变量</li><li>函数的所有命名参数</li><li>函数的参数集合</li><li>函数的this指向</li></ul><p>举个例子来看函数执行的时候AO的值</p><pre><code>function add(a,b){    var sum = a + b;    function say(){        alert(sum);    }    return sum;}add(4,5);</code></pre><p>如果我们用JS的对象来描述AO，那么它的表现形式如下</p><pre><code>  AO = {        this : window,        arguments : [4,5],        a : 4,        b : 5,        say : ,        sum : undefined  }</code></pre><p>VO对应的是函数创建阶段，JS解析引擎进行预解析时，所有的变量和函数的声明，统称为Variable Object。该变量与执行上下文相关，知道自己的数据存储在哪里，并且知道如何访问。它分为全局上下文VO（全局对象，Global object，我们通常说的global对象）和函数上下文的AO，它存储着在上下文中声明的以下内容：</p><ul><li>变量 (var, 变量声明);</li><li>函数声明 (FunctionDeclaration, 缩写为FD);</li><li>函数的形参</li></ul><pre><code>function add(a,b){    var sum = a + b;    function say(){        alert(sum);    }    return sum;}// sum,say,a,b 组合的对象就是VO，不过该对象的值基本上都是undefined</code></pre><h2 id="遍历作用域链"><a href="#遍历作用域链" class="headerlink" title="遍历作用域链"></a>遍历作用域链</h2><p>作用域链中的下一个变量对象来自包含（外部）环境，而再下一个变量对象则来自下一个包含环境。这样，一直延续到全局执行环境；全局执行环境的变量对象始终都是作用域链中的最后一个对象。</p><p>他喵的，上面好多都是我复制过来的，概念很复杂其实挺简单的，我们举一个简单的例子来看。</p><pre><code>var x = 10;function foo() {    var y = 20;    function bar() {        var z = 30;        console.log(x + y + z); //60    };    bar()};foo();</code></pre><p>函数bar可以直接访问”z”，然后通过作用域链访问上层的”x”和”y”。此时的作用域链为：</p><pre><code>此时作用域链（Scope Chain）有三级，第一级为bar AO，第二级为foo AO,然后Global Object（VO）    scope -&gt; bar.AO -&gt; foo.AO -&gt; Global Object    bar.AO = {        z : 30,        __parent__ : foo.AO    }    foo.AO = {        y : 20,        bar : ,        __parent__ :     }    Global Object = {        x : 10,        foo : ,        __parent__ : null    }</code></pre><p>很简单，就是先从当前的AO一步一步向上遍历AO对象查找，走后查到VO(存储全局对象的东西)</p><h2 id="一个有趣的Scope-Chain"><a href="#一个有趣的Scope-Chain" class="headerlink" title="一个有趣的Scope Chain"></a>一个有趣的Scope Chain</h2><p>我们看下面的例子，console.log的打印值为<code>undefined</code></p><pre><code>var username = &#39;hpdoger&#39;;function echoName(){    console.log(username);  //undefiend    var username = &#39;wuyanzu&#39;;}echoName();</code></pre><p>为啥不是hpdoger呢？这是因为AO建立的逻辑是要先声明变量，所以在函数<code>eechoName</code>中代码实际的执行流程是这样的：</p><pre><code>function echoName(){    var username;    console.log(username);    var username = &#39;wuyanzu&#39;;}</code></pre>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;深入Javascript-作用域-amp-Scope-Chain&quot;&gt;&lt;a href=&quot;#深入Javascript-作用域-amp-Scope-Chain&quot; class=&quot;headerlink&quot; title=&quot;深入Javascript-作用域&amp;amp;Scope C
+      
+    
+    </summary>
+    
+    
+      <category term="前端安全" scheme="https://hpdoger.cn/tags/%E5%89%8D%E7%AB%AF%E5%AE%89%E5%85%A8/"/>
+    
+  </entry>
+  
+  <entry>
     <title>My 2019</title>
     <link href="https://hpdoger.cn/2020/01/01/My%202019/"/>
     <id>https://hpdoger.cn/2020/01/01/My 2019/</id>
@@ -465,29 +488,6 @@
     
     
       <category term="CTF" scheme="https://hpdoger.cn/tags/CTF/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>对“绕过Facebook Token进行CSRF账号接管”的文章解读</title>
-    <link href="https://hpdoger.cn/2019/02/18/%E6%B5%85%E8%B0%88%E7%BB%95%E8%BF%87Facebook%20Token%E8%BF%9B%E8%A1%8CCSRF%E8%B4%A6%E5%8F%B7%E6%8E%A5%E7%AE%A1/"/>
-    <id>https://hpdoger.cn/2019/02/18/浅谈绕过Facebook Token进行CSRF账号接管/</id>
-    <published>2019-02-17T16:00:00.000Z</published>
-    <updated>2019-02-19T15:22:14.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="浅谈绕过Facebook-Token进行CSRF账号接管"><a href="#浅谈绕过Facebook-Token进行CSRF账号接管" class="headerlink" title="浅谈绕过Facebook Token进行CSRF账号接管"></a>浅谈绕过Facebook Token进行CSRF账号接管</h1><p>今天早上看到Sam大佬推特发了这篇文章，下午就见到先知上有译文了。为什么有译文了还要写这篇文章呢？安全圈的译文你懂的，大部分右键一把梭。</p><p>从文章本身来说，还是有比较值得学习的地方，所以摘出来流程分析一下。</p><p>原文：<a href="https://ysamm.com/?p=185" target="_blank" rel="noopener">https://ysamm.com/?p=185</a></p><p>先知译文: <a href="https://xz.aliyun.com/t/4089#toc-5" target="_blank" rel="noopener">https://xz.aliyun.com/t/4089#toc-5</a></p><h1 id="漏洞关键条件"><a href="#漏洞关键条件" class="headerlink" title="漏洞关键条件"></a>漏洞关键条件</h1><p>攻击者有一个oauth认证接口，即漏洞网站可以授权自己的网站</p><h1 id="漏洞流程"><a href="#漏洞流程" class="headerlink" title="漏洞流程"></a>漏洞流程</h1><p><img src="https://i.loli.net/2019/02/19/5c6c1ace4e4e3.jpg" alt></p><p>第二步，即location的Url如下</p><pre><code>https://www.facebook.com/comet/dialog_DONOTUSE/?url=/add_contactpoint/dialog/submit/%3fcontactpoint={EMAIL_CHOSEN}%26next=/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code></pre><p>next参数为<strong>下一步跳转参数</strong>，即邮箱绑定后跳转到<code>/v3.2/dialog/oauth%253fresponse_type%253dtoken%2526client_id%253d{ATTACKER_APP}%2526redirect_uri%253d{DOUBLE_URL_ENCODED_LINK]</code>获取token再redirect到attacker web</p><h1 id="总结-修复思考"><a href="#总结-修复思考" class="headerlink" title="总结/修复思考"></a>总结/修复思考</h1><p>漏洞新颖的点就在授权后的跳转，这也算是一种突破oauth的新思路。利用信任站点的重定向进行其它oauth的绑定，再携带token二次重定向到attacker web。</p><p>如果能再二次重定向的地方加一个权限验证，即attacker app与oauth匹配，会不会避免这样的越权呢？</p><p>其次就是，如果我们省略三方授权，直接诱导用户点击第二步的location，不就更省事了么？这点我邮寄了sam师傅，希望日后有其它研究的师傅可以指点一下~</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h1 id=&quot;浅谈绕过Facebook-Token进行CSRF账号接管&quot;&gt;&lt;a href=&quot;#浅谈绕过Facebook-Token进行CSRF账号接管&quot; class=&quot;headerlink&quot; title=&quot;浅谈绕过Facebook Token进行CSRF账号接管&quot;&gt;&lt;/a&gt;浅谈
-      
-    
-    </summary>
-    
-    
-      <category term="漏洞挖掘" scheme="https://hpdoger.cn/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/"/>
     
   </entry>
   

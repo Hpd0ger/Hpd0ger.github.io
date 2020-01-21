@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+    <title>
+        
+            深入Javascript-作用域&amp;Scope Chain
+        
+    </title>
+    <link rel="icon" href="/img/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <link rel="stylesheet" href="/css/hljs.min.css">
+    <script src="/js/hljs.min.js"></script>  
+    <script src="/js/gitment.browser.js"></script>  
+</head>
+<body>
+    <header class="header" id="header">
+    <h1>
+        <a class="title" href="/">
+            Hpdoger
+        </a>
+    </h1>
+    <h2>
+        <a class="motto">
+            Finance behind Passion in Security
+        </a>
+    </h2>
+    <nav class="navbar">
+        <ul class="menu">
+            
+            
+                <li class="menu-item">
+                    <a href="/" class="menu-item-link">
+                        Home
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/archives/" class="menu-item-link">
+                        Archives
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/about/" class="menu-item-link">
+                        About
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/friends/" class="menu-item-link">
+                        Friends
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="https://github.com/Hpd0ger" class="menu-item-link">
+                        Github
+                    </a>
+                </li>
+            
+                
+            
+                <li class="menu-item">
+                    <a href="/atom.xml" class="menu-item-link">
+                        RSS
+                    </a>
+                </li>
+            
+                
+            
+                
+                
+        </ul>
+    </nav>
+</header>
+    <main class="main">
+        <article class="post">
+            <h1>
+                <a class="title" href="/2020/01/20/深入Javascript-作用域&Scope Chain/"> 
+                    深入Javascript-作用域&amp;Scope Chain 
+                </a>
+            </h1>
+            <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2020-01-20   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/前端安全/">前端安全</a></li></ul>
+            </div>
+<div class="toc">
+  <ol class="toc-list"><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#深入Javascript-作用域-amp-Scope-Chain"><span class="toc-list-text">深入Javascript-作用域&amp;Scope Chain</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#写在前面"><span class="toc-list-text">写在前面</span></a></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#什么是JavaScript的作用域"><span class="toc-list-text">什么是JavaScript的作用域</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#全局作用域-Global-Scope"><span class="toc-list-text">全局作用域(Global Scope)</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#1-程序最外层定义的函数或者变量"><span class="toc-list-text">1-程序最外层定义的函数或者变量</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#2-所有末定义直接赋值的变量"><span class="toc-list-text">2-所有末定义直接赋值的变量</span></a></li><li class="toc-list-item toc-list-level-3"><a class="toc-list-link" href="#3-Window对象的属性和方法"><span class="toc-list-text">3-Window对象的属性和方法</span></a></li></ol></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#局部作用域-Local-Scope"><span class="toc-list-text">局部作用域(Local Scope)</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#局部作用域与全局作用域的制约"><span class="toc-list-text">局部作用域与全局作用域的制约</span></a></li></ol></li><li class="toc-list-item toc-list-level-1"><a class="toc-list-link" href="#什么是Javascript作用域链"><span class="toc-list-text">什么是Javascript作用域链</span></a><ol class="toc-list-child"><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#基础概念"><span class="toc-list-text">基础概念</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#遍历作用域链"><span class="toc-list-text">遍历作用域链</span></a></li><li class="toc-list-item toc-list-level-2"><a class="toc-list-link" href="#一个有趣的Scope-Chain"><span class="toc-list-text">一个有趣的Scope Chain</span></a></li></ol></li></ol>
+</div>
+            <div class="content">
+                <h1 id="深入Javascript-作用域-amp-Scope-Chain"><a href="#深入Javascript-作用域-amp-Scope-Chain" class="headerlink" title="深入Javascript-作用域&amp;Scope Chain"></a>深入Javascript-作用域&amp;Scope Chain</h1><h1 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h1><p>前一段时间朋友面试keen问了个问题：JS作用域是什么？正好这两天有一道XSS-Challenge也涉及了作用域的trick，填补了很多知识空白(JS的世界真是太特喵的nb了)，写一篇文章来扫个盲</p>
+<h1 id="什么是JavaScript的作用域"><a href="#什么是JavaScript的作用域" class="headerlink" title="什么是JavaScript的作用域"></a>什么是JavaScript的作用域</h1><p>在JS中，一个函数内是否可访问某个变量，要看该变量的作用域(scope)。我们可以这样理解：<strong>作用域就是一个独立的地盘，让变量不会外泄、暴露出去。也就是说作用域最大的用处就是隔离变量，不同作用域下同名变量不会有冲突</strong></p>
+<p>变量的作用域有全局作用域和局部作用域(函数作用域)两种</p>
+<h2 id="全局作用域-Global-Scope"><a href="#全局作用域-Global-Scope" class="headerlink" title="全局作用域(Global Scope)"></a>全局作用域(Global Scope)</h2><p>在代码中任何地方都能访问到的<strong>对象</strong>拥有全局作用域，一般来说以下三种情形拥有全局作用域</p>
+<h3 id="1-程序最外层定义的函数或者变量"><a href="#1-程序最外层定义的函数或者变量" class="headerlink" title="1-程序最外层定义的函数或者变量"></a>1-程序最外层定义的函数或者变量</h3><p>举个最简单的例子如下，<code>global</code>变量就属于全局作用域，不管是在 checkscope() 函数内部还是外部，都能访问到全局变量 global，<code>checkscope</code>函数也属于全局作用域。</p>
+<pre><code>var global = &quot;global&quot;;     // 显式声明一个全局变量
+function checkscope() {
+    var local = &quot;local&quot;;   // 显式声明一个局部变量
+    return global;         // 返回全局变量的值
+}
+console.log(scope);        // &quot;global&quot;
+console.log(checkscope()); // &quot;global&quot;
+console.log(local);        // error: local is not defined.</code></pre><h3 id="2-所有末定义直接赋值的变量"><a href="#2-所有末定义直接赋值的变量" class="headerlink" title="2-所有末定义直接赋值的变量"></a>2-所有末定义直接赋值的变量</h3><p>这个跟我们平常写代码的坏习惯有关，不加限制类型的变量会自动升级为全局作用域，这个就不限制在程序的最外层还是函数内部，示例如下：</p>
+<pre><code class="javascript">username = &#39;hpdoger&#39;;
+
+function echoName(){
+    nickname = &#39;wuyanzu&#39;;
+}
+
+function CheckVal(){
+    console.log(username); //hpdoger    
+    console.log(nickname); //wuyanzu
+}
+
+echoName();
+CheckVal();</code></pre>
+<h3 id="3-Window对象的属性和方法"><a href="#3-Window对象的属性和方法" class="headerlink" title="3-Window对象的属性和方法"></a>3-Window对象的属性和方法</h3><p>一般情况下，window对象的内置属性都拥有全局作用域，例如window.name、window.location、window.top等等</p>
+<p>通常在Javascript中我们说全局对象，指的就是Window对象，引用<code>this</code>指代的也是Window对象，如果我们在程序中定义一个全局作用域的变量，那么它自然也会成为Window对象的属性，所以下面的用法是等价的</p>
+<pre><code>var name = &#39;hpdoger&#39;;
+
+name == window.name; //true</code></pre><h2 id="局部作用域-Local-Scope"><a href="#局部作用域-Local-Scope" class="headerlink" title="局部作用域(Local Scope)"></a>局部作用域(Local Scope)</h2><p>和全局作用域相反，局部作用域一般只在固定的代码片段内可访问到。最常见的是在函数体内定义的变量，只能在函数体内使用</p>
+<p>举个最简单的例子如下</p>
+<pre><code>function init() {
+    var inVariable = &quot;local&quot;;
+}
+init();
+console.log(inVariable); //Uncaught ReferenceError: inVariable is not defined</code></pre><p><code>var</code>声明的<code>inVariaiable</code>属于局部作用域范畴，在全局作用域没有声明，只能在函数内部调用。这时候你可能有个疑问，它是<code>var</code>的声明啊，他喵的不应该是全局变量吗？？</p>
+<p>实际上这跟它的声明方式没有一点关系。变量是否可引用，只由它的作用域决定。</p>
+<h2 id="局部作用域与全局作用域的制约"><a href="#局部作用域与全局作用域的制约" class="headerlink" title="局部作用域与全局作用域的制约"></a>局部作用域与全局作用域的制约</h2><p>在函数体内，局部变量的优先级高于同名的全局变量。如果在函数内声明的一个局部变量或者函数参数中带有的变量和全局变量重名，那么全局变量就被局部变量所<strong>遮盖</strong>，而全局变量并不会因此发生值的变化，举个例子来看。</p>
+<pre><code>var username = &#39;hpdoger&#39;;
+
+function echoNameA(username){
+    console.log(username);//wuyanzu
+}
+
+function echoNameB(){
+    var username = &#39;wuyanzu&#39;;
+    console.log(username); //wuyanzu
+}
+
+echoNameA(&#39;wuyanzu&#39;);
+echoNameB();
+console.log(username);   //hpdoger</code></pre><p>我们在这里用到<strong>遮盖</strong>这个词，其实是不准确的。因为读取变量值的方式是查找作用域链，也就是遍历Scope Chain，只是实现效果类似于遮盖。下文我们来看一下什么是Javascript的作用域链</p>
+<h1 id="什么是Javascript作用域链"><a href="#什么是Javascript作用域链" class="headerlink" title="什么是Javascript作用域链"></a>什么是Javascript作用域链</h1><h2 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h2><p>在寻找一个变量可访问性(取值)时是根据作用域链来查找的，<strong>作用域链的用途，是保证对执行环境有权访问的所有变量和函数的有序访问</strong></p>
+<p>我们先引入两个概念来走通scope chain</p>
+<ul>
+<li>AO：Activetion Object（活动对象）</li>
+<li>VO：Variable Object（变量对象）</li>
+</ul>
+<p>AO对应的是函数执行阶段，当函数被调用执行时，会建立一个执行上下文，该执行上下文包含了函数所需的所有变量，该变量共同组成了一个新的对象就是Activetion Object。该对象包含了：</p>
+<ul>
+<li>函数的所有局部变量</li>
+<li>函数的所有命名参数</li>
+<li>函数的参数集合</li>
+<li>函数的this指向</li>
+</ul>
+<p>举个例子来看函数执行的时候AO的值</p>
+<pre><code>function add(a,b){
+    var sum = a + b;
+    function say(){
+        alert(sum);
+    }
+    return sum;
+}
+
+add(4,5);</code></pre><p>如果我们用JS的对象来描述AO，那么它的表现形式如下</p>
+<pre><code>  AO = {
+        this : window,
+        arguments : [4,5],
+        a : 4,
+        b : 5,
+        say : ,
+        sum : undefined
+  }</code></pre><p>VO对应的是函数创建阶段，JS解析引擎进行预解析时，所有的变量和函数的声明，统称为Variable Object。该变量与执行上下文相关，知道自己的数据存储在哪里，并且知道如何访问。它分为全局上下文VO（全局对象，Global object，我们通常说的global对象）和函数上下文的AO，它存储着在上下文中声明的以下内容：</p>
+<ul>
+<li>变量 (var, 变量声明);</li>
+<li>函数声明 (FunctionDeclaration, 缩写为FD);</li>
+<li>函数的形参</li>
+</ul>
+<pre><code>function add(a,b){
+    var sum = a + b;
+    function say(){
+        alert(sum);
+    }
+    return sum;
+}
+// sum,say,a,b 组合的对象就是VO，不过该对象的值基本上都是undefined</code></pre><h2 id="遍历作用域链"><a href="#遍历作用域链" class="headerlink" title="遍历作用域链"></a>遍历作用域链</h2><p>作用域链中的下一个变量对象来自包含（外部）环境，而再下一个变量对象则来自下一个包含环境。这样，一直延续到全局执行环境；全局执行环境的变量对象始终都是作用域链中的最后一个对象。</p>
+<p>他喵的，上面好多都是我复制过来的，概念很复杂其实挺简单的，我们举一个简单的例子来看。</p>
+<pre><code>var x = 10;
+
+function foo() {
+    var y = 20;
+
+    function bar() {
+        var z = 30;
+
+        console.log(x + y + z); //60
+    };
+
+    bar()
+};
+
+foo();</code></pre><p>函数bar可以直接访问”z”，然后通过作用域链访问上层的”x”和”y”。此时的作用域链为：</p>
+<pre><code>此时作用域链（Scope Chain）有三级，第一级为bar AO，第二级为foo AO,然后Global Object（VO）
+
+    scope -&gt; bar.AO -&gt; foo.AO -&gt; Global Object
+
+    bar.AO = {
+        z : 30,
+        __parent__ : foo.AO
+    }
+
+    foo.AO = {
+        y : 20,
+        bar : ,
+        __parent__ : 
+    }
+
+    Global Object = {
+        x : 10,
+        foo : ,
+        __parent__ : null
+    }</code></pre><p>很简单，就是先从当前的AO一步一步向上遍历AO对象查找，走后查到VO(存储全局对象的东西)</p>
+<h2 id="一个有趣的Scope-Chain"><a href="#一个有趣的Scope-Chain" class="headerlink" title="一个有趣的Scope Chain"></a>一个有趣的Scope Chain</h2><p>我们看下面的例子，console.log的打印值为<code>undefined</code></p>
+<pre><code>var username = &#39;hpdoger&#39;;
+
+function echoName(){
+    console.log(username);  //undefiend
+    var username = &#39;wuyanzu&#39;;
+}
+
+echoName();</code></pre><p>为啥不是hpdoger呢？这是因为AO建立的逻辑是要先声明变量，所以在函数<code>eechoName</code>中代码实际的执行流程是这样的：</p>
+<pre><code>function echoName(){
+    var username;
+    console.log(username);
+    var username = &#39;wuyanzu&#39;;
+}</code></pre>
+            </div>
+          
+           
+            <div class="copyright">
+                <div class="name">
+                    <a>Author:</a>
+                    <a>Hpdoger</a>
+                </div>
+                <div class="link">
+                    <a>Link:</a>
+                    <a class="permalink" href="https://hpdoger.cn/2020/01/20/深入Javascript-作用域&amp;Scope Chain/">https://hpdoger.cn/2020/01/20/深入Javascript-作用域&amp;Scope Chain/</a>
+                </div>
+                <div class="license">
+                    <a>Statement:</a>
+                    <a>All articles in this blog shall be licensed by CC BY-NC-SA 3.0 CN, unless otherwise stated. Please indicate the provenance!</a>
+                </div>
+            </div>
+            
+
+          
+
+
+</article>
+
+
+<div class="tip">
+<button class="tip-btn">
+    Tip
+</button>
+<div class="tip-img">
+<ul>
+    
+ 
+<li>
+    <img src="/img/wechat.jpg">
+</li>
+
+</ul>
+</div>
+</div>
+
+<div class="more">
+
+    <div class="prev">
+   <a href="/2025/01/03/Node的一些应用技巧(持续更新)/">  Node的一些应用技巧(持续更新)</a>
+    </div>
+
+<div></div>
+
+    <div class="next">
+    <a href="/2020/01/01/My 2019/"> My 2019 </a>
+    </div>
+    
+</div>
+
+<div class="bdsharebuttonbox">
+<a href="#" class="bds_weixin fa fa-weixin" data-cmd="weixin" title="分享到微信" style="color:#1cbd8f">
+</a>
+<a href="#" class="bds_tsina fa fa-weibo" data-cmd="tsina" title="分享到新浪微博" style="color:#ff6363">
+</a>
+<a href="#" class="bds_twi fa fa-twitter" data-cmd="twi" title="分享到Twitter" style="color:#00A7EB">
+</a>
+<a href="#" class="bds_fbook fa fa-facebook" data-cmd="fbook" title="分享到Facebook" style="color:#00A7EB">
+</a>
+</div>
+<script>
+window._bd_share_config={
+    "common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"1","bdSize":"16"},
+    "share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='../../../../../static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+</script>
+ 
+<div id="comments"></div>
+
+<script>
+    var gitment = new Gitment({
+    id: "Mon Jan 20 2020 00:00:00 GMT+0800",
+    owner: "Hpd0ger",
+    repo: "Hpd0ger.github.io",
+    oauth: {
+      client_id:"8d83609a651e972e308d",
+      client_secret: "37e40c89a47e957f654e86f71c5caaccad0774de",
+    }
+  })
+  gitment.render('comments')
+</script>
+    </main>
+    <a class="not-found">not found!</a>
+    <div class="search-items">
+    </div>
+    <a href="#header" id="top" style="display:none">
+        <i class="fa fa-sort-asc fa-2x"></i>
+    </a>
+    <footer class="footer">
+    <div class="footer-copyright">©️2017
+    <a href="//github.com/Vevlins/toki" class="link" target="_blank">Toki</a>  by Vevlins
+    </div>
+</footer>
+
+    <script src="/js/jquery.js"></script>
+    <script src="/js/toki.js"></script>  
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
