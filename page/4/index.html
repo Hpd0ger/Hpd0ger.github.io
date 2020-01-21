@@ -90,6 +90,54 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/12/17/HCTF2018线下赛感想/"> 
+                    HCTF2018线下赛感想 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-17   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/博客文章/">博客文章</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <p>跑去丢了一趟人，实在是对不起各位师傅</p>
+<h1 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h1><p>比赛期恰逢考试期，几天一共就睡了几个小时，无论从体力或是经验都输的一塌糊涂。</p>
+<p>这次比赛也算是给自己个教训，<strong>准备不充分</strong>，就把之前备好的流量成功监控了，其余的东西几乎没用</p>
+<p>比赛开始配置网络用了挺长时间的，导致登上ssh以后就已经被别人上马了。</p>
+<p>其实这是很吃亏的事：第一，你无法及时备份原始的目录，这就有一个很严重的后果，如果后来一不小心恢复了留有马子的备份一切功亏一篑，更严重的是，如果你的一些服务被恶意删了，那开局就直接崩盘。</p>
+<p>第二，在你杀别人后门的时候，别人可能就已经打了你一轮，甚至可能会种新的马。而且杀后门的时间又占用了补洞的时间..新一轮的马子又会上来…</p>
+<p>所以上线一定要快，备份打的一定要快！</p>
+<p>教训就是，一定要在本地补好洞了，再传到机器上，宁可被打，也要修好自己的服务，被打总比down掉了好。这次吃了很大的亏，全场被check。</p>
+<p>所以，不要随便就删漏洞点，有时候漏洞点也是功能点。补洞不代表无脑卡权限，这次include的文件包含洞就可以换成file_get_contents来补。<strong>最重要的事，不要随便就把目录555了</strong>，如果Check点是上传和下载功能就凉了</p>
+<p>关于防御，<strong>一定要给自己留一个可用的后门</strong>,www-data权限一定得有一个，否则php进程可能都杀不掉</p>
+<h1 id="这次比赛后要准备的东西"><a href="#这次比赛后要准备的东西" class="headerlink" title="这次比赛后要准备的东西"></a>这次比赛后要准备的东西</h1><p>吃足了教训：<strong>手动上马是非常愚蠢的行为</strong></p>
+<h2 id="内置后门批量上马"><a href="#内置后门批量上马" class="headerlink" title="内置后门批量上马"></a>内置后门批量上马</h2><p>蓝莲花的moxiaoxi师傅的脚本思路大致是这样的：</p>
+<p>内置后门(能执行system函数)，通过散列生成随机名字的隐藏不死马+守护进程维护不死马+软连接来隐藏真实的请求</p>
+<p>最近要完成这个脚本</p>
+<h2 id="心态"><a href="#心态" class="headerlink" title="心态"></a>心态</h2><p>心态真的是很重要，不要因为被打就慌张，找到洞点，补好了再上服务，切忌慌里慌张。</p>
+<p>这次就算是交学费了，自闭</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/12/17/HCTF2018线下赛感想/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/11/14/RootkitXSS֮ServiceWorker/"> 
                     RootkitXSS之ServiceWorker 
                 </a>
@@ -1181,158 +1229,6 @@ if __name__ == &#39;__main__&#39;:
             </div>
             <div class="continue">
             <a href="/2018/08/21/Dedecms V5.7 SP2代码审计/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/18/代码审计复现：Bluecms 1.6/"> 
-                    代码审计复现：Bluecms 1.6 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-18   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近一阵子得了一场病，加之情感上的一件事，痛不欲生。陆陆续续的缓过来了，渡劫余生，留下该留下的。病也慢慢在恢复了。</p>
-<p>前些日子说要学代码审计，买了本《代码审计》看了两天，为作者尹毅先生无限打call，人生导师一样的人物，经历是传奇的，努力是可见的。书中开篇点题为什么要代码审计？这是web狗的一项技能。其实，当初学安全的时候我一直想要走的方向是渗透，虽然至今也是。但是渗透就仅仅是用工具来attack么？不，渗透是一种思路，是一种积累，也是一种艺术。它是我们基础的升华，经验的绽放。脚本小子use tools will nerver be a hacker。我们要学的、做的要很多，知识面要很宽，尽管路会很难。</p>
-<p>从今天起，至未来的一个月，会把学习的全部精力都投入到审计方向，立下flag:未来半个月内拿自己的cve</p>
-<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>cms: bulecms 1.6 sp1<br>php: 5.4 + mysql 5.5.53</p>
-<h2 id="sql注入一"><a href="#sql注入一" class="headerlink" title="sql注入一"></a>sql注入一</h2><h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题文件位于：/uploads/ad_js.php</p>
-<pre><code>$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&#39;ad&#39;).&quot; WHERE ad_id =&quot;.$ad_id);</code></pre><p>变量未用单引号闭合，可能会引起注入</p>
-<p>跟踪一下$ad_id，查找该参数如何获得</p>
-<pre><code>$ad_id = !empty($_GET[&#39;ad_id&#39;]) ? trim($_GET[&#39;ad_id&#39;]) : &#39;&#39;;</code></pre><p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
-<p>再追踪一下getone()函数怎么定义的，一个定义mysql相关操作的文件位于/uploads/include/mysql.class.php：</p>
-<pre><code>    function getone($sql, $type=MYSQL_ASSOC){
-        $query = $this-&gt;query($sql,$this-&gt;linkid);
-        $row = mysql_fetch_array($query, $type);
-        return $row;
-    }</code></pre><p>追踪此类里query函数的定义：</p>
-<pre><code>    function query($sql){
-        if(!$query=@mysql_query($sql, $this-&gt;linkid)){
-            $this-&gt;dbshow(&quot;Query error:$sql&quot;);
-        }else{
-            return $query;
-        }
-    }</code></pre><p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
-<h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p><img src="https://s1.ax1x.com/2018/08/16/PWEujK.jpg" alt></p>
-<h2 id="sql注入二"><a href="#sql注入二" class="headerlink" title="sql注入二"></a>sql注入二</h2><p>一开始审了一个前台/uploads/user.php的宽字节注入,记一下思路：</p>
-<p>在mysql.class.php中看到：</p>
-<pre><code>mysql_query( &quot;SET NAMES gbk&quot;);</code></pre><p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
-<p>果然对POST\GET过滤，追踪deep_addslashes</p>
-<pre><code>function deep_addslashes($str)
-{
-    if(is_array($str))
-    {
-        foreach($str as $key=&gt;$val)
-        {
-            $str[$key] = deep_addslashes($val);
-        }
-    }
-    else
-    {
-        $str = addslashes($str);
-    }
-    return $str;
-}</code></pre><p>联想宽字节，先追踪一下处理表单的方法</p>
-<pre><code> elseif($act == &#39;index_login&#39;){
-     $user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;
-     $pwd = !empty($_REQUEST[&#39;pwd&#39;]) ? trim($_REQUEST[&#39;pwd&#39;]) : &#39;&#39;;
-     $remember = isset($_REQUEST[&#39;remember&#39;]) ? intval($_REQUEST[&#39;remember&#39;]) : 0;
-     if($user_name == &#39;&#39;){
-         showmsg(&#39;�û�������Ϊ��&#39;);
-     }
-     if($pwd == &#39;&#39;){
-         showmsg(&#39;���벻��Ϊ��&#39;);
-     }
-    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);
-    if($row[&#39;num&#39;] == 1){
-        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
-    }
-    $w = login($user_name, $pwd);
-
-    if(defined(&#39;UC_API&#39;) &amp;&amp; @include_once(BLUE_ROOT.&#39;uc_client/client.php&#39;)){
-        list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);
-        if($uid&gt;0){
-            $password = md5($password);
-            if(!$w){
-                $db-&gt;query(&quot;INSERT INTO &quot;.table(&#39;user&#39;).&quot; (user_name, pwd, email, reg_time) VALUES (&#39;$username&#39;, &#39;$password&#39;, &#39;$email&#39;, &#39;$timestamp&#39;)&quot;); 
-                $w = 1;
-            }
-            $ucsynlogin = uc_user_synlogin($uid);
-        }
-        elseif($uid === -1){
-            if($w == 1){
-                $user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
-                $uid = uc_user_register($user_name, $pwd, $user_info[&#39;email&#39;]);
-                if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);
-            }else $w = -1;
-        }
-        elseif($uid == -2){
-            showmsg(&#39;�������&#39;);
-        }
-        echo $ucsynlogin;
-    }
-    if($w == -1 || $w == 0){
-        showmsg(&#39;��������û��������벻��ȷ&#39;);
-    }
-    elseif($w == 1){
-        update_user_info($user_name);
-         if($remember==1){
-             setcookie(&#39;BLUE[user_id]&#39;, $_SESSION[&#39;user_id&#39;], time()+172800, $cookiepath, $cookiedomain);
-             setcookie(&#39;BLUE[user_name]&#39;, $user_name, time()+172800, $cookiepath, $cookiedomain);
-            setcookie(&#39;BLUE[user_pwd]&#39;, md5(md5($pwd).$_CFG[&#39;cookie_hash&#39;]), time()+172800, $cookiepath, $cookiedomain);
-         }
-         showmsg(&#39;��ӭ�� &#39;.$user_name.&#39; ���������ڽ�ת����Ա����&#39;, &#39;user.php&#39;);
-     }
- }</code></pre><p>追踪user_name怎么传入：</p>
-<pre><code>$user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;</code></pre><p>发现无过滤</p>
-<p>再追踪一下对suername的sql语句如何执行：</p>
-<pre><code>$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);</code></pre><p>看到调用了getone()函数，第一个注入有介绍。</p>
-<p>再看到下面一句：</p>
-<pre><code>    if($row[&#39;num&#39;] == 1){
-        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
-    }</code></pre><p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
-<pre><code>$w = login($user_name, $pwd);</code></pre><p>再追踪login函数得到：</p>
-<pre><code> function login($user_name,$pwd){
-     global $db;
-    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
-    if($row[&#39;num&#39;]==0){
-        $result = 0;
-    }else{
-        $sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39; and pwd=md5(&#39;$pwd&#39;)&quot;;
-         $user_num = $db-&gt;getone($sql);
-         if($user_num[&#39;num&#39;]){
-             $result = 1;
-         }else $result = -1;
-    }
-     return $result;
- }</code></pre><p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
-<p><strong>如果我们的用户名是admin表中用户名，则不允许登陆</strong><br><strong>若不是表中的用户名，则会进行user表的对比查询，再判断是否有这个用户</strong></p>
-<p>明确思路：盲注<br>注入是否成功的判断条件：$row[‘num’]返回值</p>
-<h3 id="复现-1"><a href="#复现-1" class="headerlink" title="复现"></a>复现</h3><p>success injection: <img src="https://s1.ax1x.com/2018/08/17/PWKfzj.jpg" alt></p>
-<p>default injection: <img src="https://s1.ax1x.com/2018/08/17/PWKILq.png" alt></p>
-<p>google一下发现别人挖过后台登陆验证的宽字节，能够利用…<br><img src="https://blog.0kami.cn/img/bluecms_code_review/bluecms_login_success.png" alt></p>
-<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>p师傅的浅析白盒审计中的字符编码及SQL注入：<a href="http://www.freebuf.com/articles/web/31537.html" target="_blank" rel="noopener">http://www.freebuf.com/articles/web/31537.html</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

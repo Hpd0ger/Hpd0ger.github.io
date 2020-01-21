@@ -90,6 +90,158 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2018/08/18/代码审计复现：Bluecms 1.6/"> 
+                    代码审计复现：Bluecms 1.6 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-08-18   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近一阵子得了一场病，加之情感上的一件事，痛不欲生。陆陆续续的缓过来了，渡劫余生，留下该留下的。病也慢慢在恢复了。</p>
+<p>前些日子说要学代码审计，买了本《代码审计》看了两天，为作者尹毅先生无限打call，人生导师一样的人物，经历是传奇的，努力是可见的。书中开篇点题为什么要代码审计？这是web狗的一项技能。其实，当初学安全的时候我一直想要走的方向是渗透，虽然至今也是。但是渗透就仅仅是用工具来attack么？不，渗透是一种思路，是一种积累，也是一种艺术。它是我们基础的升华，经验的绽放。脚本小子use tools will nerver be a hacker。我们要学的、做的要很多，知识面要很宽，尽管路会很难。</p>
+<p>从今天起，至未来的一个月，会把学习的全部精力都投入到审计方向，立下flag:未来半个月内拿自己的cve</p>
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>cms: bulecms 1.6 sp1<br>php: 5.4 + mysql 5.5.53</p>
+<h2 id="sql注入一"><a href="#sql注入一" class="headerlink" title="sql注入一"></a>sql注入一</h2><h3 id="代码审计"><a href="#代码审计" class="headerlink" title="代码审计"></a>代码审计</h3><p>问题文件位于：/uploads/ad_js.php</p>
+<pre><code>$ad = $db-&gt;getone(&quot;SELECT * FROM &quot;.table(&#39;ad&#39;).&quot; WHERE ad_id =&quot;.$ad_id);</code></pre><p>变量未用单引号闭合，可能会引起注入</p>
+<p>跟踪一下$ad_id，查找该参数如何获得</p>
+<pre><code>$ad_id = !empty($_GET[&#39;ad_id&#39;]) ? trim($_GET[&#39;ad_id&#39;]) : &#39;&#39;;</code></pre><p>trim去掉ad_id两侧空格，未过滤参数，可注入</p>
+<p>再追踪一下getone()函数怎么定义的，一个定义mysql相关操作的文件位于/uploads/include/mysql.class.php：</p>
+<pre><code>    function getone($sql, $type=MYSQL_ASSOC){
+        $query = $this-&gt;query($sql,$this-&gt;linkid);
+        $row = mysql_fetch_array($query, $type);
+        return $row;
+    }</code></pre><p>追踪此类里query函数的定义：</p>
+<pre><code>    function query($sql){
+        if(!$query=@mysql_query($sql, $this-&gt;linkid)){
+            $this-&gt;dbshow(&quot;Query error:$sql&quot;);
+        }else{
+            return $query;
+        }
+    }</code></pre><p>查询出错则dbshow进行报错，有结果则返回$query集合后，$row进行取值</p>
+<h3 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h3><p><img src="https://s1.ax1x.com/2018/08/16/PWEujK.jpg" alt></p>
+<h2 id="sql注入二"><a href="#sql注入二" class="headerlink" title="sql注入二"></a>sql注入二</h2><p>一开始审了一个前台/uploads/user.php的宽字节注入,记一下思路：</p>
+<p>在mysql.class.php中看到：</p>
+<pre><code>mysql_query( &quot;SET NAMES gbk&quot;);</code></pre><p>看一下有没有进行addslashes过滤<br><img src="https://s1.ax1x.com/2018/08/16/PWEMnO.png" alt></p>
+<p>果然对POST\GET过滤，追踪deep_addslashes</p>
+<pre><code>function deep_addslashes($str)
+{
+    if(is_array($str))
+    {
+        foreach($str as $key=&gt;$val)
+        {
+            $str[$key] = deep_addslashes($val);
+        }
+    }
+    else
+    {
+        $str = addslashes($str);
+    }
+    return $str;
+}</code></pre><p>联想宽字节，先追踪一下处理表单的方法</p>
+<pre><code> elseif($act == &#39;index_login&#39;){
+     $user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;
+     $pwd = !empty($_REQUEST[&#39;pwd&#39;]) ? trim($_REQUEST[&#39;pwd&#39;]) : &#39;&#39;;
+     $remember = isset($_REQUEST[&#39;remember&#39;]) ? intval($_REQUEST[&#39;remember&#39;]) : 0;
+     if($user_name == &#39;&#39;){
+         showmsg(&#39;�û�������Ϊ��&#39;);
+     }
+     if($pwd == &#39;&#39;){
+         showmsg(&#39;���벻��Ϊ��&#39;);
+     }
+    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);
+    if($row[&#39;num&#39;] == 1){
+        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
+    }
+    $w = login($user_name, $pwd);
+
+    if(defined(&#39;UC_API&#39;) &amp;&amp; @include_once(BLUE_ROOT.&#39;uc_client/client.php&#39;)){
+        list($uid, $username, $password, $email) = uc_user_login($user_name, $pwd);
+        if($uid&gt;0){
+            $password = md5($password);
+            if(!$w){
+                $db-&gt;query(&quot;INSERT INTO &quot;.table(&#39;user&#39;).&quot; (user_name, pwd, email, reg_time) VALUES (&#39;$username&#39;, &#39;$password&#39;, &#39;$email&#39;, &#39;$timestamp&#39;)&quot;); 
+                $w = 1;
+            }
+            $ucsynlogin = uc_user_synlogin($uid);
+        }
+        elseif($uid === -1){
+            if($w == 1){
+                $user_info = $db-&gt;getone(&quot;SELECT email FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
+                $uid = uc_user_register($user_name, $pwd, $user_info[&#39;email&#39;]);
+                if($uid &gt; 0) $ucsynlogin = uc_user_synlogin($uid);
+            }else $w = -1;
+        }
+        elseif($uid == -2){
+            showmsg(&#39;�������&#39;);
+        }
+        echo $ucsynlogin;
+    }
+    if($w == -1 || $w == 0){
+        showmsg(&#39;��������û��������벻��ȷ&#39;);
+    }
+    elseif($w == 1){
+        update_user_info($user_name);
+         if($remember==1){
+             setcookie(&#39;BLUE[user_id]&#39;, $_SESSION[&#39;user_id&#39;], time()+172800, $cookiepath, $cookiedomain);
+             setcookie(&#39;BLUE[user_name]&#39;, $user_name, time()+172800, $cookiepath, $cookiedomain);
+            setcookie(&#39;BLUE[user_pwd]&#39;, md5(md5($pwd).$_CFG[&#39;cookie_hash&#39;]), time()+172800, $cookiepath, $cookiedomain);
+         }
+         showmsg(&#39;��ӭ�� &#39;.$user_name.&#39; ���������ڽ�ת����Ա����&#39;, &#39;user.php&#39;);
+     }
+ }</code></pre><p>追踪user_name怎么传入：</p>
+<pre><code>$user_name = !empty($_REQUEST[&#39;user_name&#39;]) ? trim($_REQUEST[&#39;user_name&#39;]) : &#39;&#39;;</code></pre><p>发现无过滤</p>
+<p>再追踪一下对suername的sql语句如何执行：</p>
+<pre><code>$row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;admin&#39;).&quot; WHERE admin_name=&#39;$user_name&#39;&quot;);</code></pre><p>看到调用了getone()函数，第一个注入有介绍。</p>
+<p>再看到下面一句：</p>
+<pre><code>    if($row[&#39;num&#39;] == 1){
+        showmsg(&#39;ϵͳ�û��鲻�ܴ�ǰ̨��¼&#39;);
+    }</code></pre><p>在admin的表中查询admin_name表中是否有传入的user_name，若存在，$row[‘num’]值为1，然后执行showmsg函数，输出：“前台无法登陆”后返回主页。值为0进行以下操作：</p>
+<pre><code>$w = login($user_name, $pwd);</code></pre><p>再追踪login函数得到：</p>
+<pre><code> function login($user_name,$pwd){
+     global $db;
+    $row = $db-&gt;getone(&quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39;&quot;);
+    if($row[&#39;num&#39;]==0){
+        $result = 0;
+    }else{
+        $sql = &quot;SELECT COUNT(*) AS num FROM &quot;.table(&#39;user&#39;).&quot; WHERE user_name=&#39;$user_name&#39; and pwd=md5(&#39;$pwd&#39;)&quot;;
+         $user_num = $db-&gt;getone($sql);
+         if($user_num[&#39;num&#39;]){
+             $result = 1;
+         }else $result = -1;
+    }
+     return $result;
+ }</code></pre><p>到这里我们可以理解，这个页面的登陆逻辑是这样的：</p>
+<p><strong>如果我们的用户名是admin表中用户名，则不允许登陆</strong><br><strong>若不是表中的用户名，则会进行user表的对比查询，再判断是否有这个用户</strong></p>
+<p>明确思路：盲注<br>注入是否成功的判断条件：$row[‘num’]返回值</p>
+<h3 id="复现-1"><a href="#复现-1" class="headerlink" title="复现"></a>复现</h3><p>success injection: <img src="https://s1.ax1x.com/2018/08/17/PWKfzj.jpg" alt></p>
+<p>default injection: <img src="https://s1.ax1x.com/2018/08/17/PWKILq.png" alt></p>
+<p>google一下发现别人挖过后台登陆验证的宽字节，能够利用…<br><img src="https://blog.0kami.cn/img/bluecms_code_review/bluecms_login_success.png" alt></p>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><p>p师傅的浅析白盒审计中的字符编码及SQL注入：<a href="http://www.freebuf.com/articles/web/31537.html" target="_blank" rel="noopener">http://www.freebuf.com/articles/web/31537.html</a></p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/08/18/代码审计复现：Bluecms 1.6/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/08/12/（转载） 基于 Token 的身份验证/"> 
                     (转载)基于 Token 的身份验证 
                 </a>
@@ -976,82 +1128,6 @@ linux因为系统安全，是不支持IP转发的，其配置文件写在/proc/s
             </div>
             <div class="continue">
             <a href="/2018/07/17/浅谈Arp攻击和利用Arp欺骗进行MITM/">
-            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/07/14/HITCON CTF命令执行绕过/"> 
-                    HITCON CTF命令执行绕过 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-07-14   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <p>#HITCON CTF命令执行绕过</p>
-<h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p>最近开始暑假生活，基本上是吃喝玩乐。但是过两天还有一场peakgeek，不想让自己松懈，学习一道命令执行的题目，由于没有自己的服务器来搭小马，我就大致在自己的linux进行绕过操作，才发现自己linux命令学的狗屁不是，构造能力也特别垃圾</p>
-<h2 id="BabayFirst"><a href="#BabayFirst" class="headerlink" title="BabayFirst"></a>BabayFirst</h2><p>题目给的源码</p>
-<pre><code>&lt;?php
-    $sandbox = &#39;/www/sandbox/&#39; . md5(&quot;orange&quot; . $_SERVER[&#39;REMOTE_ADDR&#39;]);
-    @mkdir($sandbox);
-    @chdir($sandbox);
-    if (isset($_GET[&#39;cmd&#39;]) &amp;&amp; strlen($_GET[&#39;cmd&#39;]) &lt;= 5) {
-        @exec($_GET[&#39;cmd&#39;]);
-    } else if (isset($_GET[&#39;reset&#39;])) {
-        @exec(&#39;/bin/rm -rf &#39; . $sandbox);
-    }
-    highlight_file(__FILE__);</code></pre><h2 id="linux写文件命令"><a href="#linux写文件命令" class="headerlink" title="linux写文件命令"></a>linux写文件命令</h2><p>题目大致意思是给每个人创建一个不同的目录，然后你在当前目录下进行命令执行。</p>
-<p>命令的长度不能超过5<br>这里有一篇文章:<br><a href="http://wonderkun.cc/index.html/?p=524" target="_blank" rel="noopener"> 从七个字符长度的任意命令执行到GetShell</a></p>
-<p>文章讲了一种方法，通过<code>&gt;</code>命令建立空文件，再用<code>ls -t&gt;</code>把当前目录的<strong>文件名</strong>当作<strong>文件内容</strong>导入到一个<strong>新的文件</strong>中。<strong>新的文件</strong>中也包含当前文件名，内容按照ascii码表排序换行。</p>
-<p>linux还有一个小技巧，<code>\</code>可以对命令进行换行，是命令的拼接操作，具体如下<br><img src="https://s1.ax1x.com/2018/07/14/PMwdcq.png" alt></p>
-<p>先看一下它是如何Work的：<br><img src="https://s1.ax1x.com/2018/07/14/PMwwj0.png" alt></p>
-<p>这里我们用<code>ls</code>语句把当前文件夹下的文件名写成一个新文件叫做<strong>down</strong>，可以看到我们用<code>&gt;</code>来创建空文件，文件名包含反斜杠<code>\</code>，这样我们执行sh的时候就可以拼接命令。从图也可以看到，遇到错误命令会报错，但是不会终止，依旧输出了1。也就是”echo 1”</p>
-<p>值得注意的是，若文件名有反斜杠，则要用<code>\\</code>来写，还有空格、&gt;要用<code>\</code>、<code>\&gt;</code>来写，用转义符。</p>
-<p>根据图片的ls可以看到，我们的文件名是按ascii码表排的，生成文件的话命令是杂乱的，也是无效的。所以我们用<code>ls -t&gt;</code>按照时间顺序来写入文件。</p>
-<p>但是这题有长度限制, ls -t&gt;已经超过5个字符。<br>网上思路是把ls -t&gt;也写成一个文件，用sh执行，那么就需要构造这个文件了。<br>构造思路纠结了我很久，后来看到一种巧妙的方法，借助<code>&gt;&gt;</code>来文件追加<br>写文件过程:</p>
-<pre><code>&gt;l\\
-&gt;s \\
-&gt;-t\\
-&gt;\&gt;g</code></pre><p>接着执行ls&gt;a，得到a中文件内容应该是这样的：</p>
-<pre><code>&#39;-t\&#39;
-&#39;&gt;g&#39;
-&#39;a&#39;
-&#39;l\&#39;
-&#39;s \&#39;</code></pre><p>如果我们追加<code>ls&gt;&gt;a</code>则内容应该是这样的：</p>
-<pre><code>&#39;-t\&#39;
-&#39;&gt;g&#39;
-&#39;a&#39;
-&#39;l\&#39;
-&#39;s \&#39;
-&#39;-t\&#39;
-&#39;&gt;g&#39;
-&#39;a&#39;
-&#39;l\&#39;
-&#39;s \&#39;</code></pre><p>前三行和后三行命令无效，只有中间部分的命令有效。所以a文件的可执行内容就只是:ls -t&gt;g</p>
-<p>接着还要构造curl请求来下载一个小马。这点还没有学会，以后再记</p>
-<h2 id="用echo和-gt-gt-追加命令写shell"><a href="#用echo和-gt-gt-追加命令写shell" class="headerlink" title="用echo和&gt;&gt;追加命令写shell"></a>用echo和&gt;&gt;追加命令写shell</h2><p>这个是偶然看到郁离歌的博客里写的，对长度限制不是那么严格的时候可以用。<br><img src="https://s1.ax1x.com/2018/07/14/PMwc4J.png" alt></p>
-<p>但是看到别人博客写，有时候这样php文件不能执行，原因就在于换行。最好可以把POST[]写到一行。所以这个方法不是很好，大多数是用wget或者curl下载小马，但是我还没学会</p>
-<p>相关链接：<br><a href="http://www.freebuf.com/articles/web/137923.html" target="_blank" rel="noopener">浅谈CTF中命令执行与绕过的小技巧</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/07/14/HITCON CTF命令执行绕过/">
             Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>

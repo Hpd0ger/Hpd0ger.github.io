@@ -225,6 +225,27 @@ console.log(&quot;[*]server run on:http://127.0.0.1:3000&quot;)</code></pre><h3 
     res.end(&#39;hello world&#39;);
 
 }).listen(3000);</code></pre><p>当然也可以用JS-Cookie来操作cookie</p>
+<h2 id="调试Express框架"><a href="#调试Express框架" class="headerlink" title="调试Express框架"></a>调试Express框架</h2><h3 id="调试已启动的Node程序"><a href="#调试已启动的Node程序" class="headerlink" title="调试已启动的Node程序"></a>调试已启动的Node程序</h3><p>在 launch.json 中作如下配置，VSCODE添加配置选项可自动添加</p>
+<pre><code>{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    &quot;version&quot;: &quot;0.2.0&quot;,
+    &quot;configurations&quot;: [
+        {
+            &quot;type&quot;: &quot;node&quot;,
+            &quot;request&quot;: &quot;attach&quot;,
+            &quot;name&quot;: &quot;Attach by Process ID&quot;,
+            &quot;processId&quot;: &quot;${command:PickProcess}&quot;,
+            &quot;skipFiles&quot;: [
+                &quot;&lt;node_internals&gt;/**&quot;
+            ]
+        }
+    ]
+}</code></pre><p>启动调试之后会让你选择存在的进程号来指定调试程序<br><img src="http://static.zybuluo.com/1160307775/s15ml8tunt28esr8pao6rhfe/image_1dtsvrmsu4ij1hjp1abliqe1nh2m.png" alt="image_1dtsvrmsu4ij1hjp1abliqe1nh2m.png-116.6kB"></p>
+<h3 id="断点位置"><a href="#断点位置" class="headerlink" title="断点位置"></a>断点位置</h3><p>Express基于中间键，调试的时候很难找到入口。如果你跟中间键的话，它在加载框架时要加载一堆的中间键(query、inint、session、cookie)这些的很复杂。所以建议直接把断点打在路由中间件<code>Route</code>的dispatch方法上，因为dispacth就是分发路由，转到对应的实现方法<br><img src="http://static.zybuluo.com/1160307775/pyj1xnf4na3lvkmf4nj84hk2/image_1dtses96u3m212l3rk713h615lr9.png" alt="image_1dtses96u3m212l3rk713h615lr9.png-359.5kB"></p>
+<p>如果你想对中间键进行分析的话，建议把断点打在这里，因为只是进入中间键的第一步，fn是一个回调的函数<br><img src="http://static.zybuluo.com/1160307775/iz3ez5c6rlrlllaipylotxfq/image_1dtsfb8ds4ebel43qt60o1rk99.png" alt="image_1dtsfb8ds4ebel43qt60o1rk99.png-366.2kB"></p>
+<h3 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h3><p>关于express中间键的加载以及路由的调度，<strong>强烈建议</strong>看这篇文章<a href="https://shadowwood.me/2016/08/27/2016-08-27-express-origin-code-analysis/" target="_blank" rel="noopener">express源码分析</a></p>
 <h2 id="应用实例1-某信息工程大学全自动评教"><a href="#应用实例1-某信息工程大学全自动评教" class="headerlink" title="应用实例1-某信息工程大学全自动评教"></a>应用实例1-某信息工程大学全自动评教</h2><p>由于贵校老师实在太多了，闲来无事写了个自动评教(默认全好评)。之所以写了一个koa，是因为最初我想挂到机房，同学们拿着cookie在我web端傻瓜式自动评教了。后来我发现贵校的sso的session竟然验证了ip，代码放出来。</p>
 <pre><code>const puppeteer = require(&#39;puppeteer&#39;);
 const Koa = require(&#39;koa&#39;);
